@@ -1,8 +1,9 @@
 """Strict source and assessment boundary models."""
 
+from math import isfinite
 from typing import Annotated, Literal
 
-from pydantic import BaseModel, ConfigDict, Field, StrictBool, StrictFloat, StrictInt, StrictStr, field_validator
+from pydantic import BaseModel, ConfigDict, Field, StrictBool, StrictFloat, StrictInt, StrictStr, field_validator, model_validator
 
 Channel = Literal["agent chat", "voice call"]
 Language = Literal["RU", "KZ", "EN"]
@@ -61,16 +62,132 @@ class CriterionJudgment(StrictModel):
 
 
 class CriterionDefinition(StrictModel):
-    id: NonemptyString
+    id: Annotated[StrictStr, Field(pattern=r"^[a-z][a-z0-9_-]{0,63}$")]
     title: NonemptyString
     description: NonemptyString
     answer_type: Literal["boolean", "scale"]
     allowed_values: list[StrictBool | StrictInt | StrictFloat]
-    scale_meanings: dict[str, StrictStr]
-    weight: StrictInt | StrictFloat
+    scale_meanings: dict[str, NonemptyString] = Field(default_factory=dict)
+    weight: Annotated[StrictInt | StrictFloat, Field(ge=0, allow_inf_nan=False)]
     allow_na: StrictBool
     na_condition: StrictStr | None
     critical: StrictBool
+
+    @field_validator("weight", "allowed_values", mode="before")
+    @classmethod
+    def finite_numbers(cls, value):
+        for number in value if isinstance(value, list) else [value]:
+            if type(number) in (int, float):
+                try:
+                    finite = isfinite(number)
+                except OverflowError:
+                    finite = False
+                if not finite:
+                    raise ValueError("Weights and scale steps must be finite representable numbers")
+        return value
+
+    @field_validator("title", "description")
+    @classmethod
+    def text_has_content(cls, value: str) -> str:
+        if not value.strip():
+            raise ValueError("Criterion text must contain non-whitespace text")
+        return value
+
+    @model_validator(mode="after")
+    def valid_definition(self):
+        allowed = self.allowed_values
+        if self.answer_type == "boolean":
+            if len(allowed) != 2 or any(type(v) is not bool for v in allowed) or set(allowed) != {False, True}:
+                raise ValueError("Boolean criteria must allow false and true exactly once")
+        elif (not allowed or any(type(v) not in (int, float) or not isfinite(v) or v < 0 for v in allowed)
+              or len(set(allowed)) != len(allowed) or max(allowed) <= 0):
+            raise ValueError("Numeric scales require unique finite nonnegative steps and a positive maximum")
+        if self.allow_na:
+            if not self.na_condition or not self.na_condition.strip():
+                raise ValueError("N/A requires an explicit nonempty applicability condition")
+        elif self.na_condition is not None:
+            raise ValueError("na_condition must be null when N/A is disabled")
+        if self.critical and (self.answer_type != "boolean" or self.weight != 0 or self.allow_na):
+            raise ValueError("Critical criteria must be unscored non-null booleans")
+        return self
+
+
+class ChecklistCreateRequest(StrictModel):
+    name: NonemptyString
+    criteria: Annotated[list[CriterionDefinition], Field(min_length=1)]
+    parent_version_id: NonemptyString | None = None
+
+    @field_validator("name")
+    @classmethod
+    def name_has_content(cls, value: str) -> str:
+        if not value.strip():
+            raise ValueError("Checklist name must contain non-whitespace text")
+        return value
+
+    @model_validator(mode="after")
+    def valid_criteria(self):
+        ids = [c.id for c in self.criteria]
+        if len(set(ids)) != len(ids):
+            raise ValueError("Criterion IDs must be unique")
+        if not any(c.weight > 0 and not c.critical for c in self.criteria):
+            raise ValueError("A checklist requires at least one positively weighted criterion")
+        return self
+
+
+class AppealRequest(StrictModel):
+    evaluation_id: NonemptyString
+    criterion_id: NonemptyString
+    comment: NonemptyString
+
+    @field_validator("comment")
+    @classmethod
+    def comment_has_content(cls, value: str) -> str:
+        if not value.strip():
+            raise ValueError("An appeal requires a nonempty comment")
+        return value
+
+
+class DecisionRequest(StrictModel):
+    action: Literal["confirm", "change"]
+    value: RawValue = None
+    reason: NonemptyString
+
+    @field_validator("reason")
+    @classmethod
+    def reason_has_content(cls, value: str) -> str:
+        if not value.strip():
+            raise ValueError("A decision requires a nonempty reason")
+        return value
+
+    @model_validator(mode="after")
+    def valid_value_presence(self):
+        if self.action == "change" and "value" not in self.model_fields_set:
+            raise ValueError("A change requires an explicit value; use null only for permitted N/A")
+        if self.action == "confirm" and "value" in self.model_fields_set:
+            raise ValueError("Confirmation accepts no override value; use action change")
+        return self
+
+
+class AppealDecision(StrictModel):
+    action: Literal["confirm", "change"]
+    value: RawValue
+    reason: NonemptyString
+    created_at: StrictStr
+
+
+class Appeal(StrictModel):
+    id: StrictStr
+    evaluation_id: StrictStr
+    criterion_id: StrictStr
+    comment: NonemptyString
+    status: Literal["open", "confirmed", "changed"]
+    created_at: StrictStr
+    decision: AppealDecision | None
+
+
+class AppealPage(StrictModel):
+    items: list[Appeal]
+    total: StrictInt
 
 
 class Checklist(StrictModel):
@@ -214,7 +331,7 @@ class Evaluation(StrictModel):
     usage_attempt_ids: list[StrictStr]
     created_at: StrictStr
     error: StrictStr | None
-    appeals: list[dict]
+    appeals: list[Appeal]
 
 
 class UsageAttempt(StrictModel):
@@ -252,3 +369,37 @@ class UsageSummary(StrictModel):
     remaining_usd: StrictInt | StrictFloat
     working_remaining_usd: StrictInt | StrictFloat
     attempts: list[UsageAttempt]
+
+
+class ExportScore(StrictModel):
+    final_score: Annotated[StrictInt | StrictFloat, Field(ge=0, le=100, allow_inf_nan=False)]
+    critical_flag: StrictBool
+
+
+class ExportSuccess(StrictModel):
+    conversation_id: NonemptyString
+    status: Literal["ok"]
+    criteria: list[CriterionJudgment]
+    score: ExportScore
+
+
+class ExportError(StrictModel):
+    conversation_id: NonemptyString
+    status: Literal["error"]
+    criteria: Annotated[list[CriterionJudgment], Field(max_length=0)]
+    score: None
+    error: NonemptyString
+
+
+class BaselineExport(StrictModel):
+    schema_version: Literal["1.0"]
+    team_name: NonemptyString
+    model: ModelIdentity
+    results: list[Annotated[ExportSuccess | ExportError, Field(discriminator="status")]]
+
+    @field_validator("team_name")
+    @classmethod
+    def team_has_content(cls, value: str) -> str:
+        if not value.strip():
+            raise ValueError("Provide the official nonempty team_name explicitly")
+        return value

@@ -20,9 +20,12 @@ from .models import (
     Channel, Checklist, ChecklistPage, ConversationPage, ConversationResponse,
     DatasetImportRequest, DatasetImportResult, HealthResponse, Language, MetaResponse,
     Run, RunRequest, Evaluation, UsageSummary,
+    Appeal, AppealPage, AppealRequest, ChecklistCreateRequest, DecisionRequest, BaselineExport,
 )
 from .rubric import default_checklist
 from .storage import Store
+from .workflows import ReviewConflict, Workflows
+from .exports import build_baseline_export
 
 
 def create_app(settings: Settings | None = None, *, model_client=None) -> FastAPI:
@@ -33,6 +36,7 @@ def create_app(settings: Settings | None = None, *, model_client=None) -> FastAP
     model_client = model_client or ModelClient(budget, settings=settings)
     evaluator = Evaluator(store, model_client)
     jobs = JobManager(store, evaluator)
+    workflows = Workflows(store)
 
     @asynccontextmanager
     async def lifespan(_app):
@@ -49,6 +53,7 @@ def create_app(settings: Settings | None = None, *, model_client=None) -> FastAP
     app.state.model_client = model_client
     app.state.evaluator = evaluator
     app.state.jobs = jobs
+    app.state.workflows = workflows
     app.add_middleware(CORSMiddleware, allow_origins=list(settings.cors_origins), allow_methods=["GET", "POST"], allow_headers=["Content-Type"])
 
     @app.exception_handler(RequestValidationError)
@@ -71,7 +76,7 @@ def create_app(settings: Settings | None = None, *, model_client=None) -> FastAP
                 "scheduling": {"mode": "assigned_demo", "period": "2026-10", "seed": 2026,
                                "interpretation": "Calendar filters use separate assigned demonstration dates in Asia/Almaty, independent of scores."},
                 "holiday_calendar": {"jurisdiction": "KZ", "status": "not_implemented"},
-                "implemented_features": ["dataset_import", "conversation_read", "checklist_read", "evaluation_runs", "run_cancellation", "usage_accounting"]}
+                "implemented_features": ["dataset_import", "conversation_read", "checklist_read", "evaluation_runs", "run_cancellation", "usage_accounting", "checklist_versions", "appeals", "baseline_export"]}
 
     @app.post("/api/datasets/import", response_model=DatasetImportResult)
     def dataset_import(request: DatasetImportRequest) -> dict:
@@ -109,6 +114,13 @@ def create_app(settings: Settings | None = None, *, model_client=None) -> FastAP
         items = store.list("checklists")
         return {"items": items, "total": len(items)}
 
+    @app.post("/api/checklists", response_model=Checklist, status_code=201)
+    def create_checklist(request: ChecklistCreateRequest) -> dict:
+        try:
+            return workflows.create_checklist(request)
+        except KeyError as error:
+            raise HTTPException(404, detail=error.args[0]) from None
+
     @app.get("/api/checklists/{id}", response_model=Checklist)
     def checklist(id: str) -> dict:
         row = store.get("checklists", id)
@@ -145,6 +157,43 @@ def create_app(settings: Settings | None = None, *, model_client=None) -> FastAP
         if row is None:
             raise HTTPException(404, detail="Evaluation not found")
         return row
+
+    @app.post("/api/appeals", response_model=Appeal, status_code=201)
+    def create_appeal(request: AppealRequest) -> dict:
+        try:
+            return workflows.create_appeal(request)
+        except KeyError as error:
+            raise HTTPException(404, detail=error.args[0]) from None
+        except ValueError as error:
+            raise HTTPException(422, detail=str(error)) from None
+
+    @app.get("/api/appeals", response_model=AppealPage)
+    def appeals(evaluation_id: str | None = None) -> dict:
+        items = workflows.appeals(evaluation_id)
+        return {"items": items, "total": len(items)}
+
+    @app.post("/api/appeals/{id}/decision", response_model=Appeal)
+    def appeal_decision(id: str, request: DecisionRequest) -> dict:
+        try:
+            return workflows.decide(id, request)
+        except KeyError as error:
+            raise HTTPException(404, detail=error.args[0]) from None
+        except ReviewConflict as error:
+            raise HTTPException(409, detail=str(error)) from None
+        except ValueError as error:
+            raise HTTPException(422, detail=str(error)) from None
+
+    @app.get("/api/exports/{dataset_id}", response_model=BaselineExport)
+    def export_dataset(dataset_id: str, team_name: Annotated[str, Query(min_length=1)],
+                       checklist_version_id: str = "cqa-v1") -> dict:
+        try:
+            return build_baseline_export(store, jobs, dataset_id, team_name, checklist_version_id)
+        except KeyError as error:
+            raise HTTPException(404, detail=error.args[0]) from None
+        except ValueError as error:
+            # Pydantic errors can contain entire rows; return only a safe export boundary error.
+            detail = "Export failed strict schema/value/evidence validation; inspect stored assessments before exporting" if isinstance(error, ValidationError) else str(error)
+            raise HTTPException(422, detail=detail) from None
 
     @app.get("/api/usage", response_model=UsageSummary)
     def usage() -> dict:

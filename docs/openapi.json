@@ -269,6 +269,42 @@
             }
           }
         }
+      },
+      "post": {
+        "summary": "Create Checklist",
+        "operationId": "create_checklist_api_checklists_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChecklistCreateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Checklist"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
       }
     },
     "/api/checklists/{id}": {
@@ -465,6 +501,196 @@
         }
       }
     },
+    "/api/appeals": {
+      "post": {
+        "summary": "Create Appeal",
+        "operationId": "create_appeal_api_appeals_post",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AppealRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Appeal"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "summary": "Appeals",
+        "operationId": "appeals_api_appeals_get",
+        "parameters": [
+          {
+            "name": "evaluation_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Evaluation Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppealPage"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/appeals/{id}/decision": {
+      "post": {
+        "summary": "Appeal Decision",
+        "operationId": "appeal_decision_api_appeals__id__decision_post",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DecisionRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Appeal"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/exports/{dataset_id}": {
+      "get": {
+        "summary": "Export Dataset",
+        "operationId": "export_dataset_api_exports__dataset_id__get",
+        "parameters": [
+          {
+            "name": "dataset_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Dataset Id"
+            }
+          },
+          {
+            "name": "team_name",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "title": "Team Name"
+            }
+          },
+          {
+            "name": "checklist_version_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "cqa-v1",
+              "title": "Checklist Version Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BaselineExport"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/usage": {
       "get": {
         "summary": "Usage",
@@ -486,6 +712,205 @@
   },
   "components": {
     "schemas": {
+      "Appeal": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "evaluation_id": {
+            "type": "string",
+            "title": "Evaluation Id"
+          },
+          "criterion_id": {
+            "type": "string",
+            "title": "Criterion Id"
+          },
+          "comment": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Comment"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "open",
+              "confirmed",
+              "changed"
+            ],
+            "title": "Status"
+          },
+          "created_at": {
+            "type": "string",
+            "title": "Created At"
+          },
+          "decision": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AppealDecision"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "evaluation_id",
+          "criterion_id",
+          "comment",
+          "status",
+          "created_at",
+          "decision"
+        ],
+        "title": "Appeal"
+      },
+      "AppealDecision": {
+        "properties": {
+          "action": {
+            "type": "string",
+            "enum": [
+              "confirm",
+              "change"
+            ],
+            "title": "Action"
+          },
+          "value": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "integer"
+              },
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Value"
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Reason"
+          },
+          "created_at": {
+            "type": "string",
+            "title": "Created At"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "action",
+          "value",
+          "reason",
+          "created_at"
+        ],
+        "title": "AppealDecision"
+      },
+      "AppealPage": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/Appeal"
+            },
+            "type": "array",
+            "title": "Items"
+          },
+          "total": {
+            "type": "integer",
+            "title": "Total"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "items",
+          "total"
+        ],
+        "title": "AppealPage"
+      },
+      "AppealRequest": {
+        "properties": {
+          "evaluation_id": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Evaluation Id"
+          },
+          "criterion_id": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Criterion Id"
+          },
+          "comment": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Comment"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "evaluation_id",
+          "criterion_id",
+          "comment"
+        ],
+        "title": "AppealRequest"
+      },
+      "BaselineExport": {
+        "properties": {
+          "schema_version": {
+            "type": "string",
+            "const": "1.0",
+            "title": "Schema Version"
+          },
+          "team_name": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Team Name"
+          },
+          "model": {
+            "$ref": "#/components/schemas/ModelIdentity"
+          },
+          "results": {
+            "items": {
+              "oneOf": [
+                {
+                  "$ref": "#/components/schemas/ExportSuccess"
+                },
+                {
+                  "$ref": "#/components/schemas/ExportError"
+                }
+              ],
+              "discriminator": {
+                "propertyName": "status",
+                "mapping": {
+                  "error": "#/components/schemas/ExportError",
+                  "ok": "#/components/schemas/ExportSuccess"
+                }
+              }
+            },
+            "type": "array",
+            "title": "Results"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "schema_version",
+          "team_name",
+          "model",
+          "results"
+        ],
+        "title": "BaselineExport"
+      },
       "Checklist": {
         "properties": {
           "id": {
@@ -532,6 +957,42 @@
           "criteria"
         ],
         "title": "Checklist"
+      },
+      "ChecklistCreateRequest": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Name"
+          },
+          "criteria": {
+            "items": {
+              "$ref": "#/components/schemas/CriterionDefinition"
+            },
+            "type": "array",
+            "minItems": 1,
+            "title": "Criteria"
+          },
+          "parent_version_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Parent Version Id"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "name",
+          "criteria"
+        ],
+        "title": "ChecklistCreateRequest"
       },
       "ChecklistPage": {
         "properties": {
@@ -673,7 +1134,7 @@
         "properties": {
           "id": {
             "type": "string",
-            "minLength": 1,
+            "pattern": "^[a-z][a-z0-9_-]{0,63}$",
             "title": "Id"
           },
           "title": {
@@ -713,7 +1174,8 @@
           },
           "scale_meanings": {
             "additionalProperties": {
-              "type": "string"
+              "type": "string",
+              "minLength": 1
             },
             "type": "object",
             "title": "Scale Meanings"
@@ -727,7 +1189,8 @@
                 "type": "number"
               }
             ],
-            "title": "Weight"
+            "title": "Weight",
+            "ge": 0
           },
           "allow_na": {
             "type": "boolean",
@@ -757,13 +1220,60 @@
           "description",
           "answer_type",
           "allowed_values",
-          "scale_meanings",
           "weight",
           "allow_na",
           "na_condition",
           "critical"
         ],
         "title": "CriterionDefinition"
+      },
+      "CriterionJudgment": {
+        "properties": {
+          "criterion_id": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Criterion Id"
+          },
+          "value": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "integer"
+              },
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Value"
+          },
+          "rationale": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Rationale"
+          },
+          "evidence_turns": {
+            "items": {
+              "type": "integer"
+            },
+            "type": "array",
+            "minItems": 1,
+            "title": "Evidence Turns"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "criterion_id",
+          "value",
+          "rationale",
+          "evidence_turns"
+        ],
+        "title": "CriterionJudgment"
       },
       "DatasetImportRequest": {
         "properties": {
@@ -843,6 +1353,47 @@
           "total_records"
         ],
         "title": "DatasetSummary"
+      },
+      "DecisionRequest": {
+        "properties": {
+          "action": {
+            "type": "string",
+            "enum": [
+              "confirm",
+              "change"
+            ],
+            "title": "Action"
+          },
+          "value": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "integer"
+              },
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Value"
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Reason"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "action",
+          "reason"
+        ],
+        "title": "DecisionRequest"
       },
       "Evaluation": {
         "properties": {
@@ -928,8 +1479,7 @@
           },
           "appeals": {
             "items": {
-              "additionalProperties": true,
-              "type": "object"
+              "$ref": "#/components/schemas/Appeal"
             },
             "type": "array",
             "title": "Appeals"
@@ -955,6 +1505,108 @@
           "appeals"
         ],
         "title": "Evaluation"
+      },
+      "ExportError": {
+        "properties": {
+          "conversation_id": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Conversation Id"
+          },
+          "status": {
+            "type": "string",
+            "const": "error",
+            "title": "Status"
+          },
+          "criteria": {
+            "items": {
+              "$ref": "#/components/schemas/CriterionJudgment"
+            },
+            "type": "array",
+            "maxItems": 0,
+            "title": "Criteria"
+          },
+          "score": {
+            "type": "null",
+            "title": "Score"
+          },
+          "error": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Error"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "conversation_id",
+          "status",
+          "criteria",
+          "score",
+          "error"
+        ],
+        "title": "ExportError"
+      },
+      "ExportScore": {
+        "properties": {
+          "final_score": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "number"
+              }
+            ],
+            "title": "Final Score",
+            "ge": 0,
+            "le": 100
+          },
+          "critical_flag": {
+            "type": "boolean",
+            "title": "Critical Flag"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "final_score",
+          "critical_flag"
+        ],
+        "title": "ExportScore"
+      },
+      "ExportSuccess": {
+        "properties": {
+          "conversation_id": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Conversation Id"
+          },
+          "status": {
+            "type": "string",
+            "const": "ok",
+            "title": "Status"
+          },
+          "criteria": {
+            "items": {
+              "$ref": "#/components/schemas/CriterionJudgment"
+            },
+            "type": "array",
+            "title": "Criteria"
+          },
+          "score": {
+            "$ref": "#/components/schemas/ExportScore"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "conversation_id",
+          "status",
+          "criteria",
+          "score"
+        ],
+        "title": "ExportSuccess"
       },
       "HTTPValidationError": {
         "properties": {
