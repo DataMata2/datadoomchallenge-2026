@@ -76,12 +76,20 @@ export default function ReportWorkspace({
     api
       .report(selectedId)
       .then(async (r) => {
-        const selection = r.spec
-          ? await api.search(r.spec.filters || { dataset_id: "DEV" })
-          : { items: [] };
+        const savedIds = new Set(r.output?.conversation_ids || []);
+        const selection =
+          r.spec && savedIds.size
+            ? await api.search({
+                dataset_id: r.spec.filters?.dataset_id || "DEV",
+              })
+            : { items: [] };
         if (alive) {
           setReport(r);
-          setSources(selection.items);
+          setSources(
+            selection.items.filter((source) =>
+              savedIds.has(source.conversation_id),
+            ),
+          );
         }
       })
       .catch((e) => {

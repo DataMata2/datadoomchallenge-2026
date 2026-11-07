@@ -4,7 +4,8 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { JSDOM } from "jsdom";
 import { act } from "react";
-import { createRoot, type Root } from "react-dom/client";
+import type { Root } from "react-dom/client";
+let createRoot: typeof import("react-dom/client").createRoot;
 import App from "./App";
 import Analysis from "./Analysis";
 import ConversationDrawer from "./ConversationDrawer";
@@ -26,7 +27,7 @@ let root: Root;
 let container: HTMLDivElement;
 let calls: Array<{ path: string; body: unknown }>;
 let route: (path: string, body: any) => unknown;
-beforeEach(() => {
+beforeEach(async () => {
   dom = new JSDOM(
     '<!doctype html><html><body><div id="root"></div></body></html>',
     { url: "http://localhost:5173" },
@@ -50,6 +51,7 @@ beforeEach(() => {
     this.open = false;
   };
   dom.window.HTMLElement.prototype.scrollIntoView = function () {};
+  ({ createRoot } = await import("react-dom/client"));
   container = document.getElementById("root") as HTMLDivElement;
   root = createRoot(container);
   calls = [];
@@ -432,6 +434,312 @@ test("saved report drilldown preserves copied judgment when the same evaluation 
   assert.match(container.textContent || "", /Current reviewer rationale/);
   assert.equal(
     calls.some((c) => c.path.includes("/refresh") || c.path === "/api/runs"),
+    false,
+  );
+});
+
+function field(row: Element, label: string) {
+  const control = Array.from(row.querySelectorAll("label"))
+    .find((l) => l.textContent?.trim().startsWith(label))
+    ?.querySelector("input, textarea, select") as
+    | HTMLInputElement
+    | HTMLTextAreaElement
+    | HTMLSelectElement
+    | undefined;
+  assert.ok(control, `Field ${label} exists`);
+  return control;
+}
+async function typeValue(
+  control: HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement,
+  value: string,
+) {
+  await act(async () => {
+    const prototype =
+      control instanceof dom.window.HTMLTextAreaElement
+        ? dom.window.HTMLTextAreaElement.prototype
+        : control instanceof dom.window.HTMLSelectElement
+          ? dom.window.HTMLSelectElement.prototype
+          : dom.window.HTMLInputElement.prototype;
+    Object.getOwnPropertyDescriptor(prototype, "value")!.set!.call(
+      control,
+      value,
+    );
+    control.dispatchEvent(
+      new dom.window.Event(
+        control instanceof dom.window.HTMLSelectElement ? "change" : "input",
+        { bubbles: true },
+      ),
+    );
+  });
+}
+
+test("checklist criteria set can replace definitions and apply the returned immutable version", async () => {
+  const baseline = structuredClone(fixtures.checklist);
+  const before = JSON.stringify(baseline);
+  const originalRoute = route;
+  let created: Checklist | undefined;
+  route = (path, body) => {
+    if (path === "/api/checklists" && body)
+      return (created = {
+        ...structuredClone(baseline),
+        ...body,
+        id: "cqa-version-returned-by-server",
+      });
+    if (path === "/api/checklists")
+      return {
+        items: created ? [baseline, created] : [baseline],
+        total: created ? 2 : 1,
+      };
+    if (
+      path.startsWith("/api/conversations/") &&
+      path.includes("cqa-version-returned-by-server")
+    )
+      return { ...fixtures.conversation, evaluation_id: null };
+    if (path === "/api/runs")
+      return {
+        ...fixtures.run,
+        id: "synthetic-apply-run",
+        status: "completed",
+        finished_at: "2026-11-08T00:00:00Z",
+        checklist_version_id: created?.id,
+        checklist_snapshot: created,
+      };
+    return originalRoute(path, body);
+  };
+  await act(async () => root.render(<App />));
+  await settle();
+  await act(async () => button("Checklists").click());
+  await settle();
+  const originalRows = container.querySelectorAll(".criterion-editor").length;
+  await act(async () => button("Add criterion").click());
+  const rows = container.querySelectorAll(".criterion-editor");
+  assert.equal(rows.length, originalRows + 1);
+  const added = rows[rows.length - 1];
+  const identity = field(added, "Criterion ID") as HTMLInputElement;
+  assert.equal(identity.disabled, false);
+  assert.equal(
+    new RegExp(identity.pattern, "v").test("replacement-metric"),
+    true,
+  );
+  identity.focus();
+  await typeValue(identity, "replacement_a");
+  assert.equal(
+    field(added, "Criterion ID"),
+    identity,
+    "Editing identity preserves the row input",
+  );
+  assert.equal(
+    document.activeElement,
+    identity,
+    "Editing identity preserves focus",
+  );
+  await typeValue(identity, "replacement_metric");
+  assert.equal(document.activeElement, identity);
+  const replacedId = baseline.criteria[0].id;
+  const remove = Array.from(rows[0].querySelectorAll("button")).find(
+    (b) => b.textContent?.trim() === "Remove criterion",
+  );
+  assert.ok(remove);
+  await act(async () => remove.click());
+  assert.equal(
+    container.querySelectorAll(".criterion-editor").length,
+    originalRows,
+  );
+  assert.equal(field(added, "Criterion ID"), identity);
+  await typeValue(field(added, "Title"), "Synthetic replacement");
+  await typeValue(
+    field(added, "Criterion wording"),
+    "Assess the stated fictional property.",
+  );
+  await typeValue(field(added, "Answer type"), "scale");
+  await typeValue(field(added, "Weight"), "7");
+  await typeValue(field(added, "Allowed raw steps"), "0, 5, 10");
+  await act(async () =>
+    (field(added, "Allow N/A") as HTMLInputElement).click(),
+  );
+  await typeValue(
+    field(added, "N/A condition"),
+    "The fictional property is not observable.",
+  );
+  for (const [value, meaning] of [
+    ["0", "Absent"],
+    ["5", "Partial"],
+    ["10", "Present"],
+  ])
+    await typeValue(field(added, `Meaning of ${value}`), meaning);
+  await typeValue(identity, "Invalid ID");
+  await act(async () =>
+    added
+      .closest("form")!
+      .dispatchEvent(
+        new dom.window.Event("submit", { bubbles: true, cancelable: true }),
+      ),
+  );
+  assert.match(
+    container.textContent || "",
+    /Criterion IDs must start with a lowercase letter/,
+  );
+  assert.equal(
+    calls.some((c) => c.path === "/api/checklists" && c.body),
+    false,
+  );
+  await typeValue(identity, "consultation");
+  await act(async () =>
+    added
+      .closest("form")!
+      .dispatchEvent(
+        new dom.window.Event("submit", { bubbles: true, cancelable: true }),
+      ),
+  );
+  assert.match(container.textContent || "", /Criterion IDs must be unique/);
+  assert.equal(
+    calls.some((c) => c.path === "/api/checklists" && c.body),
+    false,
+  );
+  await typeValue(identity, "replacement_metric");
+  await act(async () => button("Add criterion").click());
+  const additional = Array.from(
+    container.querySelectorAll(".criterion-editor"),
+  ).at(-1)!;
+  await typeValue(field(additional, "Criterion ID"), "additional_metric");
+  await typeValue(field(additional, "Title"), "Additional fictional check");
+  await typeValue(
+    field(additional, "Criterion wording"),
+    "Assess another stated fictional property.",
+  );
+  await typeValue(field(additional, "Weight"), "3");
+  await act(async () => button("Save new checklist version").click());
+  await settle();
+  assert.ok(created);
+  const request = calls.find((c) => c.path === "/api/checklists" && c.body)!
+    .body as any;
+  assert.equal(request.parent_version_id, baseline.id);
+  assert.equal(
+    request.criteria.some((c: any) => c.id === replacedId),
+    false,
+  );
+  assert.equal(request.criteria.length, originalRows + 1);
+  assert.equal(
+    request.criteria.find((c: any) => c.id === "additional_metric").answer_type,
+    "boolean",
+  );
+  assert.deepEqual(
+    request.criteria.find((c: any) => c.id === "replacement_metric"),
+    {
+      id: "replacement_metric",
+      title: "Synthetic replacement",
+      description: "Assess the stated fictional property.",
+      answer_type: "scale",
+      allowed_values: [0, 5, 10],
+      weight: 7,
+      allow_na: true,
+      na_condition: "The fictional property is not observable.",
+      critical: false,
+      scale_meanings: { "0": "Absent", "5": "Partial", "10": "Present" },
+    },
+  );
+  assert.deepEqual(
+    request.criteria.find((c: any) => c.critical),
+    baseline.criteria.find((c: any) => c.critical),
+  );
+  assert.equal(JSON.stringify(baseline), before);
+  assert.equal(
+    calls.some((c) => c.path === "/api/runs"),
+    false,
+  );
+  await act(async () => button("Overview").click());
+  await settle();
+  await act(async () => button(fixtures.conversation.conversation_id).click());
+  await settle();
+  await typeValue(select("Checklist version"), created.id);
+  await settle();
+  await act(async () => button("Evaluate this conversation").click());
+  assert.deepEqual(calls.find((c) => c.path === "/api/runs")!.body, {
+    dataset_id: fixtures.conversation.dataset_id,
+    conversation_ids: [fixtures.conversation.conversation_id],
+    checklist_version_id: created.id,
+  });
+});
+
+test("saved source metadata survives score and critical drift without refreshing copied judgments", async () => {
+  const saved = structuredClone(fixtures.report);
+  saved.spec.filters.min_score = 80;
+  saved.spec.filters.critical = true;
+  saved.stale = true;
+  saved.output.spec = structuredClone(saved.spec);
+  const observed = saved.output.observations[0];
+  observed.final.critical_flag = true;
+  const savedCritical = observed.final.criteria.find(
+    (c: any) => c.criterion_id === "critical",
+  );
+  savedCritical.value = true;
+  savedCritical.normalized_value = 1;
+  saved.output.groups[0].metrics.critical.value = 100;
+  observed.final.criteria.find(
+    (c: any) => c.criterion_id === "dialogue",
+  ).rationale = "Copied judgment retained after review";
+  const current = structuredClone(fixtures.evaluation);
+  const changedDialogue = current.final.criteria.find(
+    (c: any) => c.criterion_id === "dialogue",
+  );
+  current.final.earned_points -= changedDialogue.points;
+  Object.assign(changedDialogue, {
+    value: 0,
+    normalized_value: 0,
+    points: 0,
+    weighted_score: 0,
+  });
+  current.final.final_score =
+    Math.round(
+      (10000 * current.final.earned_points) / current.final.applicable_weight,
+    ) / 100;
+  current.final.critical_flag = false;
+  const originalRoute = route;
+  route = (path, body) => {
+    if (path === `/api/reports/${saved.id}`) return saved;
+    if (path === "/api/conversations/search")
+      return body.min_score != null || body.critical != null
+        ? { items: [], total: 0 }
+        : fixtures.conversation_page;
+    if (path.startsWith("/api/evaluations/")) return current;
+    return originalRoute(path, body);
+  };
+  localStorage.setItem("cqa-report", saved.id);
+  await act(async () => root.render(<App />));
+  await settle();
+  await act(async () => button("Assistant & reports").click());
+  await settle();
+  const source = Array.from(
+    container.querySelectorAll(".report-canvas .text-button"),
+  ).find((b) => b.textContent === observed.conversation_id);
+  assert.ok(source);
+  const row = source.closest("tr")!;
+  assert.match(row.textContent || "", /agent chat \/ EN/);
+  assert.match(row.textContent || "", /2026/);
+  assert.ok(row.textContent?.includes(observed.final.final_score.toFixed(2)));
+  assert.match(row.textContent || "", /Critical flag/);
+  assert.doesNotMatch(row.textContent || "", /Source loading|No assigned date/);
+  const tile = Array.from(container.querySelectorAll(".metric-tile")).find(
+    (b) => b.textContent?.includes("Dialogue"),
+  ) as HTMLButtonElement;
+  await act(async () => tile.click());
+  const evidence = container.querySelector(
+    "dialog .turn-link",
+  ) as HTMLButtonElement;
+  await act(async () => evidence.click());
+  await settle();
+  assert.match(
+    container.querySelector("[aria-label='Saved report observation']")
+      ?.textContent || "",
+    /Copied judgment retained after review/,
+  );
+  assert.equal(
+    calls.some(
+      (c) =>
+        c.path.includes("/refresh") ||
+        c.path === "/api/runs" ||
+        c.path === "/api/assistant",
+    ),
     false,
   );
 });

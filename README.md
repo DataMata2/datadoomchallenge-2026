@@ -63,6 +63,8 @@ Save an overview selection as a report, or use the assistant to request a report
 
 A conversation shows every original turn with one-based evidence links, original/final scores, applicable weight and raw/weighted criterion calculations. Checklist edits save a new version; select that version in a conversation before explicitly evaluating it. Appeal and reviewer forms preserve original assessments, comments, reasons and recalculated final results. A critical flag remains separate from the arithmetic total.
 
+The paid baseline model is **`claude-sonnet-5-5`**. One complete assessment uses one request containing the full original numbered transcript and the complete selected checklist; the backend calculates the scores. The original 65-record DEV bulk run recorded 65 successful requests costing **USD 0.988380**, a mean of about **USD 0.0152 per complete assessment** (0.988380 ÷ 65). This historical token-usage estimate excludes extra smoke, assistant, custom-metric and retry work. The [recorded usage](docs/coordination/implementation/ledger.md) totals USD 1.061508 across 73 attempts with zero reserved at final verification, including extra checks and retained rejections. These are recorded usage calculations, not invoice reconciliation or a future pricing guarantee.
+
 ## Export evaluated results
 
 Exports are read-only and always use the prescribed `cqa-v1` checklist. The backend rejects missing evaluations or invalid source evidence rather than fabricating a result. Supply the official team name explicitly:

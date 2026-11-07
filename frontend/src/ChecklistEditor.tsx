@@ -1,7 +1,11 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { api, type Checklist, type CriterionDefinition } from "./api";
 import { Empty, ErrorBox, errorText } from "./ui";
-type Draft = CriterionDefinition & { scaleText: string; weightText: string };
+type Draft = CriterionDefinition & {
+  rowKey: number;
+  scaleText: string;
+  weightText: string;
+};
 export default function ChecklistEditor({
   checklists,
   saved,
@@ -9,6 +13,8 @@ export default function ChecklistEditor({
   checklists: Checklist[];
   saved: () => Promise<void>;
 }) {
+  const nextRowKey = useRef(0);
+  const [addedRowKey, setAddedRowKey] = useState<number>();
   const [parent, setParent] = useState("cqa-v1");
   const [name, setName] = useState("");
   const [criteria, setCriteria] = useState<Draft[]>([]);
@@ -22,23 +28,54 @@ export default function ChecklistEditor({
       setCriteria(
         source.criteria.map((c) => ({
           ...structuredClone(c),
+          rowKey: nextRowKey.current++,
           scaleText: c.allowed_values.join(", "),
           weightText: String(c.weight),
         })),
       );
       setSuccess("");
+      setAddedRowKey(undefined);
     }
   }, [parent, checklists]);
-  const update = (index: number, patch: Partial<Draft>) =>
+  const update = (rowKey: number, patch: Partial<Draft>) =>
     setCriteria((list) =>
-      list.map((c, i) => (i === index ? { ...c, ...patch } : c)),
+      list.map((c) => (c.rowKey === rowKey ? { ...c, ...patch } : c)),
     );
+  const add = () => {
+    const rowKey = nextRowKey.current++;
+    setCriteria((list) => [
+      ...list,
+      {
+        rowKey,
+        id: "",
+        title: "",
+        description: "",
+        answer_type: "boolean",
+        allowed_values: [false, true],
+        scale_meanings: {},
+        weight: 0,
+        weightText: "0",
+        scaleText: "false, true",
+        allow_na: false,
+        na_condition: null,
+        critical: false,
+      },
+    ]);
+    setAddedRowKey(rowKey);
+    setSuccess("");
+  };
   const submit = async () => {
     setBusy(true);
     setError("");
     setSuccess("");
     try {
-      const parsed = criteria.map(({ scaleText, weightText, ...c }) => {
+      if (criteria.some((c) => !/^[a-z][a-z0-9_-]{0,63}$/.test(c.id)))
+        throw new Error(
+          "Criterion IDs must start with a lowercase letter and use at most 64 lowercase letters, digits, underscores or hyphens.",
+        );
+      if (new Set(criteria.map((c) => c.id)).size !== criteria.length)
+        throw new Error("Criterion IDs must be unique.");
+      const parsed = criteria.map(({ rowKey, scaleText, weightText, ...c }) => {
         const values =
           c.answer_type === "boolean"
             ? [false, true]
@@ -58,6 +95,8 @@ export default function ChecklistEditor({
           na_condition: c.allow_na ? c.na_condition : null,
         };
       });
+      if (!parsed.some((c) => !c.critical && c.weight > 0))
+        throw new Error("Keep at least one positively weighted criterion.");
       const result = await api.saveChecklist({
         name,
         parent_version_id: parent,
@@ -114,12 +153,18 @@ export default function ChecklistEditor({
         <div className="notice">
           Weighted criteria normalize over applicable weight. Critical is a
           separate boolean with zero weight. N/A requires an explicit
-          applicability condition.
+          applicability condition. To replace a criterion, remove its draft row
+          and add a criterion with a new ID. Saving retains all earlier versions
+          and assessment snapshots.
         </div>
         {criteria.map((c, index) => (
-          <details className="criterion-editor" key={c.id} open={index === 0}>
+          <details
+            className="criterion-editor"
+            key={c.rowKey}
+            open={index === 0 || c.rowKey === addedRowKey}
+          >
             <summary>
-              {c.title}{" "}
+              {c.title || "New criterion"}{" "}
               <span>
                 {c.weightText} weight · {c.answer_type}
                 {c.allow_na ? " · N/A allowed" : ""}
@@ -128,14 +173,20 @@ export default function ChecklistEditor({
             <div className="editor-grid">
               <label>
                 Criterion ID
-                <input value={c.id} disabled />
+                <input
+                  required
+                  maxLength={64}
+                  pattern={"[a-z][a-z0-9_\\-]{0,63}"}
+                  value={c.id}
+                  onChange={(e) => update(c.rowKey, { id: e.target.value })}
+                />
               </label>
               <label>
                 Title
                 <input
                   required
                   value={c.title}
-                  onChange={(e) => update(index, { title: e.target.value })}
+                  onChange={(e) => update(c.rowKey, { title: e.target.value })}
                 />
               </label>
               <label className="full">
@@ -144,7 +195,7 @@ export default function ChecklistEditor({
                   required
                   value={c.description}
                   onChange={(e) =>
-                    update(index, { description: e.target.value })
+                    update(c.rowKey, { description: e.target.value })
                   }
                 />
               </label>
@@ -154,7 +205,7 @@ export default function ChecklistEditor({
                   disabled={c.critical}
                   value={c.answer_type}
                   onChange={(e) =>
-                    update(index, {
+                    update(c.rowKey, {
                       answer_type: e.target.value as Draft["answer_type"],
                       scaleText:
                         e.target.value === "boolean"
@@ -177,7 +228,7 @@ export default function ChecklistEditor({
                   disabled={c.critical}
                   value={c.weightText}
                   onChange={(e) =>
-                    update(index, { weightText: e.target.value })
+                    update(c.rowKey, { weightText: e.target.value })
                   }
                 />
               </label>
@@ -188,7 +239,7 @@ export default function ChecklistEditor({
                     required
                     value={c.scaleText}
                     onChange={(e) =>
-                      update(index, { scaleText: e.target.value })
+                      update(c.rowKey, { scaleText: e.target.value })
                     }
                   />
                 </label>
@@ -199,7 +250,7 @@ export default function ChecklistEditor({
                   disabled={c.critical}
                   checked={c.allow_na}
                   onChange={(e) =>
-                    update(index, {
+                    update(c.rowKey, {
                       allow_na: e.target.checked,
                       na_condition: e.target.checked ? "" : null,
                     })
@@ -215,7 +266,7 @@ export default function ChecklistEditor({
                     required
                     value={c.na_condition || ""}
                     onChange={(e) =>
-                      update(index, { na_condition: e.target.value })
+                      update(c.rowKey, { na_condition: e.target.value })
                     }
                   />
                 </label>
@@ -234,7 +285,7 @@ export default function ChecklistEditor({
                     <input
                       value={c.scale_meanings?.[value] || ""}
                       onChange={(e) =>
-                        update(index, {
+                        update(c.rowKey, {
                           scale_meanings: {
                             ...c.scale_meanings,
                             [value]: e.target.value,
@@ -245,9 +296,26 @@ export default function ChecklistEditor({
                   </label>
                 ))}
               </div>
+              <div className="full">
+                <button
+                  type="button"
+                  disabled={busy}
+                  onClick={() => {
+                    setCriteria((list) =>
+                      list.filter((row) => row.rowKey !== c.rowKey),
+                    );
+                    setSuccess("");
+                  }}
+                >
+                  Remove criterion
+                </button>
+              </div>
             </div>
           </details>
         ))}
+        <button type="button" disabled={busy} onClick={add}>
+          Add criterion
+        </button>
         {error && <ErrorBox>{error}</ErrorBox>}
         {success && (
           <div className="notice" role="status">
