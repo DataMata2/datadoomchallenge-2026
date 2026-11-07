@@ -60,6 +60,7 @@ def test_openapi_publishes_only_implemented_routes_and_typed_envelope(tmp_path):
     assert set(schema["paths"]) == {
         "/api/health", "/api/meta", "/api/datasets/import", "/api/conversations",
         "/api/conversations/{id}", "/api/checklists", "/api/checklists/{id}",
+        "/api/runs", "/api/runs/{id}", "/api/runs/{id}/cancel", "/api/evaluations/{id}", "/api/usage",
     }
     assert schema["components"]["schemas"]["DatasetImportRequest"]["properties"]["payload"]["$ref"].endswith("/SourceEnvelope")
     assert schema["components"]["schemas"]["ConversationResponse"]["properties"]["transcript"]["items"]["$ref"].endswith("/SourceTurn")

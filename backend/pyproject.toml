@@ -3,7 +3,13 @@ name = "cqa"
 version = "0.1.0"
 description = "Local conversation quality analytics prototype"
 requires-python = ">=3.12,<3.13"
-dependencies = ["fastapi==0.162.2", "pydantic==2.14.3", "uvicorn==0.54.0"]
+dependencies = [
+    "anthropic==2.6.0",
+    "fastapi==0.162.2",
+    "jsonschema>=4,<5",
+    "pydantic==2.14.3",
+    "uvicorn==0.54.0",
+]
 
 [dependency-groups]
 dev = [

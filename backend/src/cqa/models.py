@@ -141,3 +141,114 @@ class MetaResponse(StrictModel):
     scheduling: dict
     holiday_calendar: dict
     implemented_features: list[StrictStr]
+
+
+class ScoredCriterion(CriterionJudgment):
+    weight: StrictInt | StrictFloat
+    applicable: StrictBool
+    normalized_value: StrictInt | StrictFloat | None
+    points: StrictInt | StrictFloat | None
+    weighted_score: StrictInt | StrictFloat | None
+
+
+class ScoreResult(StrictModel):
+    criteria: list[ScoredCriterion]
+    earned_points: StrictInt | StrictFloat
+    applicable_weight: StrictInt | StrictFloat
+    final_score: StrictInt | StrictFloat | None
+    critical_flag: StrictBool
+
+
+class ModelIdentity(StrictModel):
+    mode: Literal["external_api", "local", "hybrid"]
+    name: StrictStr
+
+
+RunStatus = Literal["queued", "running", "completed", "failed", "interrupted", "cancelled"]
+
+
+class RunRequest(StrictModel):
+    dataset_id: NonemptyString
+    conversation_ids: Annotated[list[NonemptyString], Field(min_length=1, max_length=500)]
+    checklist_version_id: NonemptyString
+
+
+class RunItem(StrictModel):
+    conversation_id: StrictStr
+    status: RunStatus
+    evaluation_id: StrictStr | None
+    error: StrictStr | None
+
+
+class Run(StrictModel):
+    id: StrictStr
+    kind: Literal["evaluation", "custom_metric"]
+    dataset_id: StrictStr
+    conversation_ids: list[StrictStr]
+    checklist_version_id: StrictStr | None
+    status: RunStatus
+    total: StrictInt
+    completed: StrictInt
+    failed: StrictInt
+    items: list[RunItem]
+    created_at: StrictStr
+    started_at: StrictStr | None
+    finished_at: StrictStr | None
+    error: StrictStr | None
+    model: ModelIdentity
+    checklist_snapshot: Checklist
+
+
+class Evaluation(StrictModel):
+    id: StrictStr
+    dataset_id: StrictStr
+    conversation_id: StrictStr
+    run_id: StrictStr
+    status: Literal["ok", "error"]
+    checklist_version_id: StrictStr
+    checklist_snapshot: Checklist
+    model: ModelIdentity
+    prompt_version: StrictStr
+    original: ScoreResult | None
+    final: ScoreResult | None
+    usage_attempt_ids: list[StrictStr]
+    created_at: StrictStr
+    error: StrictStr | None
+    appeals: list[dict]
+
+
+class UsageAttempt(StrictModel):
+    id: StrictStr
+    run_id: StrictStr | None
+    purpose: StrictStr
+    model: StrictStr
+    status: StrictStr
+    started_at: StrictStr
+    finished_at: StrictStr | None
+    latency_ms: StrictInt | None
+    provider_request_id: StrictStr | None
+    provider_message_id: StrictStr | None
+    raw_usage: dict | None
+    input_tokens: StrictInt | None
+    output_tokens: StrictInt | None
+    cost_usd: StrictInt | StrictFloat | None
+    reserved_usd: StrictInt | StrictFloat
+    reservation_usd: StrictInt | StrictFloat
+    allowance: Literal["working", "control"]
+    max_tokens: StrictInt | None
+    rates: dict
+    error: StrictStr | None
+    stop_reason: StrictStr | None
+    stop_details: dict | None
+
+
+class UsageSummary(StrictModel):
+    currency: Literal["USD"]
+    hard_limit_usd: StrictInt | StrictFloat
+    working_limit_usd: StrictInt | StrictFloat
+    control_reserve_usd: StrictInt | StrictFloat
+    spent_usd: StrictInt | StrictFloat
+    reserved_usd: StrictInt | StrictFloat
+    remaining_usd: StrictInt | StrictFloat
+    working_remaining_usd: StrictInt | StrictFloat
+    attempts: list[UsageAttempt]

@@ -1,8 +1,8 @@
 # CQA frontend API contract
 
-Version: 0.1.0 (Task 1). Base URL: `http://127.0.0.1:8000`; every application route starts with `/api`. No authentication is required for this local prototype. Use the Vite development proxy or explicitly configured `CQA_CORS_ORIGINS`. Run one backend process. Never expose backend credentials in frontend environment variables.
+Version: 0.1.0 (Tasks 1–2). Base URL: `http://127.0.0.1:8000`; every application route starts with `/api`. No authentication is required for this local prototype. Use the Vite development proxy or explicitly configured `CQA_CORS_ORIGINS`. Run one backend process. Never expose backend credentials in frontend environment variables.
 
-`docs/openapi.json` is generated from the implemented application; `/openapi.json` and `/docs` expose the same live specification. This document also reserves the planned Tasks 2–5 interfaces. A planned route is **not implemented** until its status changes here and it appears in live OpenAPI. Calling an unimplemented route currently returns 404 or 405. `docs/api-examples.json` contains fictional examples only; evaluation/report examples are explicitly planned, not measured outcomes.
+`docs/openapi.json` is generated from the implemented application; `/openapi.json` and `/docs` expose the same live specification. This document also reserves the planned Tasks 2–5 interfaces. A planned route is **not implemented** until its status changes here and it appears in live OpenAPI. Calling an unimplemented route currently returns 404 or 405. `docs/api-examples.json` contains fictional examples only; evaluation examples are fictional implemented shapes; report examples remain planned. No example is a measured outcome.
 
 ## Common rules
 
@@ -12,7 +12,7 @@ Version: 0.1.0 (Task 1). Base URL: `http://127.0.0.1:8000`; every application ro
 - Errors use `{detail: string | validation_error_array}`; invalid requests return 422 and missing resources 404. Import validation errors identify fields without reflecting transcript content or recording URLs.
 - API calendar instants are ISO 8601 with explicit timezone. Source transcript timestamps are **exceptions**: preserve exact original strings, either chat MM:SS or call ISO 8601 with timezone. Evidence indices are one-based across **all** original turns, including client/bot/system.
 - Calendar filtering uses `demo_started_at` in Asia/Almaty, not original call dates or elapsed chat timestamps. Demo scheduling is independent of scores. Its October 2026 assignment uses seed 2026 and version `stratified-october-v1`, sorted source identities, deterministic shuffling, all 31 days for a dataset of at least 31 records, and alternating night/day strata. Reordering import records does not change assignments. Record source content and assigned metadata are immutable after import; a conflicting reimport returns 422. A distinct group cannot overwrite another group's IDs.
-- No model evaluation runs on startup or import. Unevaluated conversations expose `evaluation_id: null`. Holiday interpretation is reserved for Kazakhstan and explicitly unimplemented in Task 1.
+- No model evaluation runs on startup or import. Deliberate backend startup marks unfinished prior runs interrupted without resending. App construction and OpenAPI generation perform no recovery. Unevaluated conversations expose `evaluation_id: null`. Holiday interpretation is reserved for Kazakhstan and explicitly unimplemented in Task 1.
 
 ## Endpoint status and request contracts
 
@@ -25,10 +25,10 @@ Version: 0.1.0 (Task 1). Base URL: `http://127.0.0.1:8000`; every application ro
 | `GET /api/conversations/{id}` | Implemented | Query `dataset_id=DEV` → `Conversation` |
 | `GET /api/checklists` | Implemented | `Page<Checklist>` |
 | `GET /api/checklists/{id}` | Implemented | `Checklist` |
-| `POST /api/runs` | **Not implemented — Task 2** | `{dataset_id, conversation_ids: string[], checklist_version_id}` → `Run` with HTTP 202 |
-| `GET /api/runs/{id}` | **Not implemented — Task 2** | `Run` |
-| `GET /api/evaluations/{id}` | **Not implemented — Task 2** | `Evaluation` |
-| `GET /api/usage` | **Not implemented — Task 2** | `UsageSummary` |
+| `POST /api/runs` | Implemented | `{dataset_id, conversation_ids: string[], checklist_version_id}` → `Run` with HTTP 202 |
+| `GET /api/runs/{id}` | Implemented | `Run` |
+| `GET /api/evaluations/{id}` | Implemented | `Evaluation` |
+| `GET /api/usage` | Implemented | `UsageSummary` |
 | `POST /api/checklists` | **Not implemented — Task 3** | `{name, criteria: CriterionDefinition[], parent_version_id?: string}` → immutable `Checklist` with HTTP 201 |
 | `POST /api/appeals` | **Not implemented — Task 3** | `{evaluation_id, criterion_id, comment}` → `Appeal` with HTTP 201 |
 | `GET /api/appeals` | **Not implemented — Task 3** | Optional query `evaluation_id` → `Page<Appeal>` |
@@ -43,9 +43,9 @@ Version: 0.1.0 (Task 1). Base URL: `http://127.0.0.1:8000`; every application ro
 | `POST /api/reports/{id}/messages` | **Not implemented — Task 5** | `{content}` → `AssistantResponse` |
 | `POST /api/assistant` | **Not implemented — Task 5** | `{content, report_id?: string}` → `AssistantResponse` |
 | `POST /api/reports/{id}/metrics` | **Not implemented — Task 5** | `CustomMetricDefinition` → `Run` with HTTP 202 |
-| `POST /api/runs/{id}/cancel` | **Not implemented — Task 5** | No body → `Run`; completed items and paid-attempt accounting remain durable |
+| `POST /api/runs/{id}/cancel` | Implemented | No body → `Run`; completed items and paid-attempt accounting remain durable |
 
-Task 2 will add optional `checklist_version_id=cqa-v1` on conversation list/detail to select the latest evaluation for that checklist. Until then `evaluation_id` is null. Task 4 will extend `Meta` with actual available periods, implemented holiday definition/source and supported filter/group/metric options. Existing fields retain their meanings.
+Conversation list/detail accept optional `checklist_version_id=cqa-v1` to select the latest evaluation (including an explicit error evaluation) for that checklist. Latest references are derived from separate evaluation documents; immutable source documents remain unchanged and identical reimport remains valid. Task 4 will extend `Meta` with actual available periods, implemented holiday definition/source and supported filter/group/metric options. Existing fields retain their meanings.
 
 ## Implemented schemas
 
@@ -63,19 +63,19 @@ Task 2 will add optional `checklist_version_id=cqa-v1` on conversation list/deta
 
 `Meta = {reporting_timezone, channels: Channel[], languages: Language[], default_checklist_version_id, datasets: {id, total_records}[], scheduling: {mode, period, seed, interpretation}, holiday_calendar: {jurisdiction: "KZ", status: "not_implemented"}, implemented_features: string[]}`. Empty startup has no datasets and one baseline checklist.
 
-## Planned evaluation, review and export schemas
+## Evaluation, review and export schemas
 
-The following schemas are **not implemented** in Task 1. They reserve field names for Tasks 2–5.
+Judgment, score, run, evaluation and usage schemas are implemented in Task 2. Appeal and export endpoints remain planned for Task 3.
 
 `Judgment = {criterion_id, value: RawValue, rationale, evidence_turns: integer[]}`. Rationale is nonempty; evidence is nonempty, unique and within the full original transcript. Supporting evidence, checked regions for omissions and N/A reasons share this shape.
 
 `ScoredCriterion = Judgment & {weight: number, applicable: boolean, normalized_value: number | null, points: number | null, weighted_score: number | null}`. `points = raw_fraction * weight` before N/A redistribution. `weighted_score = points * 100 / applicable_weight`. `ScoreResult = {criteria: ScoredCriterion[], earned_points: number, applicable_weight: number, final_score: number | null, critical_flag: boolean}`. Total is rounded to two decimal places; intermediate values are not rounded. Unscored critical is separate and does not zero arithmetic. Only the backend computes scores.
 
-`Run = {id, kind: "evaluation" | "custom_metric", dataset_id, conversation_ids: string[], checklist_version_id: string | null, status: "queued" | "running" | "completed" | "failed" | "interrupted" | "cancelled", total: integer, completed: integer, failed: integer, items: RunItem[], created_at, started_at: string | null, finished_at: string | null, error: string | null}`. `RunItem = {conversation_id, status: "queued" | "running" | "completed" | "failed" | "interrupted" | "cancelled", evaluation_id: string | null, error: string | null}`. Every requested source ID appears once, including failures. Poll the run while queued/running. Restart does not silently resend interrupted paid requests.
+`Run = {id, kind: "evaluation" | "custom_metric", dataset_id, conversation_ids: string[], checklist_version_id: string | null, status: "queued" | "running" | "completed" | "failed" | "interrupted" | "cancelled", total: integer, completed: integer, failed: integer, items: RunItem[], created_at, started_at: string | null, finished_at: string | null, error: string | null, model: {mode, name}, checklist_snapshot: Checklist}`. `RunItem = {conversation_id, status: "queued" | "running" | "completed" | "failed" | "interrupted" | "cancelled", evaluation_id: string | null, error: string | null}`. Every requested source ID appears once, including failures. Poll the run while queued/running. Restart does not silently resend interrupted paid requests. Run requests require a nonempty unique ID list, at most 500 IDs, and an existing checklist and source records. Cancellation marks queued work cancelled, allows in-flight paid work to finish durably, and leaves completed items intact. A cancelled run has a null `finished_at` while in-flight work finishes. Completed/failed counts exclude cancelled/interrupted items; every requested ID remains visible.
 
 `Evaluation = {id, dataset_id, conversation_id, run_id, status: "ok" | "error", checklist_version_id, checklist_snapshot: Checklist, model: {mode: "external_api" | "local" | "hybrid", name}, prompt_version, original: ScoreResult | null, final: ScoreResult | null, usage_attempt_ids: string[], created_at, error: string | null, appeals: Appeal[]}`. Original assessment is immutable. Final results can change only through documented review. Model/prompt/checklist identity is retained with the assessment. Error status has null scores and an actionable reason.
 
-`UsageSummary = {currency: "USD", hard_limit_usd: number, working_limit_usd: number, control_reserve_usd: number, spent_usd: number, reserved_usd: number, remaining_usd: number, attempts: UsageAttempt[]}`. `UsageAttempt = {id, run_id: string | null, purpose, model, status, started_at, finished_at: string | null, latency_ms: number | null, provider_request_id: string | null, provider_message_id: string | null, raw_usage: object | null, input_tokens: integer | null, output_tokens: integer | null, cost_usd: number | null, reserved_usd: number, rates: object, error: string | null}`. Failed/schema-invalid attempts retain usage. Unknown outcomes retain reservations. Hard cap is USD 100; regular working allowance USD 80 and control/recovery reserve USD 20. No model calls are implemented in Task 1.
+`UsageSummary = {currency: "USD", hard_limit_usd: number, working_limit_usd: number, control_reserve_usd: number, spent_usd: number, reserved_usd: number, remaining_usd: number, working_remaining_usd: number, attempts: UsageAttempt[]}`. `UsageAttempt = {id, run_id: string | null, purpose, model, status, started_at, finished_at: string | null, latency_ms: number | null, provider_request_id: string | null, provider_message_id: string | null, raw_usage: object | null, input_tokens: integer | null, output_tokens: integer | null, cost_usd: number | null, reserved_usd: number, reservation_usd: number, allowance: "working" | "control", max_tokens: integer | null, rates: object, error: string | null, stop_reason: string | null, stop_details: object | null}`. Failed/schema-invalid attempts retain usage. Unknown outcomes retain reservations. Hard cap is USD 100; regular working allowance USD 80 and control/recovery reserve USD 20. `reserved_usd` is the outstanding reservation; `reservation_usd` retains its original amount. Statuses include `reserved`, `received`, `succeeded`, `invalid_output`, `failed`, `unknown` and `cancelled`. Usage settles before output parsing. `remaining_usd` includes the control reserve; `working_remaining_usd` is the amount still available under the working allowance. Unknown outcomes retain reservations across restart. Standard Sonnet requests reserve USD 2.04096 before send (1M input-token upper bound plus 4,096 output tokens); actual billed usage releases the remainder. Rates and raw provider usage are retained. SDK retries are disabled, timeout is 90 seconds, and all provider consumers share a maximum of two in-flight requests. No model request occurs inside a database transaction.
 
 `Appeal = {id, evaluation_id, criterion_id, comment, status: "open" | "confirmed" | "changed", created_at, decision: {action: "confirm" | "change", value: RawValue, reason, created_at} | null}`. A change uses strict evaluated-snapshot scale/applicability rules; a reason is mandatory for either decision. Original evaluation remains unchanged. A decided appeal cannot receive another decision.
 
@@ -107,3 +107,22 @@ uv run --project backend pytest backend/tests -q
 ```
 
 The backend defaults to ignored `runtime/cqa.sqlite3`. Set `CQA_DATABASE_PATH` to choose a local file. Source payloads, recordings, credentials and runtime databases must remain outside Git. No data import, inference, paid request or organizer URL access occurs automatically.
+
+
+## Explicit provider preparation
+
+Backend `Settings` read `CQA_MODEL` (default `claude-sonnet-5-5`) and the ignored backend `CQA_ENV_FILE` path. The credential is loaded only for an explicit provider operation. Only the verified Sonnet model/rate combination is enabled; a different model needs an explicit implementation and verification of rates/capabilities. The model uses the Anthropic SDK 2.6.0 synchronous client, API 2026-10-21, native `output_config.format` JSON, and no sampling parameters or forced tools. Every assessment sends the full numbered transcript and complete immutable checklist, and deterministic Python validation/scoring supplies totals.
+
+Run the commands from the repository root with `CQA_ENV_FILE` set to the original ignored secret file:
+
+```bash
+uv run --locked --project backend python -m cqa.prepare account
+uv run --locked --project backend python -m cqa.prepare smoke
+uv run --locked --project backend python -m cqa.prepare dev
+```
+
+`account` checks the authenticated model list without inference. `smoke` evaluates one DEV source record in each of RU/KZ/EN; `dev` requires that successful smoke and exactly 65 DEV records. Every run and preparation marker is persisted in the configured local database. Already attempted preparation stages require explicit `--repeat`; interrupted runs are never resumed automatically. To retry selected failures, create a new run explicitly and retain the prior run/attempt evidence. Normal app runs do not require preparation markers.
+
+`CQA_MODEL_LOCK` overrides the project-only lock path, default `runtime/model-jobs.lock`. The preparation commands acquire this nonblocking `flock` for the full stage. It coordinates this project only. Run one backend process and stop it before running preparation against the same database. OpenAPI generation must use a separate disposable database and must not enter the app lifespan.
+
+Credential normalization is an explicit one-time command: `python -m cqa.prepare normalize-credential`. It requires exactly one unambiguous credential in the configured file, replaces that same ignored file with a standard assignment, restricts permissions to 0600 and emits no credential material. It does not run automatically.
