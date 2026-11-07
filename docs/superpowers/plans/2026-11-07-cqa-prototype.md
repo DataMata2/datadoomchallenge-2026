@@ -1,0 +1,136 @@
+# CQA Prototype Implementation Plan
+
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+
+**Goal:** Deliver the confirmed local CQA application, a stable frontend API, genuine DEV evaluations and valid export, and a rehearsable five-minute demonstration.
+
+**Architecture:** A single FastAPI process owns persistent SQLite documents, deterministic scoring/analytics, background evaluation jobs, and a backend-only Anthropic client. A separate React/TypeScript reference frontend uses `/api`; a teammate can replace it without changing domain logic. Source conversations, checklist versions, original evaluations, reviewer decisions, analysis reports, and usage records retain separate identities.
+
+**Tech Stack:** Python 3.12, FastAPI/Pydantic 2, SQLite rollback journal, Anthropic Python SDK with native structured output, React/TypeScript/Vite, standard CSS and lightweight SVG charts. Use pinned resolved dependencies and lockfiles. Installed Node 22.23.2 and Python 3.12.13 are available; current primary-document facts are in `docs/coordination/implementation/readiness.md` in the original project directory.
+
+**Spec:** `docs/coordination/product-discovery/product-design.md`, plus `docs/coordination/materials-review/briefing.md` for exact scoring/export rules. User confirmed both scope and starting implementation. GitHub repo is PRIVATE, `DataMata2/datadoomchallenge-2026`; teammate `gojosatorukz` has a pending write invitation.
+
+## Global Constraints
+
+- Do not dispatch subagents. Do the work yourself and report back. All questions/blockers go to the parent overseer, never the user.
+- Keep the repository PRIVATE. Never commit `.env`, credentials, signed organizer URLs, raw organizer payloads, recordings, or local evidence/runtime data. Source IDs, source turn order, and original timestamp strings are immutable.
+- Use standard technical English in code, documentation, interface explanations, and reports. Preserve original multilingual transcript content; support RU, KZ, and EN.
+- Default IDs/weights: contact 10; discovery 15; identification 20; consultation 20 with raw 0/5/10/15/20; empathy 15; dialogue 15 with raw 0/4/7/10; closure 5; critical unscored boolean. N/A only where allowed; scores normalize over applicable weight and round to two places. Critical never automatically zeros the total.
+- Evidence indices are one-based across the full original transcript, including client/bot/system. Preserve original evaluation, appeal, decision reason, and final recalculated result.
+- Conversation type is `channel`, exactly `agent chat` or `voice call`. No business-topic classifier, operator-identity analytics, authentication, speech recognition, or model-comparison product feature.
+- Demo dates are reproducible separate metadata independent of quality scores. Reporting timezone Asia/Almaty; holiday interpretation initially Kazakhstan. Expose scheduling provenance and visible filter interpretation.
+- Report custom metrics NEVER affect the regular QA score or the required baseline eight-criterion export.
+- Backend secrets stay backend-only. No generated SQL/code execution; natural-language actions use validated, allowlisted data contracts. Transcript text is data, never trusted tool instructions.
+- One backend process; at most two cloud evaluation requests concurrently. No network request inside a database transaction. Serialize heavy tests/model jobs with `flock`; cap JS test workers at two if a worker pool is used.
+- USD 100 hard project model budget; default working allowance USD 80 with USD 20 held for control/recovery. Persist attempt/usage/cost evidence, enforce reservations before sends, retain unknown-outcome reservations. Do not silently switch models within a recorded run.
+- Deadline 2026-11-08 12:00 Asia/Almaty. Both required DEV and ten-control-chat JSONs must be committed/pushed before deadline when control access exists. Public visibility remains reserved to user despite the organizer's public-submission requirement.
+- Implement only the assigned task, self-review, run meaningful focused checks then the relevant full suite once, commit your task, and write the requested report. Parent owns independent review and push.
+
+## Review Focus
+
+1. Strict raw-value types: false must remain boolean, numeric scale values must be allowed steps, N/A must be permitted, and evidence must refer to existing turns (Tasks 1-2).
+2. Partial failures/restarts: preserve every requested conversation; completed work survives restart, failed/unknown attempts do not masquerade as scores, and budget cannot be overspent by concurrent jobs (Task 2).
+3. Review history/version changes: preserve original values; updated totals use the evaluated checklist snapshot; official export stays schema-compatible (Task 3).
+4. Empty/unevaluated/small cohorts and date boundaries: count exclusions and sample sizes, retain a zero score, handle Almaty timezone and overnight hour windows without inventing trends (Task 4).
+5. Assistant/custom-metric follow-ups: validate the whole filter/metric plan before execution; report metrics do not mutate base scores; errors retain a usable saved report and appear in UI (Tasks 5-6).
+
+## File and interface map
+
+- `backend/pyproject.toml`, `backend/uv.lock`, `backend/src/cqa/`: Python package; run checks with `UV_CACHE_DIR=.cache/uv uv run --project backend pytest backend/tests -q`.
+- `cqa/config.py`, `models.py`, `storage.py`, `rubric.py`, `scoring.py`, `datasets.py`: configuration, strict domain types, document persistence, default rubric, arithmetic, import/scheduling.
+- `cqa/main.py`, `cqa/api/*.py`: `create_app(settings: Settings | None = None) -> FastAPI` and HTTP boundary. Export `app = create_app()` without triggering inference/import at module load.
+- `cqa/provider.py`, `budget.py`, `evaluations.py`, `jobs.py`: model calls/attempt accounting, assessment validation, bounded jobs.
+- `cqa/workflows.py`, `exports.py`: checklist versions, appeals/decisions, baseline JSON.
+- `cqa/analytics.py`, `reports.py`, `assistant.py`, `custom_metrics.py`: filter/aggregate, saved analysis, natural language plan, additional metric runs.
+- `frontend/src/`: reference client/components/views; `docs/api-contract.md`, `docs/api-examples.json`, generated `docs/openapi.json` are the teammate handoff.
+- `scripts/`, `docs/demo.md`, `docs/presentation-model-comparison.md`: startup/import/export/demo rehearsal and separate local experiment.
+
+Shared persistence is a small SQLite JSON-document store: `Store(path)`, `get(collection: str, id: str) -> dict | None`, `put(collection: str, id: str, value: dict) -> None`, `list(collection: str) -> list[dict]`, and `update(collection: str, id: str, fn) -> dict` with an atomic short transaction. Use one connection per operation, finite busy timeout, rollback journal. No ORM or remote DB is needed for 65 records.
+
+Canonical HTTP resources: `/api/conversations`, `/api/checklists`, `/api/runs`, `/api/evaluations`, `/api/appeals`, `/api/reports`, `/api/analytics`, `/api/usage`, `/api/exports`. List responses use `{items, total}`; resource IDs are strings. Errors return a useful `detail`; request validation returns 422. Dates in API use ISO timestamps and explicit timezone. Long operations return a run ID and are polled through `/api/runs/{id}`.
+
+## Task 1: Persistent source data, exact scoring, and early frontend contract
+
+**Files:** Create package/config/domain/store/rubric/scoring/datasets/main, `backend/tests/test_scoring.py`, `test_datasets.py`, `test_store.py`, `test_read_api.py`, `.env.example`, and the API handoff documents. Do not implement the model provider yet.
+
+**Interfaces:** Produce shared Store and `create_app` above. `default_checklist() -> dict` has stable version ID `cqa-v1`, all eight definitions and the full source applicability/scale meanings. `score_criteria(definitions: list[dict], judgments: list[dict], turn_count: int) -> dict` returns validated criterion detail plus `final_score` and `critical_flag`. `import_dataset(store: Store, payload: dict, group_id: str, assign_demo_dates: bool = True) -> dict` validates the envelope and stores immutable source records, using `dataset_id` in storage keys so groups cannot overwrite one another. Conversation responses expose source fields, `dataset_id`, derived observed span, separate `demo_started_at`, scheduling provenance, and optional evaluation reference.
+
+- [ ] Write meaningful failing tests: sample appendix values produce 85.38; dialogue raw 7 contributes 10.5 before N/A; critical true leaves arithmetic unchanged; false remains boolean; disallowed null/scale steps/out-of-range evidence reject; no applicable weight gives null total.
+- [ ] Implement domain/store/scoring and tests for persistence across reopening, atomic update, duplicate source IDs, invalid envelope/timestamps, and exact source turn/timestamp preservation.
+- [ ] Implement deterministic date assignment in October 2026 with seed 2026, covering day/night and the month, independent of scores; preserve organizer timestamps. Actual holiday labels are added in Task 4.
+- [ ] Implement `GET /api/health`, `GET /api/meta`, `POST /api/datasets/import` (JSON envelope and group ID), `GET /api/conversations` (dataset/channel/language/page/page_size), `GET /api/conversations/{id}?dataset_id=DEV`, and `GET /api/checklists`/`GET /api/checklists/{id}`. Default app can start with an empty DB; no fake evaluations.
+- [ ] Publish a complete planned endpoint/schema contract for Tasks 2-5, explicitly marking unimplemented endpoints until they exist, plus synthetic safe example responses. Source IDs/evidence examples must be fictional. Route and field names are stable thereafter; update plan interfaces if an unavoidable change is approved by parent.
+- [ ] Install/lock only needed Python dependencies using project-local UV cache; use Python 3.12.13 explicitly. Run relevant backend tests and whitespace check; commit and report exact results.
+
+## Task 2: Claude evaluation, persistent jobs, and budget enforcement
+
+**Files:** Create provider/budget/evaluations/jobs, API runs/evaluations/usage, tests `test_provider.py`, `test_evaluation_jobs.py`, `test_budget.py`; extend contract examples and OpenAPI.
+
+**Interfaces:** `ModelClient.generate(system: str, prompt: str, schema: dict, purpose: str) -> ModelReply` where reply retains parsed JSON, exact model, raw usage, latency, attempt ID, and cost. Provider is injectable for offline tests. `JobManager(store, evaluator)` starts and retrieves persistent runs, processes IDs with a selected checklist snapshot, and exposes completed/failed/total progress. `POST /api/runs` body `{dataset_id, conversation_ids, checklist_version_id}`; `GET /api/runs/{id}`; `GET /api/evaluations/{id}`; `GET /api/usage`. Successful evaluation retains `original`, `final`, checklist snapshot, model/prompt/run IDs, rationale/evidence, status and usage references. Conversations expose latest evaluation for the requested checklist.
+
+- [ ] Add failing tests for malformed provider output, invalid evidence/value/criterion duplication, refusal/truncation, a mixed success/failure run retaining every ID, restart interruption state, and concurrent budget reservations rejecting excess spend.
+- [ ] Normalize the existing local credential into a standard ignored env assignment only if one unambiguous credential is recoverable; never print it or copy it into Git. Use `CQA_ENV_FILE` to locate the original project's env while working in the isolated checkout. Read the configured model list; default candidate is `claude-sonnet-5-5`, subject to actual account access.
+- [ ] Implement current documented native structured JSON requests (see readiness report); no forced tool choice, no temperature. Capture usage even for invalid output. Native/model/API differences must be resolved from official docs and authenticated responses, not guessed. Bound timeouts/retries and output tokens.
+- [ ] Prompt with full numbered source transcript, complete criterion definitions and conditional applicability. Ask for short rationale and supporting/checked-region turn indices; compute all weights/totals in Python.
+- [ ] Persist attempt reservations before requests, reconcile actual usage, keep unresolved-timeout reservations, expose working/control allowances, and enforce at most two requests concurrently. Runs interrupted by process restart become explicitly interrupted/error with durable completed items. Do not restart paid calls implicitly.
+- [ ] Run one measured smoke evaluation each on RU/KZ/EN after schema/account check; if valid, evaluate all 65 DEV through the real engine and persist prepared results. Offline tests use synthetic/provider fixtures, never the production key.
+- [ ] Run backend suite, document measured spend/failures and exact model, regenerate OpenAPI, commit code only, report local result paths separately.
+
+## Task 3: Checklist changes, appeals, decisions, and exact export
+
+**Files:** Create workflows/exports and API routes, `test_workflows.py`, `test_exports.py`; update contract/OpenAPI.
+
+**Interfaces:** `POST /api/checklists` creates an immutable new version from `{name, criteria, parent_version_id?}`. Criterion fields include id/title/description/answer_type/allowed_values/weight/allow_na/na_condition/critical. `POST /api/appeals` body `{evaluation_id, criterion_id, comment}`; `POST /api/appeals/{id}/decision` body `{action: confirm|change, value?, reason}`. `GET /api/appeals` and evaluation detail expose status/history. `GET /api/exports/{dataset_id}?checklist_version_id=cqa-v1&team_name=...` returns schema 1.0 JSON for the baseline version and final reviewed values, preserving all IDs including errors; validate record counts against the selected dataset.
+
+- [ ] Test appeal creation, confirmation and changes, mandatory reasons, wrong-scale changes, duplicate decisions, original immutability, and recalculation using the evaluation's snapshot after another checklist version is created.
+- [ ] Implement editable configuration with strict IDs/types and nonnegative weights, at least one weighted criterion, unique allowed scale steps, and explicit N/A conditions. A changed criterion is actually evaluated by Task 2 without code edits.
+- [ ] Implement exact baseline export: eight IDs once each; strict values, rationale, evidence indices, model mode/name, two-place final total and separate critical flag. Incompatible nonbaseline checklists return an actionable error. Preserve failed items with empty criteria/null score/reason; unevaluated records produce an explicit export error rather than fabricated grades.
+- [ ] Test complete DEV export, ten-record control fixture, duplicate/missing IDs, N/A/false/zero distinction, critical true, and rejection of incompatible checklist versions. Include appendix sample arithmetic.
+- [ ] Save actual DEV export locally at `results/dev/results.json` only after full validation; do not publish raw recordings/transcripts. Parent reviews result file before tracking/push. Run suite, update docs/OpenAPI, commit code, report export status separately.
+
+## Task 4: Calendar filters, deterministic analytics, and saved reports
+
+**Files:** Create analytics/reports and API routes, tests `test_filters.py`, `test_analytics.py`, `test_reports.py`; use a verified Kazakhstan holiday calendar dependency or explicit verified 2026 calendar data with source documentation.
+
+**Interfaces:** `FilterSpec` contains dataset_id (DEV default), channel?, language?, start_at?, end_at?, hours? (start/end 0-23, end exclusive, supports overnight), weekdays? (ISO 1-7), holiday? (boolean), min_score?, max_score?, critical?. `AnalysisSpec` contains filters, `group_by` (none/date/month_half/daypart/holiday/language/channel), metric_ids (default final_score plus baseline criteria), and title. `select_conversations(store, filters) -> list[dict]`; `analyze(store, spec) -> dict`. `POST /api/conversations/search` -> `{items,total}`; `POST /api/analytics` -> report data without saving; `POST /api/reports` -> saved report; `GET /api/reports`, `GET /api/reports/{id}`. Report retains selection IDs, evaluation IDs, checklist version, applied spec, definitions, groups, counts and timestamp.
+
+- [ ] Test Almaty boundary conversion, overnight hours, holiday exclusions, zero score retained, absent evaluations excluded from means and counted, empty cohorts with null means (not zero), N/A per-criterion denominators, first/second half month grouping, and sample counts for every displayed aggregate.
+- [ ] Implement visible scheduling provenance and filter interpretation. Use assigned demo calendar time consistently for calendar queries; retain original timestamps for evidence. Expose Kazakhstan holiday definition/source in metric/filter metadata.
+- [ ] Calculate overall mean from evaluated conversation final scores; per-criterion means use normalized criterion fractions over applicable records. Critical rate is a separate percentage. Include underlying conversation IDs and simple chart series; model prose never supplies numerical aggregates.
+- [ ] Persist saved report spec/output and support explicit deterministic refresh. Read-only analytics must not mutate evaluations. Update meta with available periods/dataset counts and published filtering options.
+- [ ] Run tests, update handoff/OpenAPI with actual examples, commit and report.
+
+## Task 5: Natural-language report updates and independent custom metrics
+
+**Files:** Create assistant/custom_metrics and API routes, tests `test_assistant.py`, `test_custom_metrics.py`; extend provider/job interfaces only where needed without breaking earlier contracts.
+
+**Interfaces:** `POST /api/reports/{id}/messages` body `{content}` and `POST /api/assistant` body `{content, report_id?}`. Response includes assistant message, resulting report ID/spec, deterministic report output, and optional custom-metric run ID. Structured action plan has allowed operation update_analysis|add_metric|clarify, validated AnalysisSpec patch, concise explanation, and optional metric definition `{id,title,description,answer_type,allowed_values,allow_na}`. No free SQL/Python/tool execution. `POST /api/reports/{id}/metrics` starts a separate job over the saved selection; `GET /api/reports/{id}` includes metric definition/status/results/aggregates.
+
+- [ ] Test first report creation, a follow-up changing only language while retaining prior period, ambiguous instruction returning clarification, invalid/unknown model keys rejected before querying, missing/invented IDs rejected, and no arbitrary tool/URL/code execution path.
+- [ ] Use the shared backend provider/usage ledger to translate requests into strict action JSON. Include current report spec, allowed fields/metrics, dataset date coverage, timezone/calendar and current date. Apply validated filters in code; compute all figures through Task 4. Keep a bounded conversation history with the report.
+- [ ] Implement custom-metric definitions, separate per-conversation assessments/evidence and background progress. These may be boolean or discrete numeric scales; N/A is explicit. They appear in saved reports and aggregates, with source links. Regular evaluation values, total, and baseline exports remain byte-equivalent before/after a custom-metric run.
+- [ ] Test cancellation/failure visibility, partial metric results and sample counts, persistence/reopen, reusing a compatible saved selection, and baseline score/export invariance. Run measured natural-language smoke cases plus one small custom metric on real data after offline checks.
+- [ ] Run suite, capture measured spend and demonstration prompts, update handoff/OpenAPI, commit/report.
+
+## Task 6: Functional reference frontend and local startup
+
+**Files:** Create `frontend/` React/TypeScript/Vite application, package lock, focused views/components/api client/styles, `scripts/dev.sh`, `scripts/import_dev.py`, `scripts/export_results.py`, updated README and frontend handoff. Read frontend-design and local-only Sites guidance; use existing Git checkout, no Site registration/hosting.
+
+**Interfaces:** Consume documented `/api` shapes with Vite proxy to port 8000. Backend serves health/OpenAPI; frontend at 5173 in development. Startup uses one backend process and explicit local env location. Frontend API layer exports typed resource functions; teammate can adapt final UI to these.
+
+- [ ] Build overview with date/channel/language filters, key aggregates, charts and an evaluated conversation table. All filters drive real backend selections; present counts and assigned-date provenance.
+- [ ] Build conversation detail with source transcript, recording link/player, evidence jump/highlight, per-metric inspection control, raw/weighted/total explanation, checklist selection/evaluation progress, appeal submission and reviewer decision/history.
+- [ ] Build checklist editor that saves/applies a new version including criterion wording/weights/scales/N/A. Build assistant/report split view with visible filter chips, message history, report blocks/charts, source drilldown, new metric definition/progress/results, and persisted report selection.
+- [ ] Handle real loading/empty/error/partial states, unknown scores, pending jobs, and API failures. No fake success indicators or fabricated evaluations. UI is a coherent functional prototype; final visual system remains teammate-owned.
+- [ ] Provide setup/start/import/export commands and env example without credential values. Import helper reads an env-configured organizer URL or a user-specified local JSON; never logs signed URLs. Existing local DEV payload can seed the ignored database.
+- [ ] Run TypeScript check/build and backend suite once; perform browser QA of a representative complete workflow using available CUA/local preview guidance. Record real test/QA outcomes and any limits. Commit/report and provide a precise teammate integration handoff.
+
+## Task 7: End-to-end verification, presentation-only local comparison, and delivery
+
+**Files:** Add targeted integration tests/scripts, `docs/demo.md`, `docs/presentation-model-comparison.md`, results validation tooling, and README final launch/troubleshooting instructions. Avoid unnecessary product changes.
+
+- [ ] Verify a real local workflow: overview -> natural-language cohort comparison -> metric inspection/evidence -> custom metric -> appeal/review total -> changed checklist evaluation -> baseline JSON export. Exercise one fresh paid evaluation and retained prepared results. Capture screenshots and exact observed failures for fixes.
+- [ ] Run one bounded local-model comparison on a representative subset using the same checklist/data contract, outside the product. First establish the project's shared model-job lock; if none exists, create a documented project-only lock at ignored `data/model-jobs.lock` and state its scope. Serialize model execution and heavy tests. Cached Qwen2.5 1.5B and 6 GiB GPU are candidates; choose a runnable path from measured evidence. No quality/speed/privacy claim without measurement. Do not let this experiment block mandatory functionality.
+- [ ] Record side-by-side criterion agreement/disagreement, schema validity, observed latency and resource/cost facts for presentation only. Failed local execution is reported honestly with a fallback demonstration plan; do not add a comparison API/screen.
+- [ ] Validate and prepare `results/dev/results.json` for tracking without full transcripts/recording links. Never fabricate the unreleased control set; provide a ready command to import/evaluate/export the supplied control group once available. Record missing control access as the exact external dependency.
+- [ ] Run final backend tests, frontend typecheck/build, and representative browser workflow; check Git diff and ignored-secret/data boundaries. Parent dispatches broad review, routes fixes, pushes reviewed code/results to PRIVATE GitHub, verifies invitation/private visibility, and gives user the startup path, teammate handoff, demo script, evidence, remaining release gates, and measured spend.
