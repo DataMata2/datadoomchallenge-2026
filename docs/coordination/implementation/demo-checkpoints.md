@@ -32,3 +32,17 @@ This is a coordinator planning artifact, not evidence that the application works
 ## Presentation reliability
 
 Choose the final examples from real observed assessments, including a clear N/A and a reviewable criterion. Rehearse the exact prompts against the saved dataset/checklist versions. Keep prepared results and saved reports available; show pending/error states honestly if a live inference request is slow. Do not manufacture a historical trend by assigning dates based on scores.
+
+## Rehearsal scope ruling
+
+The primary presentation should emphasize three connected actions: a cohort question, an inspectable score, and a new report metric. Appeals and checklist versioning are required product workflows and must be verified, but can be shown as a short secondary path if the presentation slot is tight. The exact final timing and prompts require rehearsal against the actual UI.
+
+Use explicit October2026 in prepared prompts; the current month at the event is November and the randomized demonstration dataset is October. A relative-date request must follow its real interpretation rather than silently substituting the prepared month. Explain once that dates are assigned demonstration metadata.
+
+The initial assistant protocol accepts one operation per response. Demonstrate switching a selection and adding a metric as separate user actions, or open the prepared five-call report before requesting the new metric. Do not write a rehearsal prompt that depends on an unsupported compound action. Suggested primary prompts, pending measured smoke:
+
+1. "Compare agent-chat quality in the first and second halves of October 2026."
+2. "Now show only English conversations."
+3. Open the saved five-call report, then request the operator-led next-contact boolean using its explicit true/false/N/A definition.
+
+A baseline evaluation rerun during demonstration must be explicit and visibly pending/completed; prepared results remain available while it runs. Avoid repeating a paid bulk run merely for presentation.
