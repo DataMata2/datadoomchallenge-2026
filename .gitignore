@@ -1,0 +1,66 @@
+# Local environment and credentials
+.env
+.env.*
+.env-*
+!.env.example
+.aws/
+.ssh/
+.credentials/
+credentials/
+secrets/
+credentials.json
+credentials.*.json
+service-account*.json
+*.pem
+*.key
+*.p12
+*.pfx
+.netrc
+
+# Organizer material and local evidence
+/docs/coordination/**/evidence/
+
+# Runtime data and generated records
+/data/
+/runtime/
+/storage/
+/uploads/
+/logs/
+*.log
+*.db
+*.db-*
+*.sqlite
+*.sqlite-*
+*.sqlite3
+*.sqlite3-*
+
+# Python environments and caches
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.cache/
+.coverage
+htmlcov/
+
+# JavaScript dependencies and build output
+node_modules/
+dist/
+build/
+coverage/
+.next/
+.nuxt/
+.vite/
+.turbo/
+.parcel-cache/
+
+# Local agent/worktree state and editor files
+.codex/
+.superpowers/
+.worktrees/
+.DS_Store
+*.swp
+*.swo
