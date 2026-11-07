@@ -42,7 +42,7 @@ Ruling: one integrated plan is appropriate because the report/assistant/frontend
 | Task | Worker | Status | Commit/review | Blockers |
 | --- | --- | --- | --- | --- |
 | 1 | `/root/task1_foundation`; reviewer `/root/task1_review` | Complete | `442238c..0a22cd7`; review approved | Minor Meta note deferred to Task 4 |
-| 2 | Pending | Queued | Pending | Task 1 |
+| 2 | `/root/task2_evaluation`; reviewer `/root/task2_review` | Complete after fix round 1 | `7092424..ed24562`; scoped re-review approved | None |
 | 3 | Pending | Queued | Pending | Task 2 |
 | 4 | Pending | Queued | Pending | Task 3 |
 | 5 | Pending | Queued | Pending | Task 4 |
@@ -63,3 +63,14 @@ Task 1: complete (commits 442238c..0a22cd7, spec compliant and task quality appr
 Task 1: minor (deferred to Task 4): `/api/meta` describes default assigned scheduling even for source-only import. Per-conversation provenance is correct. Fix summary when analytics metadata becomes dataset-aware, with a focused source-only/mixed-state test.
 
 Ruling: implement cancellation with Task 2 JobManager rather than waiting for the Task 5 consumer. Keep the already documented route and shape. Contract hour/daypart/refresh semantics are accepted as explicit elaborations of the spec. Latest-evaluation references must not mutate immutable source records. Decimal final rounding uses ROUND_HALF_UP, an explicit engineering convention where source tie behavior is unspecified.
+
+Task 2: dispatched `/root/task2_evaluation`; BASE 709242497b7b9fe41b6bcb0f991d2c152f6dd6a8. Foundation and API contract pushed to private feature branch.
+Ruling: canonical checkout-local model-job flock is `runtime/model-jobs.lock`, overridable via CQA_MODEL_LOCK. It coordinates this active project checkout, not other host projects. Real smoke/bulk and later local-model jobs use it; lightweight offline tests need not. No model job has started yet.
+
+## Task 2 verified completion
+
+Task 2: fix round 1/5 (2 addressed, 0 open; commits b2ebc79..ed24562). Review confirmed a preparation dispatch-before-marker gap and destructive unrelated env normalization. Fix persists marker before duplicate-safe dispatch and refuses unrelated settings before mutation. Scoped re-review approved both findings with no new issues. Parent read implementation/fix diffs and independently ran the final locked offline suite: 75 passed in 1.61s.
+
+Task 2: complete (commits 7092424..ed24562, review approved). Parent independently read the real run/source/usage database without printing content: DEV run 34f4496c-876a-4e03-9f6e-72c92d89a556 is 65/65, all original source fields preserved, all stored original/final scores recomputed; 8 critical flags, scores 12.5–100.0. Smoke run 3e4718cc-8bb2-4b10-8dfc-7a6a21b61f54 is RU/KZ/EN 3/3, measured USD0.041122. Total68 attempts USD1.029502, outstanding reservations0. Exact model claude-sonnet-5-5. No new paid calls or real env migration occurred in fix round. Human grading accuracy remains unverified.
+
+Coordinator questions pending asynchronously: teammate frontend branch/repository; official team_name for export. Neither blocks implementation. Final submission files must use the actual team name; do not invent one. Until provided, validate export code and real DEV structure in memory with explicitly synthetic metadata rather than tracking a misleading official file.
