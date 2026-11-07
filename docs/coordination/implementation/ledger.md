@@ -44,7 +44,7 @@ Ruling: one integrated plan is appropriate because the report/assistant/frontend
 | 1 | `/root/task1_foundation`; reviewer `/root/task1_review` | Complete | `442238c..0a22cd7`; review approved | Minor Meta note deferred to Task 4 |
 | 2 | `/root/task2_evaluation`; reviewer `/root/task2_review` | Complete after fix round 1 | `7092424..ed24562`; scoped re-review approved | None |
 | 3 | `/root/task3_workflows`; reviewer `/root/task3_review` | Complete after fix round 1 | `8edcf84..a264d45`; scoped re-review approved | Minor OpenAPI note deferred to Task 4 |
-| 4 | Pending | Queued | Pending | Task 3 |
+| 4 | `/root/task4_analytics`; reviewer `/root/task4_review` | Complete | `bf4118c..ea7c28b`; approved | Minor cohort-bound test deferred to Task 5 |
 | 5 | Pending | Queued | Pending | Task 4 |
 | 6 | Pending | Queued | Pending | Task 5 |
 | 7 | Pending | Queued | Pending | Task 6; actual control group not released |
@@ -91,3 +91,13 @@ Task 3: complete (commits8edcf84..a264d45, review approved). Parent independentl
 Task 3: minor (deferred to Task 4): generated OpenAPI union-number bounds use ignored ge/le keywords; emit standard minimum/maximum and test Draft202012 rejection of invalid boundary samples. Runtime validation currently works.
 
 User answered coordination questions: frontend work will be in this same GitHub repository; watch for his branch rather than another repo. Official team_name is exactly404 Dauren Not Found. At the latest GitHub check, gojosatorukz write invitation remained pending and effective permission was none; recipient must accept. Branches were main and feat/cqa-prototype. User was given the invitation URL and suggested a frontend branch; no external message was sent.
+
+2026-11-08 update: Task 4 is active under `/root/task4_analytics`, BASE bf4118c87a4bb9619ddadcd87c3a277329157069. Tasks 1–3 and the official DEV export are pushed on the PRIVATE feature branch. The deadline remains today at 12:00 Asia/Almaty. No control data has been invented or requested before organizer release.
+
+## Task 4 verified completion
+
+Task 4: complete (commits bf4118c..ea7c28b, spec compliant and quality approved). Parent read actual source diff and independently ran 187 tests (4.24s). Read-only verification confirmed saved chat report n=60, group means 67.04/72.46 and call report n=5, mean61.63; all observation finals match their saved evaluations, stale=false, reads do not mutate reports, and paid attempts remain68. Figures describe assigned demo dates and model assessments, not a historical causal finding or gold-label accuracy.
+Task 4 resolved Task1 Meta source-only/mixed provenance and Task3 standard JSON Schema numeric bounds.
+Task 4: minor (deferred to Task 5): five-cohort rejection fixture uses invalid digit-leading keys; use valid keys to isolate the enforced four-cohort bound.
+
+Task 5 architecture ruling after bounded design check: persist draft reports for first clarification; retain legacy ready reports; use explicit field masks over typed target specs so native-null defaults cannot erase context. Share the existing JobManager/provider/budget, register metric work before dispatch, and use separate metric assessment storage. Add explicit rerun lifecycle/coverage and retain old run evidence. Custom metrics never alter QA/evaluation/export values. This implements conversation continuity and explicit new-assessment runs in the confirmed product, without a second model-comparison path.
