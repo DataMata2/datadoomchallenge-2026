@@ -56,3 +56,9 @@ Assert the full October holiday-date set, rather than checking only October 25. 
 Weekdays and boundary conversions were checked locally with GNU `date`, using `TZ=Asia/Almaty` and each listed ISO input; all produced the values above. No holiday package was installed or executed. The implementing worker must validate these expectations against its pinned dependency and the application selector.
 
 Not verified: full-year 2026 calendar correctness, other years, every exceptional government transfer, individual organizational workweeks, library behavior with `observed=False`, deployed runtime timezone-data freshness, or current application behavior. The Adilet law page could not be fetched; no legal interpretation relies on it. Only this research note was written; no application source, config, dataset, dependency, Git index, branch, or history was changed.
+
+## Task 4 implementation verification
+
+Pinned `holidays==0.108` in `backend/pyproject.toml` and `backend/uv.lock`. The application uses `country_holidays('KZ', years=[year], observed=True, language='en_US')`; classification is local-date membership after conversion to `Asia/Almaty`. Offline acceptance tests assert the full October 2026 set `{2026-10-25, 2026-10-26}`, all listed UTC boundaries, holiday/weekday intersections and ordinary weekend retention. The generated metadata records provider/version, observed-date inclusion, sources and verified period. Other years remain library-defined and have not received the same independent calendar verification.
+
+Package/API references checked during implementation: [pinned release](https://pypi.org/project/holidays/0.108/), [Kazakhstan implementation reference](https://holidays.readthedocs.io/en/main/auto_gen_docs/kazakhstan/). These checks and the explicit October tests support the implementation; they do not expand the independent full-year verification scope.

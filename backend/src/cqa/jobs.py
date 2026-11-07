@@ -7,6 +7,7 @@ from uuid import uuid4
 
 from .budget import now
 from .datasets import conversation_key
+from .evaluations import latest_evaluations
 from .provider import CancelledBeforeSend, provider_context
 from .storage import Store
 
@@ -108,9 +109,7 @@ class JobManager:
         return run
 
     def latest_evaluation(self, dataset_id: str, conversation_id: str, checklist_version_id: str) -> dict | None:
-        matches = [row for row in self.store.list("evaluations") if row["dataset_id"] == dataset_id
-                   and row["conversation_id"] == conversation_id and row["checklist_version_id"] == checklist_version_id]
-        return max(matches, key=lambda row: (row["created_at"], row["id"])) if matches else None
+        return latest_evaluations(self.store, dataset_id, checklist_version_id).get(conversation_id)
 
     def cancel(self, id: str) -> dict:
         def cancel(run):

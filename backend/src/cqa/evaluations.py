@@ -32,6 +32,18 @@ class Assessment(StrictModel):
     criteria: Annotated[list[CriterionJudgment], Field(min_length=1)]
 
 
+def latest_evaluations(store: Store, dataset_id: str, checklist_version_id: str = "cqa-v1") -> dict[str, dict]:
+    """Latest attempt per conversation, including errors; never fall back to success."""
+    latest = {}
+    for row in store.list("evaluations"):
+        if row["dataset_id"] != dataset_id or row["checklist_version_id"] != checklist_version_id:
+            continue
+        previous = latest.get(row["conversation_id"])
+        if previous is None or (row["created_at"], row["id"]) > (previous["created_at"], previous["id"]):
+            latest[row["conversation_id"]] = row
+    return latest
+
+
 class Evaluator:
     def __init__(self, store: Store, client):
         self.store, self.client = store, client

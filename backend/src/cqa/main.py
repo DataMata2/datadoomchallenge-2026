@@ -26,6 +26,9 @@ from .rubric import default_checklist
 from .storage import Store
 from .workflows import ReviewConflict, Workflows
 from .exports import build_baseline_export
+from .analytics import analyze, filtering_options, scheduling_summary, select_conversations, CALENDAR
+from .analytics_models import AnalysisOutput, AnalysisSpec, FilterSpec, Report, ReportPage
+from .reports import Reports
 
 
 def create_app(settings: Settings | None = None, *, model_client=None) -> FastAPI:
@@ -37,6 +40,7 @@ def create_app(settings: Settings | None = None, *, model_client=None) -> FastAP
     evaluator = Evaluator(store, model_client)
     jobs = JobManager(store, evaluator)
     workflows = Workflows(store)
+    reports = Reports(store)
 
     @asynccontextmanager
     async def lifespan(_app):
@@ -54,6 +58,7 @@ def create_app(settings: Settings | None = None, *, model_client=None) -> FastAP
     app.state.evaluator = evaluator
     app.state.jobs = jobs
     app.state.workflows = workflows
+    app.state.reports = reports
     app.add_middleware(CORSMiddleware, allow_origins=list(settings.cors_origins), allow_methods=["GET", "POST"], allow_headers=["Content-Type"])
 
     @app.exception_handler(RequestValidationError)
@@ -70,13 +75,13 @@ def create_app(settings: Settings | None = None, *, model_client=None) -> FastAP
     def meta() -> dict:
         rows = store.list("conversations")
         datasets = sorted({row["dataset_id"] for row in rows})
+        scheduling = scheduling_summary(rows)
         return {"reporting_timezone": settings.reporting_timezone, "channels": ["agent chat", "voice call"],
                 "languages": ["RU", "KZ", "EN"], "default_checklist_version_id": "cqa-v1",
                 "datasets": [{"id": id, "total_records": sum(row["dataset_id"] == id for row in rows)} for id in datasets],
-                "scheduling": {"mode": "assigned_demo", "period": "2026-10", "seed": 2026,
-                               "interpretation": "Calendar filters use separate assigned demonstration dates in Asia/Almaty, independent of scores."},
-                "holiday_calendar": {"jurisdiction": "KZ", "status": "not_implemented"},
-                "implemented_features": ["dataset_import", "conversation_read", "checklist_read", "evaluation_runs", "run_cancellation", "usage_accounting", "checklist_versions", "appeals", "baseline_export"]}
+                "scheduling": scheduling, "available_periods": scheduling["periods"],
+                "filtering_options": filtering_options(), "holiday_calendar": CALENDAR,
+                "implemented_features": ["dataset_import", "conversation_read", "checklist_read", "evaluation_runs", "run_cancellation", "usage_accounting", "checklist_versions", "appeals", "baseline_export", "conversation_search", "analytics", "saved_reports"]}
 
     @app.post("/api/datasets/import", response_model=DatasetImportResult)
     def dataset_import(request: DatasetImportRequest) -> dict:
@@ -101,6 +106,38 @@ def create_app(settings: Settings | None = None, *, model_client=None) -> FastAP
         rows.sort(key=lambda row: row["conversation_id"])
         start = (page - 1) * page_size
         return {"items": [conversation_response(row, checklist_version_id) for row in rows[start:start + page_size]], "total": len(rows)}
+
+    @app.post("/api/conversations/search", response_model=ConversationPage)
+    def search_conversations(request: FilterSpec) -> dict:
+        items = select_conversations(store, request)
+        return {"items": items, "total": len(items)}
+
+    @app.post("/api/analytics", response_model=AnalysisOutput)
+    def analytics(request: AnalysisSpec) -> dict:
+        return analyze(store, request)
+
+    @app.post("/api/reports", response_model=Report, status_code=201)
+    def create_report(request: AnalysisSpec) -> dict:
+        return reports.create(request)
+
+    @app.get("/api/reports", response_model=ReportPage)
+    def list_reports() -> dict:
+        items = reports.list()
+        return {"items": items, "total": len(items)}
+
+    @app.get("/api/reports/{id}", response_model=Report)
+    def get_report(id: str) -> dict:
+        try:
+            return reports.get(id)
+        except KeyError as error:
+            raise HTTPException(404, detail=error.args[0]) from None
+
+    @app.post("/api/reports/{id}/refresh", response_model=Report)
+    def refresh_report(id: str) -> dict:
+        try:
+            return reports.refresh(id)
+        except KeyError as error:
+            raise HTTPException(404, detail=error.args[0]) from None
 
     @app.get("/api/conversations/{id}", response_model=ConversationResponse)
     def conversation(id: str, dataset_id: str = "DEV", checklist_version_id: str = "cqa-v1") -> dict:

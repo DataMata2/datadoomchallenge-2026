@@ -69,7 +69,7 @@ class CriterionDefinition(StrictModel):
     answer_type: Literal["boolean", "scale"]
     allowed_values: list[StrictBool | StrictInt | StrictFloat]
     scale_meanings: dict[str, NonemptyString] = Field(default_factory=dict)
-    weight: Annotated[StrictInt | StrictFloat, Field(ge=0, allow_inf_nan=False)]
+    weight: Annotated[StrictInt, Field(ge=0)] | Annotated[StrictFloat, Field(ge=0, allow_inf_nan=False)]
     allow_na: StrictBool
     na_condition: StrictStr | None
     critical: StrictBool
@@ -267,6 +267,8 @@ class MetaResponse(StrictModel):
     scheduling: dict
     holiday_calendar: dict
     implemented_features: list[StrictStr]
+    available_periods: list[StrictStr]
+    filtering_options: dict
 
 
 class ScoredCriterion(CriterionJudgment):
@@ -381,7 +383,7 @@ class UsageSummary(StrictModel):
 
 
 class ExportScore(StrictModel):
-    final_score: Annotated[StrictInt | StrictFloat, Field(ge=0, le=100, allow_inf_nan=False)]
+    final_score: Annotated[StrictInt, Field(ge=0, le=100)] | Annotated[StrictFloat, Field(ge=0, le=100, allow_inf_nan=False)]
     critical_flag: StrictBool
 
 

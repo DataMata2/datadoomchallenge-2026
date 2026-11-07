@@ -1,5 +1,5 @@
 {
-  "notice": "All IDs, transcript text and workflow results are fictional. Implemented responses illustrate actual API shapes; planned responses remain unimplemented. No example is a measured output.",
+  "notice": "All IDs, transcript text, evaluations and derived workflow numbers are fictional. Implemented responses are generated against those fixtures. Assistant/custom-metric examples remain planned. No example is a measured DEV outcome.",
   "implemented": {
     "dataset_import_request": {
       "group_id": "FICTIONAL",
@@ -387,13 +387,90 @@
       ],
       "scheduling": {
         "mode": "assigned_demo",
+        "counts": {
+          "assigned_demo": 1,
+          "source_only": 0
+        },
         "period": "2026-10",
+        "periods": [
+          "2026-10"
+        ],
         "seed": 2026,
-        "interpretation": "Calendar filters use separate assigned demonstration dates in Asia/Almaty, independent of scores."
+        "seeds": [
+          2026
+        ],
+        "algorithms": [
+          "stratified-october-v1"
+        ],
+        "independent_of_scores": true,
+        "interpretation": "Calendar predicates use demo_started_at converted to Asia/Almaty; records without assigned demo dates are excluded only when a calendar predicate is supplied."
+      },
+      "available_periods": [
+        "2026-10"
+      ],
+      "filtering_options": {
+        "fields": [
+          "channel",
+          "language",
+          "start_at",
+          "end_at",
+          "hours",
+          "weekdays",
+          "holiday",
+          "min_score",
+          "max_score",
+          "critical",
+          "dataset_id"
+        ],
+        "group_by": [
+          "none",
+          "date",
+          "month_half",
+          "daypart",
+          "day_night",
+          "holiday",
+          "language",
+          "channel"
+        ],
+        "metric_ids": [
+          "final_score",
+          "contact",
+          "discovery",
+          "identification",
+          "consultation",
+          "empathy",
+          "dialogue",
+          "closure",
+          "critical"
+        ],
+        "comparison_cohorts": {
+          "minimum": 1,
+          "maximum": 4,
+          "group_by": "none",
+          "combination": "AND with global filters; cohorts may overlap"
+        },
+        "intervals": "start inclusive, end exclusive; min/max score inclusive",
+        "hours": "0–23 local hours; end exclusive; overnight supported; equal endpoints mean full day",
+        "weekdays": "ISO Monday=1 through Sunday=7; holidays and ordinary weekends are separate",
+        "month_half": "days 1–15 and 16–month end, separately for each month",
+        "daypart": "night 00–06; morning 06–12; afternoon 12–18; evening 18–24",
+        "day_night": "day 06–18; night 18–06",
+        "calendar": "Calendar predicates use demo_started_at converted to Asia/Almaty; records without assigned demo dates are excluded only when a calendar predicate is supplied."
       },
       "holiday_calendar": {
         "jurisdiction": "KZ",
-        "status": "not_implemented"
+        "timezone": "Asia/Almaty",
+        "observed": true,
+        "provider": "holidays",
+        "version": "0.108",
+        "language": "en_US",
+        "definition": "Kazakhstan public holidays including observed days; ordinary weekends are controlled by ISO weekday filters.",
+        "sources": [
+          "https://www.gov.kz/article/33969?lang=ru",
+          "https://www.gov.kz/article/16887?lang=en",
+          "https://holidays.readthedocs.io/en/main/auto_gen_docs/kazakhstan/"
+        ],
+        "verified_period": "2026-10"
       },
       "implemented_features": [
         "dataset_import",
@@ -404,7 +481,10 @@
         "usage_accounting",
         "checklist_versions",
         "appeals",
-        "baseline_export"
+        "baseline_export",
+        "conversation_search",
+        "analytics",
+        "saved_reports"
       ]
     },
     "run": {
@@ -1305,16 +1385,47 @@
           "critical": true
         }
       ]
-    }
-  },
-  "planned_not_implemented": {
+    },
+    "analysis_request": {
+      "filters": {
+        "channel": null,
+        "language": "EN",
+        "start_at": null,
+        "end_at": null,
+        "hours": null,
+        "weekdays": null,
+        "holiday": null,
+        "min_score": null,
+        "max_score": null,
+        "critical": null,
+        "dataset_id": "FICTIONAL"
+      },
+      "group_by": "none",
+      "cohorts": null,
+      "metric_ids": [
+        "final_score",
+        "dialogue",
+        "critical"
+      ],
+      "title": "Fictional quality review"
+    },
     "analysis": {
       "spec": {
         "filters": {
-          "dataset_id": "FICTIONAL",
-          "language": "EN"
+          "channel": null,
+          "language": "EN",
+          "start_at": null,
+          "end_at": null,
+          "hours": null,
+          "weekdays": null,
+          "holiday": null,
+          "min_score": null,
+          "max_score": null,
+          "critical": null,
+          "dataset_id": "FICTIONAL"
         },
         "group_by": "none",
+        "cohorts": null,
         "metric_ids": [
           "final_score",
           "dialogue",
@@ -1329,6 +1440,134 @@
       "evaluation_ids": [
         "fictional-evaluation-001"
       ],
+      "observations": [
+        {
+          "conversation_id": "fictional-001",
+          "evaluation_id": "fictional-evaluation-001",
+          "evaluation_status": "ok",
+          "final": {
+            "criteria": [
+              {
+                "criterion_id": "contact",
+                "value": true,
+                "rationale": "Fictional demonstration evidence; not a real evaluation.",
+                "evidence_turns": [
+                  1,
+                  8
+                ],
+                "weight": 10,
+                "applicable": true,
+                "normalized_value": 1.0,
+                "points": 10.0,
+                "weighted_score": 15.384615384615385
+              },
+              {
+                "criterion_id": "discovery",
+                "value": null,
+                "rationale": "Fictional demonstration evidence; not a real evaluation.",
+                "evidence_turns": [
+                  1,
+                  8
+                ],
+                "weight": 15,
+                "applicable": false,
+                "normalized_value": null,
+                "points": null,
+                "weighted_score": null
+              },
+              {
+                "criterion_id": "identification",
+                "value": null,
+                "rationale": "Fictional demonstration evidence; not a real evaluation.",
+                "evidence_turns": [
+                  1,
+                  8
+                ],
+                "weight": 20,
+                "applicable": false,
+                "normalized_value": null,
+                "points": null,
+                "weighted_score": null
+              },
+              {
+                "criterion_id": "consultation",
+                "value": 15,
+                "rationale": "Fictional demonstration evidence; not a real evaluation.",
+                "evidence_turns": [
+                  1,
+                  8
+                ],
+                "weight": 20,
+                "applicable": true,
+                "normalized_value": 0.75,
+                "points": 15.0,
+                "weighted_score": 23.076923076923077
+              },
+              {
+                "criterion_id": "empathy",
+                "value": true,
+                "rationale": "Fictional demonstration evidence; not a real evaluation.",
+                "evidence_turns": [
+                  1,
+                  8
+                ],
+                "weight": 15,
+                "applicable": true,
+                "normalized_value": 1.0,
+                "points": 15.0,
+                "weighted_score": 23.076923076923077
+              },
+              {
+                "criterion_id": "dialogue",
+                "value": 7,
+                "rationale": "Fictional demonstration evidence; not a real evaluation.",
+                "evidence_turns": [
+                  1,
+                  8
+                ],
+                "weight": 15,
+                "applicable": true,
+                "normalized_value": 0.7,
+                "points": 10.5,
+                "weighted_score": 16.153846153846153
+              },
+              {
+                "criterion_id": "closure",
+                "value": true,
+                "rationale": "Fictional demonstration evidence; not a real evaluation.",
+                "evidence_turns": [
+                  1,
+                  8
+                ],
+                "weight": 5,
+                "applicable": true,
+                "normalized_value": 1.0,
+                "points": 5.0,
+                "weighted_score": 7.6923076923076925
+              },
+              {
+                "criterion_id": "critical",
+                "value": false,
+                "rationale": "Fictional demonstration evidence; not a real evaluation.",
+                "evidence_turns": [
+                  1,
+                  8
+                ],
+                "weight": 0,
+                "applicable": true,
+                "normalized_value": 0.0,
+                "points": 0.0,
+                "weighted_score": 0.0
+              }
+            ],
+            "earned_points": 55.5,
+            "applicable_weight": 65.0,
+            "final_score": 85.38,
+            "critical_flag": false
+          },
+          "revision": "eff724897a8b8b6de8afbdc5fc81de51b5c98353b0dd28d28a224db984a8e53b"
+        }
+      ],
       "counts": {
         "selected": 1,
         "evaluated": 1,
@@ -1336,17 +1575,164 @@
         "failed": 0
       },
       "definitions": {
-        "final_score": {
-          "calculation": "Mean final score of evaluated conversations."
+        "calendar": {
+          "jurisdiction": "KZ",
+          "timezone": "Asia/Almaty",
+          "observed": true,
+          "provider": "holidays",
+          "version": "0.108",
+          "language": "en_US",
+          "definition": "Kazakhstan public holidays including observed days; ordinary weekends are controlled by ISO weekday filters.",
+          "sources": [
+            "https://www.gov.kz/article/33969?lang=ru",
+            "https://www.gov.kz/article/16887?lang=en",
+            "https://holidays.readthedocs.io/en/main/auto_gen_docs/kazakhstan/"
+          ],
+          "verified_period": "2026-10"
+        },
+        "scheduling": {
+          "mode": "assigned_demo",
+          "counts": {
+            "assigned_demo": 1,
+            "source_only": 0
+          },
+          "period": "2026-10",
+          "periods": [
+            "2026-10"
+          ],
+          "seed": 2026,
+          "seeds": [
+            2026
+          ],
+          "algorithms": [
+            "stratified-october-v1"
+          ],
+          "independent_of_scores": true,
+          "interpretation": "Calendar predicates use demo_started_at converted to Asia/Almaty; records without assigned demo dates are excluded only when a calendar predicate is supplied."
+        },
+        "grouping": {
+          "fields": [
+            "channel",
+            "language",
+            "start_at",
+            "end_at",
+            "hours",
+            "weekdays",
+            "holiday",
+            "min_score",
+            "max_score",
+            "critical",
+            "dataset_id"
+          ],
+          "group_by": [
+            "none",
+            "date",
+            "month_half",
+            "daypart",
+            "day_night",
+            "holiday",
+            "language",
+            "channel"
+          ],
+          "metric_ids": [
+            "final_score",
+            "contact",
+            "discovery",
+            "identification",
+            "consultation",
+            "empathy",
+            "dialogue",
+            "closure",
+            "critical"
+          ],
+          "comparison_cohorts": {
+            "minimum": 1,
+            "maximum": 4,
+            "group_by": "none",
+            "combination": "AND with global filters; cohorts may overlap"
+          },
+          "intervals": "start inclusive, end exclusive; min/max score inclusive",
+          "hours": "0–23 local hours; end exclusive; overnight supported; equal endpoints mean full day",
+          "weekdays": "ISO Monday=1 through Sunday=7; holidays and ordinary weekends are separate",
+          "month_half": "days 1–15 and 16–month end, separately for each month",
+          "daypart": "night 00–06; morning 06–12; afternoon 12–18; evening 18–24",
+          "day_night": "day 06–18; night 18–06",
+          "calendar": "Calendar predicates use demo_started_at converted to Asia/Almaty; records without assigned demo dates are excluded only when a calendar predicate is supplied."
+        },
+        "metrics": {
+          "final_score": {
+            "title": "Mean final quality score",
+            "unit": "percent",
+            "calculation": "Mean final conversation score",
+            "denominator": "sample_count; failed and unevaluated excluded; N/A excluded and counted separately",
+            "criterion": null
+          },
+          "dialogue": {
+            "title": "Clarity, sequence and waiting",
+            "unit": "percent",
+            "calculation": "Mean normalized criterion fraction × 100 over applicable evaluated records",
+            "denominator": "sample_count; failed and unevaluated excluded; N/A excluded and counted separately",
+            "criterion": {
+              "allow_na": false,
+              "allowed_values": [
+                0,
+                4,
+                7,
+                10
+              ],
+              "answer_type": "scale",
+              "critical": false,
+              "description": "Assess clarity, sequence, coherence and advance notice of an explicit wait, independently of solution completeness.",
+              "id": "dialogue",
+              "na_condition": null,
+              "scale_meanings": {
+                "0": "Incoherent or contradictory replies make the dialogue impossible to follow.",
+                "10": "Answers are clear and coherent; the operator warns the client when there is an explicit wait.",
+                "4": "Wording or answer order forces the client to ask again.",
+                "7": "One noticeable disruption, but the client can understand the answer and continue."
+              },
+              "title": "Clarity, sequence and waiting",
+              "weight": 15
+            }
+          },
+          "critical": {
+            "title": "Serious violation",
+            "unit": "percent",
+            "calculation": "Critical flag rate; does not zero quality scores",
+            "denominator": "sample_count; failed and unevaluated excluded; N/A excluded and counted separately",
+            "criterion": {
+              "allow_na": false,
+              "allowed_values": [
+                false,
+                true
+              ],
+              "answer_type": "boolean",
+              "critical": true,
+              "description": "Flag an insult, an offer of paid services outside the company, or confidential disclosure. An offer to invest money transferred personally to the operator, or to provide private paid consultation using the client's personal number, is sufficient; client agreement or payment is unnecessary.",
+              "id": "critical",
+              "na_condition": null,
+              "scale_meanings": {
+                "false": "None of the three serious violations is detected.",
+                "true": "At least one of the three serious violations is detected."
+              },
+              "title": "Serious violation",
+              "weight": 0
+            }
+          }
         }
       },
       "filter_interpretation": [
-        "Assigned demonstration calendar in Asia/Almaty; English only."
+        "Calendar predicates use demo_started_at converted to Asia/Almaty; records without assigned demo dates are excluded only when a calendar predicate is supplied.",
+        "Kazakhstan public holidays including observed days; ordinary weekends are controlled by ISO weekday filters.",
+        "All supplied predicates are AND; date/time end bounds are exclusive, score bounds inclusive. Hours with equal endpoints cover the full day.",
+        "Latest cqa-v1 evaluation including errors; means exclude failed, unevaluated and N/A values.",
+        "Global filters: {\"dataset_id\": \"FICTIONAL\", \"language\": \"EN\"}"
       ],
       "groups": [
         {
           "key": "all",
           "label": "All selected",
+          "conditions": null,
           "conversation_ids": [
             "fictional-001"
           ],
@@ -1363,30 +1749,77 @@
               "na_count": 0
             },
             "dialogue": {
-              "value": 70,
+              "value": 70.0,
               "sample_count": 1,
               "na_count": 0
             },
             "critical": {
-              "value": 0,
+              "value": 0.0,
               "sample_count": 1,
               "na_count": 0
             }
           }
         }
       ],
-      "chart_series": [],
-      "generated_at": "2026-10-15T12:00:00+05:00"
+      "chart_series": [
+        {
+          "metric_id": "final_score",
+          "points": [
+            {
+              "value": 85.38,
+              "sample_count": 1,
+              "na_count": 0,
+              "key": "all",
+              "label": "All selected"
+            }
+          ]
+        },
+        {
+          "metric_id": "dialogue",
+          "points": [
+            {
+              "value": 70.0,
+              "sample_count": 1,
+              "na_count": 0,
+              "key": "all",
+              "label": "All selected"
+            }
+          ]
+        },
+        {
+          "metric_id": "critical",
+          "points": [
+            {
+              "value": 0.0,
+              "sample_count": 1,
+              "na_count": 0,
+              "key": "all",
+              "label": "All selected"
+            }
+          ]
+        }
+      ],
+      "generated_at": "2026-11-07T19:22:29.841640+00:00"
     },
     "report": {
       "id": "fictional-report-001",
       "title": "Fictional quality review",
       "spec": {
         "filters": {
-          "dataset_id": "FICTIONAL",
-          "language": "EN"
+          "channel": null,
+          "language": "EN",
+          "start_at": null,
+          "end_at": null,
+          "hours": null,
+          "weekdays": null,
+          "holiday": null,
+          "min_score": null,
+          "max_score": null,
+          "critical": null,
+          "dataset_id": "FICTIONAL"
         },
         "group_by": "none",
+        "cohorts": null,
         "metric_ids": [
           "final_score",
           "dialogue",
@@ -1397,10 +1830,20 @@
       "output": {
         "spec": {
           "filters": {
-            "dataset_id": "FICTIONAL",
-            "language": "EN"
+            "channel": null,
+            "language": "EN",
+            "start_at": null,
+            "end_at": null,
+            "hours": null,
+            "weekdays": null,
+            "holiday": null,
+            "min_score": null,
+            "max_score": null,
+            "critical": null,
+            "dataset_id": "FICTIONAL"
           },
           "group_by": "none",
+          "cohorts": null,
           "metric_ids": [
             "final_score",
             "dialogue",
@@ -1415,6 +1858,134 @@
         "evaluation_ids": [
           "fictional-evaluation-001"
         ],
+        "observations": [
+          {
+            "conversation_id": "fictional-001",
+            "evaluation_id": "fictional-evaluation-001",
+            "evaluation_status": "ok",
+            "final": {
+              "criteria": [
+                {
+                  "criterion_id": "contact",
+                  "value": true,
+                  "rationale": "Fictional demonstration evidence; not a real evaluation.",
+                  "evidence_turns": [
+                    1,
+                    8
+                  ],
+                  "weight": 10,
+                  "applicable": true,
+                  "normalized_value": 1.0,
+                  "points": 10.0,
+                  "weighted_score": 15.384615384615385
+                },
+                {
+                  "criterion_id": "discovery",
+                  "value": null,
+                  "rationale": "Fictional demonstration evidence; not a real evaluation.",
+                  "evidence_turns": [
+                    1,
+                    8
+                  ],
+                  "weight": 15,
+                  "applicable": false,
+                  "normalized_value": null,
+                  "points": null,
+                  "weighted_score": null
+                },
+                {
+                  "criterion_id": "identification",
+                  "value": null,
+                  "rationale": "Fictional demonstration evidence; not a real evaluation.",
+                  "evidence_turns": [
+                    1,
+                    8
+                  ],
+                  "weight": 20,
+                  "applicable": false,
+                  "normalized_value": null,
+                  "points": null,
+                  "weighted_score": null
+                },
+                {
+                  "criterion_id": "consultation",
+                  "value": 15,
+                  "rationale": "Fictional demonstration evidence; not a real evaluation.",
+                  "evidence_turns": [
+                    1,
+                    8
+                  ],
+                  "weight": 20,
+                  "applicable": true,
+                  "normalized_value": 0.75,
+                  "points": 15.0,
+                  "weighted_score": 23.076923076923077
+                },
+                {
+                  "criterion_id": "empathy",
+                  "value": true,
+                  "rationale": "Fictional demonstration evidence; not a real evaluation.",
+                  "evidence_turns": [
+                    1,
+                    8
+                  ],
+                  "weight": 15,
+                  "applicable": true,
+                  "normalized_value": 1.0,
+                  "points": 15.0,
+                  "weighted_score": 23.076923076923077
+                },
+                {
+                  "criterion_id": "dialogue",
+                  "value": 7,
+                  "rationale": "Fictional demonstration evidence; not a real evaluation.",
+                  "evidence_turns": [
+                    1,
+                    8
+                  ],
+                  "weight": 15,
+                  "applicable": true,
+                  "normalized_value": 0.7,
+                  "points": 10.5,
+                  "weighted_score": 16.153846153846153
+                },
+                {
+                  "criterion_id": "closure",
+                  "value": true,
+                  "rationale": "Fictional demonstration evidence; not a real evaluation.",
+                  "evidence_turns": [
+                    1,
+                    8
+                  ],
+                  "weight": 5,
+                  "applicable": true,
+                  "normalized_value": 1.0,
+                  "points": 5.0,
+                  "weighted_score": 7.6923076923076925
+                },
+                {
+                  "criterion_id": "critical",
+                  "value": false,
+                  "rationale": "Fictional demonstration evidence; not a real evaluation.",
+                  "evidence_turns": [
+                    1,
+                    8
+                  ],
+                  "weight": 0,
+                  "applicable": true,
+                  "normalized_value": 0.0,
+                  "points": 0.0,
+                  "weighted_score": 0.0
+                }
+              ],
+              "earned_points": 55.5,
+              "applicable_weight": 65.0,
+              "final_score": 85.38,
+              "critical_flag": false
+            },
+            "revision": "eff724897a8b8b6de8afbdc5fc81de51b5c98353b0dd28d28a224db984a8e53b"
+          }
+        ],
         "counts": {
           "selected": 1,
           "evaluated": 1,
@@ -1422,17 +1993,164 @@
           "failed": 0
         },
         "definitions": {
-          "final_score": {
-            "calculation": "Mean final score of evaluated conversations."
+          "calendar": {
+            "jurisdiction": "KZ",
+            "timezone": "Asia/Almaty",
+            "observed": true,
+            "provider": "holidays",
+            "version": "0.108",
+            "language": "en_US",
+            "definition": "Kazakhstan public holidays including observed days; ordinary weekends are controlled by ISO weekday filters.",
+            "sources": [
+              "https://www.gov.kz/article/33969?lang=ru",
+              "https://www.gov.kz/article/16887?lang=en",
+              "https://holidays.readthedocs.io/en/main/auto_gen_docs/kazakhstan/"
+            ],
+            "verified_period": "2026-10"
+          },
+          "scheduling": {
+            "mode": "assigned_demo",
+            "counts": {
+              "assigned_demo": 1,
+              "source_only": 0
+            },
+            "period": "2026-10",
+            "periods": [
+              "2026-10"
+            ],
+            "seed": 2026,
+            "seeds": [
+              2026
+            ],
+            "algorithms": [
+              "stratified-october-v1"
+            ],
+            "independent_of_scores": true,
+            "interpretation": "Calendar predicates use demo_started_at converted to Asia/Almaty; records without assigned demo dates are excluded only when a calendar predicate is supplied."
+          },
+          "grouping": {
+            "fields": [
+              "channel",
+              "language",
+              "start_at",
+              "end_at",
+              "hours",
+              "weekdays",
+              "holiday",
+              "min_score",
+              "max_score",
+              "critical",
+              "dataset_id"
+            ],
+            "group_by": [
+              "none",
+              "date",
+              "month_half",
+              "daypart",
+              "day_night",
+              "holiday",
+              "language",
+              "channel"
+            ],
+            "metric_ids": [
+              "final_score",
+              "contact",
+              "discovery",
+              "identification",
+              "consultation",
+              "empathy",
+              "dialogue",
+              "closure",
+              "critical"
+            ],
+            "comparison_cohorts": {
+              "minimum": 1,
+              "maximum": 4,
+              "group_by": "none",
+              "combination": "AND with global filters; cohorts may overlap"
+            },
+            "intervals": "start inclusive, end exclusive; min/max score inclusive",
+            "hours": "0–23 local hours; end exclusive; overnight supported; equal endpoints mean full day",
+            "weekdays": "ISO Monday=1 through Sunday=7; holidays and ordinary weekends are separate",
+            "month_half": "days 1–15 and 16–month end, separately for each month",
+            "daypart": "night 00–06; morning 06–12; afternoon 12–18; evening 18–24",
+            "day_night": "day 06–18; night 18–06",
+            "calendar": "Calendar predicates use demo_started_at converted to Asia/Almaty; records without assigned demo dates are excluded only when a calendar predicate is supplied."
+          },
+          "metrics": {
+            "final_score": {
+              "title": "Mean final quality score",
+              "unit": "percent",
+              "calculation": "Mean final conversation score",
+              "denominator": "sample_count; failed and unevaluated excluded; N/A excluded and counted separately",
+              "criterion": null
+            },
+            "dialogue": {
+              "title": "Clarity, sequence and waiting",
+              "unit": "percent",
+              "calculation": "Mean normalized criterion fraction × 100 over applicable evaluated records",
+              "denominator": "sample_count; failed and unevaluated excluded; N/A excluded and counted separately",
+              "criterion": {
+                "allow_na": false,
+                "allowed_values": [
+                  0,
+                  4,
+                  7,
+                  10
+                ],
+                "answer_type": "scale",
+                "critical": false,
+                "description": "Assess clarity, sequence, coherence and advance notice of an explicit wait, independently of solution completeness.",
+                "id": "dialogue",
+                "na_condition": null,
+                "scale_meanings": {
+                  "0": "Incoherent or contradictory replies make the dialogue impossible to follow.",
+                  "10": "Answers are clear and coherent; the operator warns the client when there is an explicit wait.",
+                  "4": "Wording or answer order forces the client to ask again.",
+                  "7": "One noticeable disruption, but the client can understand the answer and continue."
+                },
+                "title": "Clarity, sequence and waiting",
+                "weight": 15
+              }
+            },
+            "critical": {
+              "title": "Serious violation",
+              "unit": "percent",
+              "calculation": "Critical flag rate; does not zero quality scores",
+              "denominator": "sample_count; failed and unevaluated excluded; N/A excluded and counted separately",
+              "criterion": {
+                "allow_na": false,
+                "allowed_values": [
+                  false,
+                  true
+                ],
+                "answer_type": "boolean",
+                "critical": true,
+                "description": "Flag an insult, an offer of paid services outside the company, or confidential disclosure. An offer to invest money transferred personally to the operator, or to provide private paid consultation using the client's personal number, is sufficient; client agreement or payment is unnecessary.",
+                "id": "critical",
+                "na_condition": null,
+                "scale_meanings": {
+                  "false": "None of the three serious violations is detected.",
+                  "true": "At least one of the three serious violations is detected."
+                },
+                "title": "Serious violation",
+                "weight": 0
+              }
+            }
           }
         },
         "filter_interpretation": [
-          "Assigned demonstration calendar in Asia/Almaty; English only."
+          "Calendar predicates use demo_started_at converted to Asia/Almaty; records without assigned demo dates are excluded only when a calendar predicate is supplied.",
+          "Kazakhstan public holidays including observed days; ordinary weekends are controlled by ISO weekday filters.",
+          "All supplied predicates are AND; date/time end bounds are exclusive, score bounds inclusive. Hours with equal endpoints cover the full day.",
+          "Latest cqa-v1 evaluation including errors; means exclude failed, unevaluated and N/A values.",
+          "Global filters: {\"dataset_id\": \"FICTIONAL\", \"language\": \"EN\"}"
         ],
         "groups": [
           {
             "key": "all",
             "label": "All selected",
+            "conditions": null,
             "conversation_ids": [
               "fictional-001"
             ],
@@ -1449,35 +2167,111 @@
                 "na_count": 0
               },
               "dialogue": {
-                "value": 70,
+                "value": 70.0,
                 "sample_count": 1,
                 "na_count": 0
               },
               "critical": {
-                "value": 0,
+                "value": 0.0,
                 "sample_count": 1,
                 "na_count": 0
               }
             }
           }
         ],
-        "chart_series": [],
-        "generated_at": "2026-10-15T12:00:00+05:00"
+        "chart_series": [
+          {
+            "metric_id": "final_score",
+            "points": [
+              {
+                "value": 85.38,
+                "sample_count": 1,
+                "na_count": 0,
+                "key": "all",
+                "label": "All selected"
+              }
+            ]
+          },
+          {
+            "metric_id": "dialogue",
+            "points": [
+              {
+                "value": 70.0,
+                "sample_count": 1,
+                "na_count": 0,
+                "key": "all",
+                "label": "All selected"
+              }
+            ]
+          },
+          {
+            "metric_id": "critical",
+            "points": [
+              {
+                "value": 0.0,
+                "sample_count": 1,
+                "na_count": 0,
+                "key": "all",
+                "label": "All selected"
+              }
+            ]
+          }
+        ],
+        "generated_at": "2026-11-07T19:22:29.842399+00:00"
       },
-      "created_at": "2026-10-15T12:00:00+05:00",
-      "updated_at": "2026-10-15T12:00:00+05:00",
+      "created_at": "2026-11-07T19:22:29.842399+00:00",
+      "updated_at": "2026-11-07T19:22:29.842399+00:00",
       "messages": [],
-      "custom_metrics": []
+      "custom_metrics": [],
+      "stale": false
     },
+    "cohort_analysis_request": {
+      "title": "Fictional first/last-seven-day comparison",
+      "filters": {
+        "dataset_id": "FICTIONAL",
+        "language": "EN",
+        "start_at": "2026-10-01T00:00:00+05:00",
+        "end_at": "2026-11-01T00:00:00+05:00"
+      },
+      "group_by": "none",
+      "cohorts": [
+        {
+          "key": "start",
+          "label": "First seven days",
+          "filters": {
+            "end_at": "2026-10-08T00:00:00+05:00"
+          }
+        },
+        {
+          "key": "end",
+          "label": "Last seven days",
+          "filters": {
+            "start_at": "2026-10-25T00:00:00+05:00"
+          }
+        }
+      ]
+    }
+  },
+  "planned_not_implemented": {
     "assistant": {
       "message": "Fictional report created.",
       "report_id": "fictional-report-001",
       "spec": {
         "filters": {
-          "dataset_id": "FICTIONAL",
-          "language": "EN"
+          "channel": null,
+          "language": "EN",
+          "start_at": null,
+          "end_at": null,
+          "hours": null,
+          "weekdays": null,
+          "holiday": null,
+          "min_score": null,
+          "max_score": null,
+          "critical": null,
+          "dataset_id": "FICTIONAL"
         },
         "group_by": "none",
+        "cohorts": null,
         "metric_ids": [
           "final_score",
           "dialogue",
@@ -1488,10 +2282,20 @@
       "output": {
         "spec": {
           "filters": {
-            "dataset_id": "FICTIONAL",
-            "language": "EN"
+            "channel": null,
+            "language": "EN",
+            "start_at": null,
+            "end_at": null,
+            "hours": null,
+            "weekdays": null,
+            "holiday": null,
+            "min_score": null,
+            "max_score": null,
+            "critical": null,
+            "dataset_id": "FICTIONAL"
           },
           "group_by": "none",
+          "cohorts": null,
           "metric_ids": [
             "final_score",
             "dialogue",
@@ -1506,6 +2310,134 @@
         "evaluation_ids": [
           "fictional-evaluation-001"
         ],
+        "observations": [
+          {
+            "conversation_id": "fictional-001",
+            "evaluation_id": "fictional-evaluation-001",
+            "evaluation_status": "ok",
+            "final": {
+              "criteria": [
+                {
+                  "criterion_id": "contact",
+                  "value": true,
+                  "rationale": "Fictional demonstration evidence; not a real evaluation.",
+                  "evidence_turns": [
+                    1,
+                    8
+                  ],
+                  "weight": 10,
+                  "applicable": true,
+                  "normalized_value": 1.0,
+                  "points": 10.0,
+                  "weighted_score": 15.384615384615385
+                },
+                {
+                  "criterion_id": "discovery",
+                  "value": null,
+                  "rationale": "Fictional demonstration evidence; not a real evaluation.",
+                  "evidence_turns": [
+                    1,
+                    8
+                  ],
+                  "weight": 15,
+                  "applicable": false,
+                  "normalized_value": null,
+                  "points": null,
+                  "weighted_score": null
+                },
+                {
+                  "criterion_id": "identification",
+                  "value": null,
+                  "rationale": "Fictional demonstration evidence; not a real evaluation.",
+                  "evidence_turns": [
+                    1,
+                    8
+                  ],
+                  "weight": 20,
+                  "applicable": false,
+                  "normalized_value": null,
+                  "points": null,
+                  "weighted_score": null
+                },
+                {
+                  "criterion_id": "consultation",
+                  "value": 15,
+                  "rationale": "Fictional demonstration evidence; not a real evaluation.",
+                  "evidence_turns": [
+                    1,
+                    8
+                  ],
+                  "weight": 20,
+                  "applicable": true,
+                  "normalized_value": 0.75,
+                  "points": 15.0,
+                  "weighted_score": 23.076923076923077
+                },
+                {
+                  "criterion_id": "empathy",
+                  "value": true,
+                  "rationale": "Fictional demonstration evidence; not a real evaluation.",
+                  "evidence_turns": [
+                    1,
+                    8
+                  ],
+                  "weight": 15,
+                  "applicable": true,
+                  "normalized_value": 1.0,
+                  "points": 15.0,
+                  "weighted_score": 23.076923076923077
+                },
+                {
+                  "criterion_id": "dialogue",
+                  "value": 7,
+                  "rationale": "Fictional demonstration evidence; not a real evaluation.",
+                  "evidence_turns": [
+                    1,
+                    8
+                  ],
+                  "weight": 15,
+                  "applicable": true,
+                  "normalized_value": 0.7,
+                  "points": 10.5,
+                  "weighted_score": 16.153846153846153
+                },
+                {
+                  "criterion_id": "closure",
+                  "value": true,
+                  "rationale": "Fictional demonstration evidence; not a real evaluation.",
+                  "evidence_turns": [
+                    1,
+                    8
+                  ],
+                  "weight": 5,
+                  "applicable": true,
+                  "normalized_value": 1.0,
+                  "points": 5.0,
+                  "weighted_score": 7.6923076923076925
+                },
+                {
+                  "criterion_id": "critical",
+                  "value": false,
+                  "rationale": "Fictional demonstration evidence; not a real evaluation.",
+                  "evidence_turns": [
+                    1,
+                    8
+                  ],
+                  "weight": 0,
+                  "applicable": true,
+                  "normalized_value": 0.0,
+                  "points": 0.0,
+                  "weighted_score": 0.0
+                }
+              ],
+              "earned_points": 55.5,
+              "applicable_weight": 65.0,
+              "final_score": 85.38,
+              "critical_flag": false
+            },
+            "revision": "eff724897a8b8b6de8afbdc5fc81de51b5c98353b0dd28d28a224db984a8e53b"
+          }
+        ],
         "counts": {
           "selected": 1,
           "evaluated": 1,
@@ -1513,17 +2445,164 @@
           "failed": 0
         },
         "definitions": {
-          "final_score": {
-            "calculation": "Mean final score of evaluated conversations."
+          "calendar": {
+            "jurisdiction": "KZ",
+            "timezone": "Asia/Almaty",
+            "observed": true,
+            "provider": "holidays",
+            "version": "0.108",
+            "language": "en_US",
+            "definition": "Kazakhstan public holidays including observed days; ordinary weekends are controlled by ISO weekday filters.",
+            "sources": [
+              "https://www.gov.kz/article/33969?lang=ru",
+              "https://www.gov.kz/article/16887?lang=en",
+              "https://holidays.readthedocs.io/en/main/auto_gen_docs/kazakhstan/"
+            ],
+            "verified_period": "2026-10"
+          },
+          "scheduling": {
+            "mode": "assigned_demo",
+            "counts": {
+              "assigned_demo": 1,
+              "source_only": 0
+            },
+            "period": "2026-10",
+            "periods": [
+              "2026-10"
+            ],
+            "seed": 2026,
+            "seeds": [
+              2026
+            ],
+            "algorithms": [
+              "stratified-october-v1"
+            ],
+            "independent_of_scores": true,
+            "interpretation": "Calendar predicates use demo_started_at converted to Asia/Almaty; records without assigned demo dates are excluded only when a calendar predicate is supplied."
+          },
+          "grouping": {
+            "fields": [
+              "channel",
+              "language",
+              "start_at",
+              "end_at",
+              "hours",
+              "weekdays",
+              "holiday",
+              "min_score",
+              "max_score",
+              "critical",
+              "dataset_id"
+            ],
+            "group_by": [
+              "none",
+              "date",
+              "month_half",
+              "daypart",
+              "day_night",
+              "holiday",
+              "language",
+              "channel"
+            ],
+            "metric_ids": [
+              "final_score",
+              "contact",
+              "discovery",
+              "identification",
+              "consultation",
+              "empathy",
+              "dialogue",
+              "closure",
+              "critical"
+            ],
+            "comparison_cohorts": {
+              "minimum": 1,
+              "maximum": 4,
+              "group_by": "none",
+              "combination": "AND with global filters; cohorts may overlap"
+            },
+            "intervals": "start inclusive, end exclusive; min/max score inclusive",
+            "hours": "0–23 local hours; end exclusive; overnight supported; equal endpoints mean full day",
+            "weekdays": "ISO Monday=1 through Sunday=7; holidays and ordinary weekends are separate",
+            "month_half": "days 1–15 and 16–month end, separately for each month",
+            "daypart": "night 00–06; morning 06–12; afternoon 12–18; evening 18–24",
+            "day_night": "day 06–18; night 18–06",
+            "calendar": "Calendar predicates use demo_started_at converted to Asia/Almaty; records without assigned demo dates are excluded only when a calendar predicate is supplied."
+          },
+          "metrics": {
+            "final_score": {
+              "title": "Mean final quality score",
+              "unit": "percent",
+              "calculation": "Mean final conversation score",
+              "denominator": "sample_count; failed and unevaluated excluded; N/A excluded and counted separately",
+              "criterion": null
+            },
+            "dialogue": {
+              "title": "Clarity, sequence and waiting",
+              "unit": "percent",
+              "calculation": "Mean normalized criterion fraction × 100 over applicable evaluated records",
+              "denominator": "sample_count; failed and unevaluated excluded; N/A excluded and counted separately",
+              "criterion": {
+                "allow_na": false,
+                "allowed_values": [
+                  0,
+                  4,
+                  7,
+                  10
+                ],
+                "answer_type": "scale",
+                "critical": false,
+                "description": "Assess clarity, sequence, coherence and advance notice of an explicit wait, independently of solution completeness.",
+                "id": "dialogue",
+                "na_condition": null,
+                "scale_meanings": {
+                  "0": "Incoherent or contradictory replies make the dialogue impossible to follow.",
+                  "10": "Answers are clear and coherent; the operator warns the client when there is an explicit wait.",
+                  "4": "Wording or answer order forces the client to ask again.",
+                  "7": "One noticeable disruption, but the client can understand the answer and continue."
+                },
+                "title": "Clarity, sequence and waiting",
+                "weight": 15
+              }
+            },
+            "critical": {
+              "title": "Serious violation",
+              "unit": "percent",
+              "calculation": "Critical flag rate; does not zero quality scores",
+              "denominator": "sample_count; failed and unevaluated excluded; N/A excluded and counted separately",
+              "criterion": {
+                "allow_na": false,
+                "allowed_values": [
+                  false,
+                  true
+                ],
+                "answer_type": "boolean",
+                "critical": true,
+                "description": "Flag an insult, an offer of paid services outside the company, or confidential disclosure. An offer to invest money transferred personally to the operator, or to provide private paid consultation using the client's personal number, is sufficient; client agreement or payment is unnecessary.",
+                "id": "critical",
+                "na_condition": null,
+                "scale_meanings": {
+                  "false": "None of the three serious violations is detected.",
+                  "true": "At least one of the three serious violations is detected."
+                },
+                "title": "Serious violation",
+                "weight": 0
+              }
+            }
           }
         },
         "filter_interpretation": [
-          "Assigned demonstration calendar in Asia/Almaty; English only."
+          "Calendar predicates use demo_started_at converted to Asia/Almaty; records without assigned demo dates are excluded only when a calendar predicate is supplied.",
+          "Kazakhstan public holidays including observed days; ordinary weekends are controlled by ISO weekday filters.",
+          "All supplied predicates are AND; date/time end bounds are exclusive, score bounds inclusive. Hours with equal endpoints cover the full day.",
+          "Latest cqa-v1 evaluation including errors; means exclude failed, unevaluated and N/A values.",
+          "Global filters: {\"dataset_id\": \"FICTIONAL\", \"language\": \"EN\"}"
         ],
         "groups": [
           {
             "key": "all",
             "label": "All selected",
+            "conditions": null,
             "conversation_ids": [
               "fictional-001"
             ],
@@ -1540,20 +2619,57 @@
                 "na_count": 0
               },
               "dialogue": {
-                "value": 70,
+                "value": 70.0,
                 "sample_count": 1,
                 "na_count": 0
               },
               "critical": {
-                "value": 0,
+                "value": 0.0,
                 "sample_count": 1,
                 "na_count": 0
               }
             }
           }
         ],
-        "chart_series": [],
-        "generated_at": "2026-10-15T12:00:00+05:00"
+        "chart_series": [
+          {
+            "metric_id": "final_score",
+            "points": [
+              {
+                "value": 85.38,
+                "sample_count": 1,
+                "na_count": 0,
+                "key": "all",
+                "label": "All selected"
+              }
+            ]
+          },
+          {
+            "metric_id": "dialogue",
+            "points": [
+              {
+                "value": 70.0,
+                "sample_count": 1,
+                "na_count": 0,
+                "key": "all",
+                "label": "All selected"
+              }
+            ]
+          },
+          {
+            "metric_id": "critical",
+            "points": [
+              {
+                "value": 0.0,
+                "sample_count": 1,
+                "na_count": 0,
+                "key": "all",
+                "label": "All selected"
+              }
+            ]
+          }
+        ],
+        "generated_at": "2026-11-07T19:22:29.841640+00:00"
       },
       "custom_metric_run_id": null,
       "clarification": null

@@ -194,6 +194,214 @@
         }
       }
     },
+    "/api/conversations/search": {
+      "post": {
+        "summary": "Search Conversations",
+        "operationId": "search_conversations_api_conversations_search_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FilterSpec"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConversationPage"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/analytics": {
+      "post": {
+        "summary": "Analytics",
+        "operationId": "analytics_api_analytics_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AnalysisSpec"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AnalysisOutput"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/reports": {
+      "get": {
+        "summary": "List Reports",
+        "operationId": "list_reports_api_reports_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReportPage"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "Create Report",
+        "operationId": "create_report_api_reports_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AnalysisSpec"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Report"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/reports/{id}": {
+      "get": {
+        "summary": "Get Report",
+        "operationId": "get_report_api_reports__id__get",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Report"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/reports/{id}/refresh": {
+      "post": {
+        "summary": "Refresh Report",
+        "operationId": "refresh_report_api_reports__id__refresh_post",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Report"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/conversations/{id}": {
       "get": {
         "summary": "Conversation",
@@ -712,6 +920,291 @@
   },
   "components": {
     "schemas": {
+      "Aggregate": {
+        "properties": {
+          "value": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 100.0,
+                "minimum": 0.0
+              },
+              {
+                "type": "number",
+                "maximum": 100.0,
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Value"
+          },
+          "sample_count": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Sample Count"
+          },
+          "na_count": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Na Count"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "value",
+          "sample_count",
+          "na_count"
+        ],
+        "title": "Aggregate"
+      },
+      "AnalysisCounts": {
+        "properties": {
+          "selected": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Selected"
+          },
+          "evaluated": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Evaluated"
+          },
+          "unevaluated": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Unevaluated"
+          },
+          "failed": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Failed"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "selected",
+          "evaluated",
+          "unevaluated",
+          "failed"
+        ],
+        "title": "AnalysisCounts"
+      },
+      "AnalysisGroup": {
+        "properties": {
+          "key": {
+            "type": "string",
+            "title": "Key"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label"
+          },
+          "conditions": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/FilterConditions"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "conversation_ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Conversation Ids"
+          },
+          "counts": {
+            "$ref": "#/components/schemas/AnalysisCounts"
+          },
+          "metrics": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/Aggregate"
+            },
+            "propertyNames": {
+              "enum": [
+                "final_score",
+                "contact",
+                "discovery",
+                "identification",
+                "consultation",
+                "empathy",
+                "dialogue",
+                "closure",
+                "critical"
+              ]
+            },
+            "type": "object",
+            "title": "Metrics"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "key",
+          "label",
+          "conditions",
+          "conversation_ids",
+          "counts",
+          "metrics"
+        ],
+        "title": "AnalysisGroup"
+      },
+      "AnalysisOutput": {
+        "properties": {
+          "spec": {
+            "$ref": "#/components/schemas/AnalysisSpec"
+          },
+          "checklist_version_id": {
+            "type": "string",
+            "title": "Checklist Version Id"
+          },
+          "conversation_ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Conversation Ids"
+          },
+          "evaluation_ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Evaluation Ids"
+          },
+          "observations": {
+            "items": {
+              "$ref": "#/components/schemas/Observation"
+            },
+            "type": "array",
+            "title": "Observations"
+          },
+          "counts": {
+            "$ref": "#/components/schemas/AnalysisCounts"
+          },
+          "definitions": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Definitions"
+          },
+          "filter_interpretation": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Filter Interpretation"
+          },
+          "groups": {
+            "items": {
+              "$ref": "#/components/schemas/AnalysisGroup"
+            },
+            "type": "array",
+            "title": "Groups"
+          },
+          "chart_series": {
+            "items": {
+              "$ref": "#/components/schemas/ChartSeries"
+            },
+            "type": "array",
+            "title": "Chart Series"
+          },
+          "generated_at": {
+            "type": "string",
+            "title": "Generated At"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "spec",
+          "checklist_version_id",
+          "conversation_ids",
+          "evaluation_ids",
+          "observations",
+          "counts",
+          "definitions",
+          "filter_interpretation",
+          "groups",
+          "chart_series",
+          "generated_at"
+        ],
+        "title": "AnalysisOutput"
+      },
+      "AnalysisSpec": {
+        "properties": {
+          "filters": {
+            "$ref": "#/components/schemas/FilterSpec"
+          },
+          "group_by": {
+            "type": "string",
+            "enum": [
+              "none",
+              "date",
+              "month_half",
+              "daypart",
+              "day_night",
+              "holiday",
+              "language",
+              "channel"
+            ],
+            "title": "Group By",
+            "default": "none"
+          },
+          "cohorts": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/ComparisonCohort"
+                },
+                "type": "array",
+                "maxItems": 4,
+                "minItems": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cohorts"
+          },
+          "metric_ids": {
+            "items": {
+              "type": "string",
+              "enum": [
+                "final_score",
+                "contact",
+                "discovery",
+                "identification",
+                "consultation",
+                "empathy",
+                "dialogue",
+                "closure",
+                "critical"
+              ]
+            },
+            "type": "array",
+            "minItems": 1,
+            "title": "Metric Ids"
+          },
+          "title": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Title"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "title"
+        ],
+        "title": "AnalysisSpec"
+      },
       "Appeal": {
         "properties": {
           "id": {
@@ -911,6 +1404,89 @@
         ],
         "title": "BaselineExport"
       },
+      "ChartPoint": {
+        "properties": {
+          "value": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 100.0,
+                "minimum": 0.0
+              },
+              {
+                "type": "number",
+                "maximum": 100.0,
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Value"
+          },
+          "sample_count": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Sample Count"
+          },
+          "na_count": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Na Count"
+          },
+          "key": {
+            "type": "string",
+            "title": "Key"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "value",
+          "sample_count",
+          "na_count",
+          "key",
+          "label"
+        ],
+        "title": "ChartPoint"
+      },
+      "ChartSeries": {
+        "properties": {
+          "metric_id": {
+            "type": "string",
+            "enum": [
+              "final_score",
+              "contact",
+              "discovery",
+              "identification",
+              "consultation",
+              "empathy",
+              "dialogue",
+              "closure",
+              "critical"
+            ],
+            "title": "Metric Id"
+          },
+          "points": {
+            "items": {
+              "$ref": "#/components/schemas/ChartPoint"
+            },
+            "type": "array",
+            "title": "Points"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "metric_id",
+          "points"
+        ],
+        "title": "ChartSeries"
+      },
       "Checklist": {
         "properties": {
           "id": {
@@ -1015,6 +1591,31 @@
           "total"
         ],
         "title": "ChecklistPage"
+      },
+      "ComparisonCohort": {
+        "properties": {
+          "key": {
+            "type": "string",
+            "pattern": "^[a-zA-Z][a-zA-Z0-9_-]{0,63}$",
+            "title": "Key"
+          },
+          "label": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Label"
+          },
+          "filters": {
+            "$ref": "#/components/schemas/FilterConditions"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "key",
+          "label",
+          "filters"
+        ],
+        "title": "ComparisonCohort"
       },
       "ConversationPage": {
         "properties": {
@@ -1183,14 +1784,15 @@
           "weight": {
             "anyOf": [
               {
-                "type": "integer"
+                "type": "integer",
+                "minimum": 0.0
               },
               {
-                "type": "number"
+                "type": "number",
+                "minimum": 0.0
               }
             ],
-            "title": "Weight",
-            "ge": 0
+            "title": "Weight"
           },
           "allow_na": {
             "type": "boolean",
@@ -1552,15 +2154,17 @@
           "final_score": {
             "anyOf": [
               {
-                "type": "integer"
+                "type": "integer",
+                "maximum": 100.0,
+                "minimum": 0.0
               },
               {
-                "type": "number"
+                "type": "number",
+                "maximum": 100.0,
+                "minimum": 0.0
               }
             ],
-            "title": "Final Score",
-            "ge": 0,
-            "le": 100
+            "title": "Final Score"
           },
           "critical_flag": {
             "type": "boolean",
@@ -1608,6 +2212,304 @@
         ],
         "title": "ExportSuccess"
       },
+      "FilterConditions": {
+        "properties": {
+          "channel": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "agent chat",
+                  "voice call"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Channel"
+          },
+          "language": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "RU",
+                  "KZ",
+                  "EN"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Language"
+          },
+          "start_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Start At"
+          },
+          "end_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "End At"
+          },
+          "hours": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Hours"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "weekdays": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "integer",
+                  "maximum": 7.0,
+                  "minimum": 1.0
+                },
+                "type": "array",
+                "maxItems": 7,
+                "minItems": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Weekdays"
+          },
+          "holiday": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Holiday"
+          },
+          "min_score": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 100.0,
+                "minimum": 0.0
+              },
+              {
+                "type": "number",
+                "maximum": 100.0,
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Min Score"
+          },
+          "max_score": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 100.0,
+                "minimum": 0.0
+              },
+              {
+                "type": "number",
+                "maximum": 100.0,
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max Score"
+          },
+          "critical": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Critical"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "FilterConditions"
+      },
+      "FilterSpec": {
+        "properties": {
+          "channel": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "agent chat",
+                  "voice call"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Channel"
+          },
+          "language": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "RU",
+                  "KZ",
+                  "EN"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Language"
+          },
+          "start_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Start At"
+          },
+          "end_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "End At"
+          },
+          "hours": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Hours"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "weekdays": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "integer",
+                  "maximum": 7.0,
+                  "minimum": 1.0
+                },
+                "type": "array",
+                "maxItems": 7,
+                "minItems": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Weekdays"
+          },
+          "holiday": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Holiday"
+          },
+          "min_score": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 100.0,
+                "minimum": 0.0
+              },
+              {
+                "type": "number",
+                "maximum": 100.0,
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Min Score"
+          },
+          "max_score": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 100.0,
+                "minimum": 0.0
+              },
+              {
+                "type": "number",
+                "maximum": 100.0,
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max Score"
+          },
+          "critical": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Critical"
+          },
+          "dataset_id": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Dataset Id",
+            "default": "DEV"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "FilterSpec"
+      },
       "HTTPValidationError": {
         "properties": {
           "detail": {
@@ -1635,6 +2537,29 @@
           "status"
         ],
         "title": "HealthResponse"
+      },
+      "Hours": {
+        "properties": {
+          "start": {
+            "type": "integer",
+            "maximum": 23.0,
+            "minimum": 0.0,
+            "title": "Start"
+          },
+          "end": {
+            "type": "integer",
+            "maximum": 23.0,
+            "minimum": 0.0,
+            "title": "End"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "start",
+          "end"
+        ],
+        "title": "Hours"
       },
       "MetaResponse": {
         "properties": {
@@ -1692,6 +2617,18 @@
             },
             "type": "array",
             "title": "Implemented Features"
+          },
+          "available_periods": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Available Periods"
+          },
+          "filtering_options": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Filtering Options"
           }
         },
         "additionalProperties": false,
@@ -1704,7 +2641,9 @@
           "datasets",
           "scheduling",
           "holiday_calendar",
-          "implemented_features"
+          "implemented_features",
+          "available_periods",
+          "filtering_options"
         ],
         "title": "MetaResponse"
       },
@@ -1731,6 +2670,65 @@
           "name"
         ],
         "title": "ModelIdentity"
+      },
+      "Observation": {
+        "properties": {
+          "conversation_id": {
+            "type": "string",
+            "title": "Conversation Id"
+          },
+          "evaluation_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Evaluation Id"
+          },
+          "evaluation_status": {
+            "type": "string",
+            "enum": [
+              "ok",
+              "error",
+              "unevaluated"
+            ],
+            "title": "Evaluation Status"
+          },
+          "final": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ScoreResult"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "revision": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Revision"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "conversation_id",
+          "evaluation_id",
+          "evaluation_status",
+          "final",
+          "revision"
+        ],
+        "title": "Observation"
       },
       "ObservedSpan": {
         "properties": {
@@ -1764,6 +2762,120 @@
           "duration_seconds"
         ],
         "title": "ObservedSpan"
+      },
+      "Report": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "spec": {
+            "$ref": "#/components/schemas/AnalysisSpec"
+          },
+          "output": {
+            "$ref": "#/components/schemas/AnalysisOutput"
+          },
+          "created_at": {
+            "type": "string",
+            "title": "Created At"
+          },
+          "updated_at": {
+            "type": "string",
+            "title": "Updated At"
+          },
+          "messages": {
+            "items": {
+              "$ref": "#/components/schemas/ReportMessage"
+            },
+            "type": "array",
+            "title": "Messages"
+          },
+          "custom_metrics": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "type": "array",
+            "title": "Custom Metrics"
+          },
+          "stale": {
+            "type": "boolean",
+            "title": "Stale"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "title",
+          "spec",
+          "output",
+          "created_at",
+          "updated_at",
+          "messages",
+          "custom_metrics",
+          "stale"
+        ],
+        "title": "Report"
+      },
+      "ReportMessage": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "role": {
+            "type": "string",
+            "enum": [
+              "user",
+              "assistant"
+            ],
+            "title": "Role"
+          },
+          "content": {
+            "type": "string",
+            "title": "Content"
+          },
+          "created_at": {
+            "type": "string",
+            "title": "Created At"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "role",
+          "content",
+          "created_at"
+        ],
+        "title": "ReportMessage"
+      },
+      "ReportPage": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/Report"
+            },
+            "type": "array",
+            "title": "Items"
+          },
+          "total": {
+            "type": "integer",
+            "title": "Total"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "items",
+          "total"
+        ],
+        "title": "ReportPage"
       },
       "Run": {
         "properties": {
