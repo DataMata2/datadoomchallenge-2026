@@ -75,6 +75,10 @@ backend/.venv/bin/python scripts/validate_results.py --input results/prod/result
   --expected-count 10 --team-name '404 Dauren Not Found'
 ```
 
+The evaluation helper returns zero when every selected source has exactly one settled completed/failed item and a matching durable cqa-v1 evaluation. Its summary reports `success_count`, `error_count` and `export_ready: true` while retaining the actual run status, including `failed`. Continue directly to export/validation even when some or all records are errors; no assessment is resent. Each error export record keeps its original source ID, `status: "error"`, a nonempty stored reason, `criteria: []` and `score: null`. Success records retain their validated numeric scores. The export/validator still enforce the complete source population and baseline contract.
+
+A cancelled/interrupted run, queued/unsent item, missing evaluation ID/document, identity mismatch or inconsistent count keeps `export_ready: false` and stops this handoff. Inspect the durable run/items and billing before any separately approved retry; do not drop IDs, fabricate evaluations or use another state file to repeat an unknown dispatch. Resume of a known run performs only read requests.
+
 For a released HTTPS source instead, set the private `CQA_CONTROL_SOURCE_URL` and the organizer-provided `CQA_CONTROL_GROUP`, then replace only import with:
 
 ```bash
@@ -82,4 +86,4 @@ python3 scripts/import_dev.py --url-env CQA_CONTROL_SOURCE_URL \
   --group "$CQA_CONTROL_GROUP" --env-file /absolute/path/to/ignored/backend.env
 ```
 
-Do not print the URL. Use that actual group in later commands. The evaluation helper saves a durable marker before dispatch. If interrupted with a known run ID, repeat its command with `--resume`; it polls the existing run without sending another assessment. If dispatch outcome is unknown, inspect existing API run IDs before acting. An existing state file refuses a new dispatch. A failed/interrupted run retains every attempt and is not automatically retried. Only reviewed final artifacts should be committed/pushed by the overseer.
+Do not print the URL. Use that actual group in later commands. The evaluation helper saves a durable marker before dispatch. If interrupted with a known run ID, repeat its command with `--resume`; it polls the existing run without sending another assessment. If dispatch outcome is unknown, inspect existing API run IDs before acting. An existing state file refuses a new dispatch. A settled run with durable error evaluations can be exported as described above; incomplete/interrupted work remains blocked. Every attempt is retained and never automatically retried. Only reviewed final artifacts should be committed/pushed by the overseer.
