@@ -4,6 +4,7 @@ import type {
   AnalysisGroup,
   Checklist,
   ConversationResponse,
+  SavedObservation,
 } from "./api";
 import {
   ConversationTable,
@@ -19,15 +20,37 @@ type Props = {
   comparison?: AnalysisOutput | null;
   sources: ConversationResponse[];
   checklist?: Checklist;
-  open: (id: string, metric?: string, turns?: number[]) => void;
+  saved?: boolean;
+  open: (
+    id: string,
+    metric?: string,
+    turns?: number[],
+    saved?: SavedObservation,
+  ) => void;
 };
 export default function Analysis({
   output,
   comparison,
   sources,
   checklist,
-  open,
+  open: openSource,
+  saved = false,
 }: Props) {
+  const open = (id: string, metric?: string, turns?: number[]) => {
+    const observation = output.observations.find(
+      (row) => row.conversation_id === id,
+    );
+    const snapshot =
+      saved && observation
+        ? {
+            observation,
+            generatedAt: output.generated_at,
+            checklistVersionId: output.checklist_version_id,
+          }
+        : undefined;
+    if (snapshot) openSource(id, metric, turns, snapshot);
+    else openSource(id, metric, turns);
+  };
   const [inspect, setInspect] = useState<{
     metric: string;
     group: AnalysisGroup;

@@ -8,6 +8,7 @@ import {
   type Evaluation,
   type Run,
   type ScoredCriterion,
+  type SavedObservation,
 } from "./api";
 import {
   activeRun,
@@ -26,6 +27,7 @@ type Props = {
   dataset: string;
   metric?: string;
   turns?: number[];
+  saved?: SavedObservation;
   checklists: Checklist[];
   close: () => void;
   changed: () => void;
@@ -35,13 +37,14 @@ export default function ConversationDrawer({
   dataset,
   metric,
   turns,
+  saved,
   checklists,
   close,
   changed,
 }: Props) {
   const [conversation, setConversation] = useState<ConversationResponse>();
   const [evaluation, setEvaluation] = useState<Evaluation | null>(null);
-  const [version, setVersion] = useState("cqa-v1");
+  const [version, setVersion] = useState(saved?.checklistVersionId || "cqa-v1");
   const [criterionId, setCriterionId] = useState(metric || "final_score");
   const [highlight, setHighlight] = useState<number[]>([]);
   const [error, setError] = useState("");
@@ -133,6 +136,16 @@ export default function ConversationDrawer({
       clearTimeout(timer);
     };
   }, [run, runError]);
+  const savedCriterion = saved?.observation.final?.criteria.find(
+    (c) => c.criterion_id === criterionId,
+  );
+  const differs =
+    saved &&
+    (saved.observation.evaluation_id !== (evaluation?.id ?? null) ||
+      saved.observation.evaluation_status !==
+        (evaluation?.status ?? "unevaluated") ||
+      JSON.stringify(saved.observation.final) !==
+        JSON.stringify(evaluation?.final ?? null));
   const current = original ? evaluation?.original : evaluation?.final;
   const selected = current?.criteria.find(
     (c) => c.criterion_id === criterionId,
@@ -259,6 +272,60 @@ export default function ConversationDrawer({
                 </details>
               </section>
               <section className="assessment">
+                {saved && (
+                  <section
+                    className="notice saved-observation"
+                    aria-label="Saved report observation"
+                  >
+                    <h3>Saved report observation</h3>
+                    <p>
+                      Generated: {saved.generatedAt}. Checklist:{" "}
+                      {saved.checklistVersionId}.
+                    </p>
+                    <p>
+                      Evaluation: {saved.observation.evaluation_id || "none"}.
+                      Revision: {saved.observation.revision || "none"}. Status:{" "}
+                      {saved.observation.evaluation_status}.
+                    </p>
+                    <p>
+                      Copied quality score:{" "}
+                      {score(saved.observation.final?.final_score)}. Critical
+                      flag: {raw(saved.observation.final?.critical_flag)}.
+                    </p>
+                    {savedCriterion && (
+                      <>
+                        <p>
+                          {metricNames[criterionId]} copied raw value:{" "}
+                          {raw(savedCriterion.value)}.{" "}
+                          {savedCriterion.rationale}
+                        </p>
+                        <p>
+                          Saved evidence:{" "}
+                          {savedCriterion.evidence_turns.map((turn) => (
+                            <button
+                              className="turn-link"
+                              key={turn}
+                              onClick={() => jump([turn])}
+                            >
+                              #{turn}
+                            </button>
+                          ))}
+                        </p>
+                      </>
+                    )}
+                    <p>
+                      The saved report remains unchanged until explicitly
+                      refreshed.
+                    </p>
+                  </section>
+                )}
+                {saved && (
+                  <h3>
+                    {differs
+                      ? "Current assessment differs from the saved report observation"
+                      : "Current assessment matches the saved report observation"}
+                  </h3>
+                )}
                 <div className="evaluation-controls">
                   <label>
                     Checklist version

@@ -7,6 +7,7 @@ import {
   type Report,
   type ReportMetric,
   type Run,
+  type SavedObservation,
 } from "./api";
 import Analysis from "./Analysis";
 import {
@@ -32,6 +33,7 @@ type Props = {
     dataset: string,
     metric?: string,
     turns?: number[],
+    saved?: SavedObservation,
   ) => void;
 };
 export default function ReportWorkspace({
@@ -278,6 +280,7 @@ export default function ReportWorkspace({
               )}
               {report.output ? (
                 <Analysis
+                  saved
                   output={report.output}
                   comparison={
                     report.output.spec.group_by !== "none" ||
@@ -287,12 +290,13 @@ export default function ReportWorkspace({
                   }
                   sources={sources}
                   checklist={checklist}
-                  open={(id, metric, turns) =>
+                  open={(id, metric, turns, saved) =>
                     open(
                       id,
                       report.spec?.filters?.dataset_id || "DEV",
                       metric,
                       turns,
+                      saved,
                     )
                   }
                 />

@@ -20,8 +20,14 @@ import type {
   DecisionRequest,
   UsageSummary,
   CustomMetricDefinition,
+  Observation,
 } from "./api-types";
 export * from "./api-types";
+export type SavedObservation = {
+  observation: Observation;
+  generatedAt: string;
+  checklistVersionId: string;
+};
 export class ApiError extends Error {
   constructor(
     public status: number,

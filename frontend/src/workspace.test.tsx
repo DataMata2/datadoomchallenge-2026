@@ -375,3 +375,63 @@ test("saving an overview persists the new report selection through a complete Ap
   await settle();
   assert.equal(select("Saved report").value, "new-saved-report");
 });
+
+test("saved report drilldown preserves copied judgment when the same evaluation is reviewed", async () => {
+  const originalRoute = route;
+  const saved = structuredClone(fixtures.report);
+  const observation = saved.output.observations[0];
+  observation.evaluation_id = fixtures.evaluation.id;
+  observation.revision = "saved-revision-before-review";
+  observation.final.criteria.find(
+    (c: any) => c.criterion_id === "dialogue",
+  ).rationale = "Copied report rationale before review";
+  const current = structuredClone(fixtures.evaluation);
+  current.final.criteria.find((c: any) => c.criterion_id === "dialogue").value =
+    0;
+  current.final.criteria.find(
+    (c: any) => c.criterion_id === "dialogue",
+  ).rationale = "Current reviewer rationale";
+  saved.stale = true;
+  route = (path, body) =>
+    path === `/api/reports/${saved.id}`
+      ? saved
+      : path.startsWith("/api/evaluations/")
+        ? current
+        : originalRoute(path, body);
+  localStorage.setItem("cqa-report", saved.id);
+  await act(async () => root.render(<App />));
+  await settle();
+  await act(async () => button("Assistant & reports").click());
+  await settle();
+  const tile = Array.from(container.querySelectorAll(".metric-tile")).find(
+    (b) => b.textContent?.includes("Dialogue"),
+  ) as HTMLButtonElement;
+  assert.ok(tile);
+  await act(async () => tile.click());
+  const evidence = container.querySelector(
+    "dialog .turn-link",
+  ) as HTMLButtonElement;
+  assert.ok(evidence);
+  await act(async () => evidence.click());
+  await settle();
+  const snapshot = container.querySelector(
+    "[aria-label='Saved report observation']",
+  );
+  assert.ok(snapshot);
+  assert.match(
+    snapshot.textContent || "",
+    /Copied report rationale before review/,
+  );
+  assert.match(snapshot.textContent || "", /saved-revision-before-review/);
+  assert.ok(snapshot.textContent?.includes(saved.output.generated_at));
+  assert.match(snapshot.textContent || "", new RegExp(fixtures.evaluation.id));
+  assert.match(
+    container.textContent || "",
+    /Current assessment differs from the saved report observation/,
+  );
+  assert.match(container.textContent || "", /Current reviewer rationale/);
+  assert.equal(
+    calls.some((c) => c.path.includes("/refresh") || c.path === "/api/runs"),
+    false,
+  );
+});

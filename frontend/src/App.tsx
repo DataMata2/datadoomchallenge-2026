@@ -9,6 +9,7 @@ import {
   type MetaResponse,
   type Report,
   type UsageSummary,
+  type SavedObservation,
 } from "./api";
 import Analysis from "./Analysis";
 import { calendarBounds } from "./domain";
@@ -48,6 +49,7 @@ export default function App() {
     dataset: string;
     metric?: string;
     turns?: number[];
+    saved?: SavedObservation;
   }>();
   const [reportId, setReportId] = useState<string>(
     () => localStorage.getItem("cqa-report") || "",
@@ -144,7 +146,8 @@ export default function App() {
     metric?: string,
     dataset = filters.dataset_id || "DEV",
     turns?: number[],
-  ) => setSelected({ id, metric, dataset, turns });
+    saved?: SavedObservation,
+  ) => setSelected({ id, metric, dataset, turns, saved });
   const savedReport = async () => {
     setError("");
     try {
@@ -506,8 +509,8 @@ export default function App() {
             select={setReportId}
             reloadLists={reloadLists}
             checklist={checklists.find((c) => c.id === "cqa-v1")}
-            open={(id, dataset, metric, turns) =>
-              open(id, metric, dataset, turns)
+            open={(id, dataset, metric, turns, saved) =>
+              open(id, metric, dataset, turns, saved)
             }
           />
         )}
