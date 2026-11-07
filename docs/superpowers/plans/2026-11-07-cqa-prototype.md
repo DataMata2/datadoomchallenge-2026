@@ -130,12 +130,15 @@ Canonical HTTP resources: `/api/conversations`, `/api/checklists`, `/api/runs`, 
 
 **Interfaces:** Consume documented `/api` shapes with Vite proxy to port 8000. Backend serves health/OpenAPI; frontend at 5173 in development. Startup uses one backend process and explicit local env location. Frontend API layer exports typed resource functions; teammate can adapt final UI to these.
 
-- [ ] Build overview with date/channel/language filters, key aggregates, charts and an evaluated conversation table. All filters drive real backend selections; present counts and assigned-date provenance.
-- [ ] Build conversation detail with source transcript, recording link/player, evidence jump/highlight, per-metric inspection control, raw/weighted/total explanation, checklist selection/evaluation progress, appeal submission and reviewer decision/history.
-- [ ] Build checklist editor that saves/applies a new version including criterion wording/weights/scales/N/A. Build assistant/report split view with visible filter chips, message history, report blocks/charts, source drilldown, new metric definition/progress/results, and persisted report selection.
-- [ ] Handle real loading/empty/error/partial states, unknown scores, pending jobs, and API failures. No fake success indicators or fabricated evaluations. UI is a coherent functional prototype; final visual system remains teammate-owned.
-- [ ] Provide setup/start/import/export commands and env example without credential values. Import helper reads an env-configured organizer URL or a user-specified local JSON; never logs signed URLs. Existing local DEV payload can seed the ignored database.
+- [x] Build overview with date/channel/language filters, key aggregates, charts and an evaluated conversation table. All filters drive real backend selections; present counts and assigned-date provenance.
+- [x] Build conversation detail with source transcript, recording link/player, evidence jump/highlight, per-metric inspection control, raw/weighted/total explanation, checklist selection/evaluation progress, appeal submission and reviewer decision/history.
+- [x] Build checklist editor that saves/applies a new version including criterion wording/weights/scales/N/A. Build assistant/report split view with visible filter chips, message history, report blocks/charts, source drilldown, new metric definition/progress/results, and persisted report selection.
+- [x] Handle real loading/empty/error/partial states, unknown scores, pending jobs, and API failures. No fake success indicators or fabricated evaluations. UI is a coherent functional prototype; final visual system remains teammate-owned.
+- [x] Provide setup/start/import/export commands and env example without credential values. Import helper reads an env-configured organizer URL or a user-specified local JSON; never logs signed URLs. Existing local DEV payload can seed the ignored database.
 - [ ] Run TypeScript check/build and backend suite once; perform browser QA of a representative complete workflow using available CUA/local preview guidance. Record real test/QA outcomes and any limits. Commit/report and provide a precise teammate integration handoff.
+
+
+**Checkpoint:** Code approved after fix round 1 at ce4db1b; parent verified 9 frontend tests, 6 CLI tests, build and formatting. Actual Vite-proxy analytics match independent references. The final browser checklist remains open because CUA fails before navigation; private-model checks remain pending authorization. Proceed to independent Task7 work without claiming these gates passed.
 
 ## Task 7: End-to-end verification, presentation-only local comparison, and delivery
 
