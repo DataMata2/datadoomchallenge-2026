@@ -293,3 +293,85 @@ test("draft reports ask for clarification; ready reports expose custom coverage 
   await settle();
   assert.match(container.textContent || "", /Source assessments have changed/);
 });
+
+async function saveOverviewSelection() {
+  const originalRoute = route;
+  let saved: Report | undefined;
+  route = (path, body) => {
+    if (path === "/api/reports" && body) {
+      saved = {
+        ...structuredClone(fixtures.report),
+        id: "new-saved-report",
+        title: body.title,
+        spec: body,
+        output: { ...structuredClone(fixtures.analysis), spec: body },
+      };
+      return saved;
+    }
+    if (path === "/api/reports")
+      return {
+        items: saved ? [saved, fixtures.report] : [fixtures.report],
+        total: saved ? 2 : 1,
+      };
+    if (path === "/api/reports/new-saved-report") return saved;
+    return originalRoute(path, body);
+  };
+  localStorage.setItem("cqa-report", "previous-report");
+  await act(async () => root.render(<App />));
+  await settle();
+  await act(async () => {
+    select("Compare by").value = "month_half";
+    select("Compare by").dispatchEvent(
+      new dom.window.Event("change", { bubbles: true }),
+    );
+  });
+  await settle();
+  await act(async () => button("Save selection as report").click());
+  await settle();
+  assert.ok(saved, "The overview selection was saved");
+  assert.equal(select("Saved report").value, "new-saved-report");
+  return saved;
+}
+
+test("saving and reopening an overview retains its displayed non-default comparison", async () => {
+  const saved = await saveOverviewSelection();
+  assert.equal(saved.spec?.group_by, "month_half");
+  assert.equal(
+    container.querySelectorAll(".bar-chart").length,
+    1,
+    "The saved report retains its comparison chart",
+  );
+  await act(async () => {
+    select("Saved report").value = fixtures.report.id;
+    select("Saved report").dispatchEvent(
+      new dom.window.Event("change", { bubbles: true }),
+    );
+  });
+  await settle();
+  await act(async () => {
+    select("Saved report").value = saved.id;
+    select("Saved report").dispatchEvent(
+      new dom.window.Event("change", { bubbles: true }),
+    );
+  });
+  await settle();
+  assert.equal(select("Saved report").value, saved.id);
+  assert.equal(saved.output?.spec.group_by, "month_half");
+  assert.equal(
+    container.querySelectorAll(".bar-chart").length,
+    1,
+    "Reopening the saved report restores its comparison",
+  );
+});
+
+test("saving an overview persists the new report selection through a complete App remount", async () => {
+  await saveOverviewSelection();
+  assert.equal(localStorage.getItem("cqa-report"), "new-saved-report");
+  await act(async () => root.unmount());
+  root = createRoot(container);
+  await act(async () => root.render(<App />));
+  await settle();
+  await act(async () => button("Assistant & reports").click());
+  await settle();
+  assert.equal(select("Saved report").value, "new-saved-report");
+});

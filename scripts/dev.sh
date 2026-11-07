@@ -28,13 +28,19 @@ for port in (8000, 5173):
 PY
 backend_pid=''
 frontend_pid=''
+cleanup_started=0
 cleanup() {
-  trap - EXIT INT TERM
+  if [[ "$cleanup_started" == 1 ]]; then return; fi
+  cleanup_started=1
+  # Finish teardown once; subsequent signals must not resume or interrupt it.
+  trap '' INT TERM
   [[ -z "$frontend_pid" ]] || kill "$frontend_pid" 2>/dev/null || true
   [[ -z "$backend_pid" ]] || kill "$backend_pid" 2>/dev/null || true
   wait 2>/dev/null || true
 }
-trap cleanup EXIT INT TERM
+trap cleanup EXIT
+trap 'exit 130' INT
+trap 'exit 143' TERM
 cd -- "$repo_dir"
 "$cqa_python" -m uvicorn cqa.main:app --app-dir "$repo_dir/backend/src" --host 127.0.0.1 --port 8000 &
 backend_pid=$!

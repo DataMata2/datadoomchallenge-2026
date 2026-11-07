@@ -52,6 +52,9 @@ export default function App() {
   const [reportId, setReportId] = useState<string>(
     () => localStorage.getItem("cqa-report") || "",
   );
+  useEffect(() => {
+    localStorage.setItem("cqa-report", reportId);
+  }, [reportId]);
   const reloadLists = async () => {
     const [c, r, u] = await Promise.all([
       api.checklists(),
@@ -147,6 +150,7 @@ export default function App() {
     try {
       const r = await api.saveReport({
         ...spec,
+        group_by: group,
         title: `Quality review · ${start || "all dates"}`,
       });
       await reloadLists();
@@ -499,10 +503,7 @@ export default function App() {
             reports={reports}
             sourceRevision={revision}
             selectedId={reportId}
-            select={(id) => {
-              setReportId(id);
-              localStorage.setItem("cqa-report", id);
-            }}
+            select={setReportId}
             reloadLists={reloadLists}
             checklist={checklists.find((c) => c.id === "cqa-v1")}
             open={(id, dataset, metric, turns) =>
