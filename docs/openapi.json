@@ -1,0 +1,1036 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "CQA API",
+    "description": "Local conversation quality analytics. Only implemented routes appear here; planned routes are documented in docs/api-contract.md.",
+    "version": "0.1.0"
+  },
+  "paths": {
+    "/api/health": {
+      "get": {
+        "summary": "Health",
+        "operationId": "health_api_health_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HealthResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/meta": {
+      "get": {
+        "summary": "Meta",
+        "operationId": "meta_api_meta_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MetaResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/datasets/import": {
+      "post": {
+        "summary": "Dataset Import",
+        "operationId": "dataset_import_api_datasets_import_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DatasetImportRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DatasetImportResult"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/conversations": {
+      "get": {
+        "summary": "Conversations",
+        "operationId": "conversations_api_conversations_get",
+        "parameters": [
+          {
+            "name": "dataset_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "DEV",
+              "title": "Dataset Id"
+            }
+          },
+          {
+            "name": "channel",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "agent chat",
+                    "voice call"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Channel"
+            }
+          },
+          {
+            "name": "language",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "RU",
+                    "KZ",
+                    "EN"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Language"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "default": 1,
+              "title": "Page"
+            }
+          },
+          {
+            "name": "page_size",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 500,
+              "minimum": 1,
+              "default": 50,
+              "title": "Page Size"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConversationPage"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/conversations/{id}": {
+      "get": {
+        "summary": "Conversation",
+        "operationId": "conversation_api_conversations__id__get",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Id"
+            }
+          },
+          {
+            "name": "dataset_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "DEV",
+              "title": "Dataset Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConversationResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/checklists": {
+      "get": {
+        "summary": "Checklists",
+        "operationId": "checklists_api_checklists_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChecklistPage"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/checklists/{id}": {
+      "get": {
+        "summary": "Checklist",
+        "operationId": "checklist_api_checklists__id__get",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Checklist"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "Checklist": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Name"
+          },
+          "parent_version_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Parent Version Id"
+          },
+          "instructions": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Instructions"
+          },
+          "criteria": {
+            "items": {
+              "$ref": "#/components/schemas/CriterionDefinition"
+            },
+            "type": "array",
+            "title": "Criteria"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "parent_version_id",
+          "instructions",
+          "criteria"
+        ],
+        "title": "Checklist"
+      },
+      "ChecklistPage": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/Checklist"
+            },
+            "type": "array",
+            "title": "Items"
+          },
+          "total": {
+            "type": "integer",
+            "title": "Total"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "items",
+          "total"
+        ],
+        "title": "ChecklistPage"
+      },
+      "ConversationPage": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/ConversationResponse"
+            },
+            "type": "array",
+            "title": "Items"
+          },
+          "total": {
+            "type": "integer",
+            "title": "Total"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "items",
+          "total"
+        ],
+        "title": "ConversationPage"
+      },
+      "ConversationResponse": {
+        "properties": {
+          "conversation_id": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Conversation Id"
+          },
+          "channel": {
+            "type": "string",
+            "enum": [
+              "agent chat",
+              "voice call"
+            ],
+            "title": "Channel"
+          },
+          "language": {
+            "type": "string",
+            "enum": [
+              "RU",
+              "KZ",
+              "EN"
+            ],
+            "title": "Language"
+          },
+          "transcript": {
+            "items": {
+              "$ref": "#/components/schemas/SourceTurn"
+            },
+            "type": "array",
+            "minItems": 1,
+            "title": "Transcript"
+          },
+          "audio_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Audio Url"
+          },
+          "dataset_id": {
+            "type": "string",
+            "title": "Dataset Id"
+          },
+          "observed_span": {
+            "$ref": "#/components/schemas/ObservedSpan"
+          },
+          "demo_started_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Demo Started At"
+          },
+          "scheduling": {
+            "$ref": "#/components/schemas/Scheduling"
+          },
+          "evaluation_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Evaluation Id"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "conversation_id",
+          "channel",
+          "language",
+          "transcript",
+          "audio_url",
+          "dataset_id",
+          "observed_span",
+          "demo_started_at",
+          "scheduling",
+          "evaluation_id"
+        ],
+        "title": "ConversationResponse"
+      },
+      "CriterionDefinition": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Id"
+          },
+          "title": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Title"
+          },
+          "description": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Description"
+          },
+          "answer_type": {
+            "type": "string",
+            "enum": [
+              "boolean",
+              "scale"
+            ],
+            "title": "Answer Type"
+          },
+          "allowed_values": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "number"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Allowed Values"
+          },
+          "scale_meanings": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "type": "object",
+            "title": "Scale Meanings"
+          },
+          "weight": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "number"
+              }
+            ],
+            "title": "Weight"
+          },
+          "allow_na": {
+            "type": "boolean",
+            "title": "Allow Na"
+          },
+          "na_condition": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Na Condition"
+          },
+          "critical": {
+            "type": "boolean",
+            "title": "Critical"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "title",
+          "description",
+          "answer_type",
+          "allowed_values",
+          "scale_meanings",
+          "weight",
+          "allow_na",
+          "na_condition",
+          "critical"
+        ],
+        "title": "CriterionDefinition"
+      },
+      "DatasetImportRequest": {
+        "properties": {
+          "group_id": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Group Id"
+          },
+          "payload": {
+            "$ref": "#/components/schemas/SourceEnvelope"
+          },
+          "assign_demo_dates": {
+            "type": "boolean",
+            "title": "Assign Demo Dates",
+            "default": true
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "group_id",
+          "payload"
+        ],
+        "title": "DatasetImportRequest"
+      },
+      "DatasetImportResult": {
+        "properties": {
+          "dataset_id": {
+            "type": "string",
+            "title": "Dataset Id"
+          },
+          "total_records": {
+            "type": "integer",
+            "title": "Total Records"
+          },
+          "assign_demo_dates": {
+            "type": "boolean",
+            "title": "Assign Demo Dates"
+          },
+          "scheduling_seed": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Scheduling Seed"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "dataset_id",
+          "total_records",
+          "assign_demo_dates",
+          "scheduling_seed"
+        ],
+        "title": "DatasetImportResult"
+      },
+      "DatasetSummary": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "total_records": {
+            "type": "integer",
+            "title": "Total Records"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "total_records"
+        ],
+        "title": "DatasetSummary"
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "type": "array",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "title": "HTTPValidationError"
+      },
+      "HealthResponse": {
+        "properties": {
+          "status": {
+            "type": "string",
+            "const": "ok",
+            "title": "Status"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "status"
+        ],
+        "title": "HealthResponse"
+      },
+      "MetaResponse": {
+        "properties": {
+          "reporting_timezone": {
+            "type": "string",
+            "title": "Reporting Timezone"
+          },
+          "channels": {
+            "items": {
+              "type": "string",
+              "enum": [
+                "agent chat",
+                "voice call"
+              ]
+            },
+            "type": "array",
+            "title": "Channels"
+          },
+          "languages": {
+            "items": {
+              "type": "string",
+              "enum": [
+                "RU",
+                "KZ",
+                "EN"
+              ]
+            },
+            "type": "array",
+            "title": "Languages"
+          },
+          "default_checklist_version_id": {
+            "type": "string",
+            "title": "Default Checklist Version Id"
+          },
+          "datasets": {
+            "items": {
+              "$ref": "#/components/schemas/DatasetSummary"
+            },
+            "type": "array",
+            "title": "Datasets"
+          },
+          "scheduling": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Scheduling"
+          },
+          "holiday_calendar": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Holiday Calendar"
+          },
+          "implemented_features": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Implemented Features"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "reporting_timezone",
+          "channels",
+          "languages",
+          "default_checklist_version_id",
+          "datasets",
+          "scheduling",
+          "holiday_calendar",
+          "implemented_features"
+        ],
+        "title": "MetaResponse"
+      },
+      "ObservedSpan": {
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "elapsed",
+              "calendar"
+            ],
+            "title": "Kind"
+          },
+          "started_at": {
+            "type": "string",
+            "title": "Started At"
+          },
+          "ended_at": {
+            "type": "string",
+            "title": "Ended At"
+          },
+          "duration_seconds": {
+            "type": "number",
+            "title": "Duration Seconds"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "kind",
+          "started_at",
+          "ended_at",
+          "duration_seconds"
+        ],
+        "title": "ObservedSpan"
+      },
+      "Scheduling": {
+        "properties": {
+          "mode": {
+            "type": "string",
+            "enum": [
+              "assigned_demo",
+              "source_only"
+            ],
+            "title": "Mode"
+          },
+          "seed": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Seed"
+          },
+          "algorithm": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Algorithm"
+          },
+          "timezone": {
+            "type": "string",
+            "title": "Timezone"
+          },
+          "period": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Period"
+          },
+          "independent_of_scores": {
+            "type": "boolean",
+            "title": "Independent Of Scores"
+          },
+          "interpretation": {
+            "type": "string",
+            "title": "Interpretation"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "mode",
+          "seed",
+          "algorithm",
+          "timezone",
+          "period",
+          "independent_of_scores",
+          "interpretation"
+        ],
+        "title": "Scheduling"
+      },
+      "SourceConversation": {
+        "properties": {
+          "conversation_id": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Conversation Id"
+          },
+          "channel": {
+            "type": "string",
+            "enum": [
+              "agent chat",
+              "voice call"
+            ],
+            "title": "Channel"
+          },
+          "language": {
+            "type": "string",
+            "enum": [
+              "RU",
+              "KZ",
+              "EN"
+            ],
+            "title": "Language"
+          },
+          "transcript": {
+            "items": {
+              "$ref": "#/components/schemas/SourceTurn"
+            },
+            "type": "array",
+            "minItems": 1,
+            "title": "Transcript"
+          },
+          "audio_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Audio Url"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "conversation_id",
+          "channel",
+          "language",
+          "transcript",
+          "audio_url"
+        ],
+        "title": "SourceConversation"
+      },
+      "SourceData": {
+        "properties": {
+          "dataset_group_id": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Dataset Group Id"
+          },
+          "total_records": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Total Records"
+          },
+          "records": {
+            "items": {
+              "$ref": "#/components/schemas/SourceConversation"
+            },
+            "type": "array",
+            "title": "Records"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "dataset_group_id",
+          "total_records",
+          "records"
+        ],
+        "title": "SourceData"
+      },
+      "SourceEnvelope": {
+        "properties": {
+          "error": {
+            "type": "string",
+            "title": "Error"
+          },
+          "isSuccess": {
+            "type": "boolean",
+            "title": "Issuccess"
+          },
+          "data": {
+            "$ref": "#/components/schemas/SourceData"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "error",
+          "isSuccess",
+          "data"
+        ],
+        "title": "SourceEnvelope"
+      },
+      "SourceTurn": {
+        "properties": {
+          "timestamp": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Timestamp"
+          },
+          "speaker": {
+            "type": "string",
+            "enum": [
+              "client",
+              "operator",
+              "bot",
+              "system"
+            ],
+            "title": "Speaker"
+          },
+          "text": {
+            "type": "string",
+            "title": "Text"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "timestamp",
+          "speaker",
+          "text"
+        ],
+        "title": "SourceTurn"
+      },
+      "ValidationError": {
+        "properties": {
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Location"
+          },
+          "msg": {
+            "type": "string",
+            "title": "Message"
+          },
+          "type": {
+            "type": "string",
+            "title": "Error Type"
+          },
+          "input": {
+            "title": "Input"
+          },
+          "ctx": {
+            "type": "object",
+            "title": "Context"
+          }
+        },
+        "type": "object",
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError"
+      }
+    }
+  }
+}
