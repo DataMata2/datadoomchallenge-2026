@@ -427,7 +427,7 @@ test("saved report drilldown preserves copied judgment when the same evaluation 
   assert.match(snapshot.textContent || "", new RegExp(fixtures.evaluation.id));
   assert.match(
     container.textContent || "",
-    /Current assessment differs from the saved report observation/,
+    /Current values differ from saved report values/,
   );
   assert.match(container.textContent || "", /Current reviewer rationale/);
   assert.equal(

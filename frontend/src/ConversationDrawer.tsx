@@ -322,8 +322,8 @@ export default function ConversationDrawer({
                 {saved && (
                   <h3>
                     {differs
-                      ? "Current assessment differs from the saved report observation"
-                      : "Current assessment matches the saved report observation"}
+                      ? "Current values differ from saved report values"
+                      : "Current values match saved report values"}
                   </h3>
                 )}
                 <div className="evaluation-controls">

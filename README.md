@@ -74,13 +74,27 @@ python3 scripts/export_results.py --dataset DEV \
 
 For the real ten-record control dataset, use its actual dataset ID and `results/prod/results.json`. A synthetic control fixture is not a submission. Export does not evaluate or refresh anything; only write an official result after the source dataset is available and assessed. Publication and public repository visibility remain separate user decisions.
 
+## Demonstration and control handoff
+
+See [the reproducible demo and control workflow](docs/demo.md) for prepared source/evaluation/report IDs, ready model prompts, read-only HTTP/export checks and the exact import → evaluate/resume → validate/export sequence for the real ten-record control source when released. [The presentation comparison](docs/presentation-model-comparison.md) records the initial import failure, verified packaging correction, five local outcomes and their limits; it does not claim gold-label accuracy or a controlled speed advantage.
+
+Current verification limits: private DEV model calls remain pending authorization and CUA visual QA is unavailable. Two wholly fictional assistant actions and one fictional custom judgment passed native-provider acceptance after a compact transport fix; the earlier two rejected attempts remain in billing history. Retained DEV read/analysis/export works. These fictional checks do not establish a complete live DEV model workflow.
+
+## Troubleshooting
+
+- Occupied port/duplicate-owner refusal: reuse the known owner or stop it gracefully and wait for its children. Do not kill an unidentified process or start a second database owner.
+- Missing prepared data: check `CQA_DATABASE_PATH` is the absolute canonical active runtime, rather than creating another relative runtime.
+- Polling interrupted: `scripts/evaluate_results.py --resume` uses its saved run ID. Inspect an unknown dispatch outcome before choosing another state file; the helper does not automatically resend.
+- Failed model action: inspect canonical `/api/usage` and run/item errors before any explicit retry. Preserve unknown-outcome reservations and all paid attempts. A provider HTTP 400 requires contract investigation.
+- Export validation failure: use the exact dataset/count/official team name, complete its unchanged cqa-v1 baseline, then explicitly export again. Independent custom metrics and other checklist versions are excluded from baseline export.
+
 ## Checks
 
 ```bash
 flock runtime/model-jobs.lock npm --prefix frontend test
 flock runtime/model-jobs.lock npm --prefix frontend run build
 npm --prefix frontend run format:check
-python3 -m unittest discover -s scripts -p 'test_*.py'
+backend/.venv/bin/python -m unittest discover -s scripts -p 'test_*.py'
 CQA_DATABASE_PATH="$PWD/runtime/test-checks.sqlite3" \
   flock runtime/model-jobs.lock backend/.venv/bin/python -m pytest -q backend/tests
 ```
