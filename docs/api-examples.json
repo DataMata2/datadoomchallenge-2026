@@ -484,7 +484,9 @@
         "baseline_export",
         "conversation_search",
         "analytics",
-        "saved_reports"
+        "saved_reports",
+        "assistant",
+        "custom_metrics"
       ]
     },
     "run": {
@@ -1804,6 +1806,7 @@
     "report": {
       "id": "fictional-report-001",
       "title": "Fictional quality review",
+      "status": "ready",
       "spec": {
         "filters": {
           "channel": null,
@@ -2250,12 +2253,23 @@
           }
         }
       ]
-    }
-  },
-  "planned_not_implemented": {
-    "assistant": {
-      "message": "Fictional report created.",
+    },
+    "assistant_request": {
+      "content": "Show only English while retaining the selected period.",
+      "report_id": "fictional-report-001"
+    },
+    "assistant_response": {
+      "status": "ok",
       "report_id": "fictional-report-001",
+      "message": {
+        "id": "fictional-assistant-message",
+        "role": "assistant",
+        "content": "Analysis updated. Selected 1 conversation; mean final quality score 85.38% (n=1). Fictional example.",
+        "created_at": "2026-11-07T19:22:29.842399+00:00",
+        "usage_attempt_ids": [
+          "fictional-assistant-attempt"
+        ]
+      },
       "spec": {
         "filters": {
           "channel": null,
@@ -2669,10 +2683,189 @@
             ]
           }
         ],
-        "generated_at": "2026-11-07T19:22:29.841640+00:00"
+        "generated_at": "2026-11-07T19:22:29.842399+00:00"
       },
-      "custom_metric_run_id": null,
-      "clarification": null
+      "metric_run_id": null,
+      "action": {
+        "operation": "update_analysis",
+        "explanation": "Restrict the saved selection to English while retaining its period.",
+        "patch": {
+          "target": {
+            "filters": {
+              "channel": null,
+              "language": "EN",
+              "start_at": null,
+              "end_at": null,
+              "hours": null,
+              "weekdays": null,
+              "holiday": null,
+              "min_score": null,
+              "max_score": null,
+              "critical": null,
+              "dataset_id": "FICTIONAL"
+            },
+            "group_by": "none",
+            "cohorts": null,
+            "metric_ids": [
+              "final_score",
+              "dialogue",
+              "critical"
+            ],
+            "title": "Fictional quality review"
+          },
+          "fields": [
+            "filters.language"
+          ]
+        },
+        "definition": null,
+        "metric_id": null,
+        "question": null
+      },
+      "error": null
+    },
+    "assistant_clarification": {
+      "status": "clarification",
+      "report_id": "fictional-draft-report",
+      "message": {
+        "id": "fictional-clarification-message",
+        "role": "assistant",
+        "content": "Which period and channel should be compared?",
+        "created_at": "2026-11-07T19:22:29.842399+00:00",
+        "usage_attempt_ids": [
+          "fictional-clarification-attempt"
+        ]
+      },
+      "spec": null,
+      "output": null,
+      "metric_run_id": null,
+      "action": {
+        "operation": "clarify",
+        "explanation": "The comparison scope is missing.",
+        "patch": null,
+        "definition": null,
+        "metric_id": null,
+        "question": "Which period and channel should be compared?"
+      },
+      "error": null
+    },
+    "custom_metric_request": {
+      "id": "operator_led_next_contact",
+      "title": "Operator-led next contact",
+      "description": "True if the operator or team explicitly commits to initiating next contact; false if the client is explicitly told to initiate. Same-call holds do not count. False is descriptive, not poor quality.",
+      "answer_type": "boolean",
+      "allowed_values": [
+        false,
+        true
+      ],
+      "allow_na": true,
+      "na_condition": "No future-contact owner is stated or ownership is unintelligible."
+    },
+    "custom_metric_run": {
+      "id": "fictional-custom-run-001",
+      "kind": "custom_metric",
+      "dataset_id": "FICTIONAL",
+      "conversation_ids": [
+        "fictional-001"
+      ],
+      "checklist_version_id": null,
+      "status": "completed",
+      "total": 1,
+      "completed": 1,
+      "failed": 0,
+      "items": [
+        {
+          "conversation_id": "fictional-001",
+          "status": "completed",
+          "evaluation_id": null,
+          "assessment_id": "fictional-custom-assessment-001",
+          "error": null
+        }
+      ],
+      "created_at": "2026-11-07T19:22:29.842399+00:00",
+      "started_at": "2026-11-07T19:22:29.842399+00:00",
+      "finished_at": "2026-11-07T19:22:29.842399+00:00",
+      "error": null,
+      "model": {
+        "mode": "external_api",
+        "name": "fictional-model"
+      },
+      "checklist_snapshot": null,
+      "report_id": "fictional-report-001",
+      "metric_snapshot": {
+        "id": "operator_led_next_contact",
+        "title": "Operator-led next contact",
+        "description": "True if the operator or team explicitly commits to initiating next contact; false if the client is explicitly told to initiate. Same-call holds do not count. False is descriptive, not poor quality.",
+        "answer_type": "boolean",
+        "allowed_values": [
+          false,
+          true
+        ],
+        "allow_na": true,
+        "na_condition": "No future-contact owner is stated or ownership is unintelligible."
+      },
+      "selection_spec": {
+        "filters": {
+          "channel": null,
+          "language": "EN",
+          "start_at": null,
+          "end_at": null,
+          "hours": null,
+          "weekdays": null,
+          "holiday": null,
+          "min_score": null,
+          "max_score": null,
+          "critical": null,
+          "dataset_id": "FICTIONAL"
+        },
+        "group_by": "none",
+        "cohorts": null,
+        "metric_ids": [
+          "final_score",
+          "dialogue",
+          "critical"
+        ],
+        "title": "Fictional quality review"
+      },
+      "selection_generated_at": "2026-11-07T19:22:29.842399+00:00"
+    },
+    "custom_assessment": {
+      "id": "fictional-custom-assessment-001",
+      "dataset_id": "FICTIONAL",
+      "conversation_id": "fictional-001",
+      "run_id": "fictional-custom-run-001",
+      "report_id": "fictional-report-001",
+      "metric_id": "operator_led_next_contact",
+      "metric_snapshot": {
+        "id": "operator_led_next_contact",
+        "title": "Operator-led next contact",
+        "description": "True if the operator or team explicitly commits to initiating next contact; false if the client is explicitly told to initiate. Same-call holds do not count. False is descriptive, not poor quality.",
+        "answer_type": "boolean",
+        "allowed_values": [
+          false,
+          true
+        ],
+        "allow_na": true,
+        "na_condition": "No future-contact owner is stated or ownership is unintelligible."
+      },
+      "status": "ok",
+      "judgment": {
+        "value": false,
+        "rationale": "Fictional example: the client is explicitly told to initiate next contact. This is descriptive, not a quality grade.",
+        "evidence_turns": [
+          8
+        ]
+      },
+      "model": {
+        "mode": "external_api",
+        "name": "fictional-model"
+      },
+      "prompt_version": "cqa-custom-metric-v1",
+      "usage_attempt_ids": [
+        "fictional-custom-attempt"
+      ],
+      "created_at": "2026-11-07T19:22:29.842399+00:00",
+      "error": null,
+      "source_url": "/api/conversations/fictional-001?dataset_id=FICTIONAL"
     }
   }
 }

@@ -75,3 +75,23 @@ class Store:
                 if existing is not None and existing[0] != value:
                     raise ValueError("Import conflicts with an immutable stored source record")
                 connection.execute("INSERT OR IGNORE INTO documents VALUES (?, ?, ?)", (collection, id, value))
+
+    def transaction(self, fn):
+        """Atomically read/write several documents. The callback must not do network I/O."""
+        with self._connection(write=True) as connection:
+            return fn(DocumentTransaction(connection))
+
+
+class DocumentTransaction:
+    def __init__(self, connection):
+        self.connection = connection
+
+    def get(self, collection, id):
+        row = self.connection.execute("SELECT value FROM documents WHERE collection=? AND id=?", (collection, id)).fetchone()
+        return json.loads(row[0]) if row else None
+
+    def put(self, collection, id, value):
+        self.connection.execute("INSERT INTO documents VALUES (?, ?, ?) ON CONFLICT(collection,id) DO UPDATE SET value=excluded.value", (collection, id, _encode(value)))
+
+    def insert(self, collection, id, value):
+        self.connection.execute("INSERT INTO documents VALUES (?, ?, ?)", (collection, id, _encode(value)))

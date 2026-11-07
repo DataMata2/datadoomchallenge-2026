@@ -86,10 +86,12 @@ def test_report_api_persistence_missing_and_explicit_refresh(analytics_data):
     assert restarted.get('/api/reports').json() == {'items': [report], 'total': 1}
     assert restarted.get('/api/reports/' + report['id']).json() == report
     # Refresh preserves separate future message/metric documents and coverage.
-    stored.update(messages=[{'id': 'message', 'role': 'assistant', 'content': 'Synthetic', 'created_at': report['created_at']}], custom_metrics=[{'definition': {'id': 'synthetic'}, 'conversation_ids': ['one']}])
+    stored.update(messages=[{'id': 'message', 'role': 'assistant', 'content': 'Synthetic', 'created_at': report['created_at']}], custom_metrics=[{'definition': {'id': 'synthetic', 'title': 'Synthetic', 'description': 'Synthetic observed property.', 'answer_type': 'boolean', 'allowed_values': [False, True], 'allow_na': False, 'na_condition': None}, 'run_ids': []}])
     store.put('reports', report['id'], stored)
     refresh = restarted.post('/api/reports/' + report['id'] + '/refresh').json()
-    assert refresh['messages'] == stored['messages'] and refresh['custom_metrics'] == stored['custom_metrics']
+    assert refresh['messages'][0]['content'] == stored['messages'][0]['content']
+    assert store.get('reports', report['id'])['custom_metrics'] == stored['custom_metrics']
+    assert refresh['custom_metrics'][0]['aggregate']['uncovered_count'] == 1
 
 
 def test_confirmed_review_changes_revision_even_when_score_is_unchanged(analytics_data):

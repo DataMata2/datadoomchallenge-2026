@@ -23,6 +23,8 @@ def _counts(run):
 class JobManager:
     def __init__(self, store: Store, evaluator):
         self.store, self.evaluator = store, evaluator
+        from .custom_metrics import MetricEvaluator
+        self.handlers = {"evaluation": evaluator, "custom_metric": MetricEvaluator(store, evaluator.client)}
         self._pool = ThreadPoolExecutor(max_workers=2, thread_name_prefix="cqa-eval")
         self._threads: dict[str, threading.Thread] = {}
         self._guard = threading.Lock()
@@ -37,20 +39,22 @@ class JobManager:
                 self._started = True
 
     def _recover(self):
-        evaluations = self.store.list("evaluations")
+        results = {"evaluation": self.store.list("evaluations"), "custom_metric": self.store.list("custom_assessments")}
         recovered = set()
         for run in self.store.list("runs"):
             if run["status"] not in ACTIVE and not (run["status"] == "cancelled" and run["finished_at"] is None):
                 continue
             recovered.add(run["id"])
             def interrupt(current):
+                kind = current["kind"]
+                result_field = "assessment_id" if kind == "custom_metric" else "evaluation_id"
                 for item in current["items"]:
                     if item["status"] in ACTIVE:
-                        saved = [e for e in evaluations if e["run_id"] == current["id"] and e["conversation_id"] == item["conversation_id"]]
+                        saved = [e for e in results[kind] if e["run_id"] == current["id"] and e["conversation_id"] == item["conversation_id"]]
                         if saved:
                             saved.sort(key=lambda e: (e["created_at"], e["id"]))
                             result = saved[-1]
-                            item.update(status="completed" if result["status"] == "ok" else "failed", evaluation_id=result["id"], error=result["error"])
+                            item.update(status="completed" if result["status"] == "ok" else "failed", error=result["error"], **{result_field: result["id"]})
                         else:
                             item.update(status="interrupted", error="Backend process stopped; no automatic retry")
                 if current["status"] != "cancelled":
@@ -61,13 +65,16 @@ class JobManager:
         budget = getattr(self.evaluator.client, "budget", None)
         if budget:
             for attempt in budget.summary()["attempts"]:
-                if attempt["status"] == "reserved" and attempt["run_id"] in recovered:
+                if attempt["status"] == "reserved" and (attempt["run_id"] in recovered or (attempt["run_id"] or "").startswith("assistant:")):
                     budget.finish(attempt["id"], status="unknown", error="Backend stopped during request; reservation retained")
 
-    def start(self, dataset_id: str, conversation_ids: list[str], checklist_version_id: str, *, background: bool = True) -> dict:
+    def ensure_available(self):
         if self._closed:
             raise ValueError("Job manager is closed")
         self.startup()
+
+    def start(self, dataset_id: str, conversation_ids: list[str], checklist_version_id: str, *, background: bool = True) -> dict:
+        self.ensure_available()
         if not conversation_ids or len(set(conversation_ids)) != len(conversation_ids):
             raise ValueError("Select a nonempty list of unique conversation IDs")
         checklist = self.store.get("checklists", checklist_version_id)
@@ -155,18 +162,21 @@ class JobManager:
         if not claimed:
             return
         conversation = self.store.get("conversations", conversation_key(run["dataset_id"], conversation_id))
+        handler = self.handlers[run["kind"]]
+        snapshot = run["metric_snapshot"] if run["kind"] == "custom_metric" else run["checklist_snapshot"]
+        result_field = "assessment_id" if run["kind"] == "custom_metric" else "evaluation_id"
         try:
             with provider_context(run_id, lambda: self.get(run_id)["status"] == "cancelled"):
-                result = self.evaluator.evaluate(conversation, run["checklist_snapshot"], run_id)
+                result = handler.evaluate(conversation, snapshot, run_id)
             state, evaluation_id, error = "completed" if result["status"] == "ok" else "failed", result["id"], result["error"]
         except CancelledBeforeSend:
             state, evaluation_id, error = "cancelled", None, "Cancelled before provider send"
         except Exception:
-            result = self.evaluator.failure(conversation, run["checklist_snapshot"], run_id, "Evaluation worker failed; explicitly retry after review")
+            result = handler.failure(conversation, snapshot, run_id, "Assessment worker failed; explicitly retry after review")
             state, evaluation_id, error = "failed", result["id"], result["error"]
         def finish(current):
             item = next(item for item in current["items"] if item["conversation_id"] == conversation_id)
-            item.update(status=state, evaluation_id=evaluation_id, error=error)
+            item.update(status=state, error=error, **{result_field: evaluation_id})
             return _counts(current)
         self.store.update("runs", run_id, finish)
 

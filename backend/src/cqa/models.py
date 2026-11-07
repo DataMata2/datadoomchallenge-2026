@@ -292,6 +292,52 @@ class ModelIdentity(StrictModel):
     name: StrictStr
 
 
+class CustomMetricDefinition(StrictModel):
+    id: Annotated[StrictStr, Field(pattern=r"^[a-z][a-z0-9_-]{0,63}$")]
+    title: NonemptyString
+    description: NonemptyString
+    answer_type: Literal["boolean", "scale"]
+    allowed_values: Annotated[list[StrictBool | StrictInt | Annotated[StrictFloat, Field(allow_inf_nan=False)]], Field(min_length=1, max_length=64)]
+    allow_na: StrictBool
+    na_condition: StrictStr | None
+
+    @field_validator("title", "description")
+    @classmethod
+    def nonblank(cls, value):
+        if not value.strip():
+            raise ValueError("Metric text must contain non-whitespace text")
+        return value
+
+    @field_validator("allowed_values", mode="before")
+    @classmethod
+    def finite_domain(cls, values):
+        if isinstance(values, list):
+            for value in values:
+                if type(value) in (int, float):
+                    try:
+                        finite = isfinite(value)
+                    except OverflowError:
+                        finite = False
+                    if not finite:
+                        raise ValueError("Metric values must be finite representable numbers")
+        return values
+
+    @model_validator(mode="after")
+    def valid_domain(self):
+        values = self.allowed_values
+        if self.answer_type == "boolean":
+            if len(values) != 2 or any(type(v) is not bool for v in values) or set(values) != {False, True}:
+                raise ValueError("Boolean metrics require false and true exactly once")
+        elif any(type(v) not in (int, float) or not isfinite(v) or v < 0 for v in values) or len(set(values)) != len(values):
+            raise ValueError("Numeric metrics require unique finite nonnegative discrete values")
+        if self.allow_na:
+            if not self.na_condition or not self.na_condition.strip():
+                raise ValueError("N/A requires an explicit nonempty condition")
+        elif self.na_condition is not None:
+            raise ValueError("na_condition must be null when N/A is disabled")
+        return self
+
+
 RunStatus = Literal["queued", "running", "completed", "failed", "interrupted", "cancelled"]
 
 
@@ -305,6 +351,7 @@ class RunItem(StrictModel):
     conversation_id: StrictStr
     status: RunStatus
     evaluation_id: StrictStr | None
+    assessment_id: StrictStr | None = None
     error: StrictStr | None
 
 
@@ -324,7 +371,22 @@ class Run(StrictModel):
     finished_at: StrictStr | None
     error: StrictStr | None
     model: ModelIdentity
-    checklist_snapshot: Checklist
+    checklist_snapshot: Checklist | None
+    report_id: StrictStr | None = None
+    metric_snapshot: CustomMetricDefinition | None = None
+    selection_spec: dict | None = None
+    selection_generated_at: StrictStr | None = None
+
+    @model_validator(mode="after")
+    def valid_kind(self):
+        if self.kind == "custom_metric":
+            if self.checklist_snapshot is not None or self.checklist_version_id is not None or self.metric_snapshot is None or self.report_id is None or self.selection_spec is None or self.selection_generated_at is None:
+                raise ValueError("Custom runs require a report, metric and saved selection; checklist fields must be null")
+            if any(item.evaluation_id is not None for item in self.items):
+                raise ValueError("Custom runs use assessment IDs")
+        elif self.checklist_snapshot is None or self.checklist_version_id is None or any(item.assessment_id is not None for item in self.items):
+            raise ValueError("Evaluation runs require a checklist and evaluation IDs")
+        return self
 
 
 class Evaluation(StrictModel):

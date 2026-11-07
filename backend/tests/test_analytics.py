@@ -111,7 +111,7 @@ def test_overlapping_cohorts_keep_unique_root_selection(analytics_data):
     {'cohorts': []}, {'cohorts': [{'key': 'a', 'label': 'A', 'filters': {}}] * 2},
     {'cohorts': [{'key': 'a', 'label': 'A', 'filters': {}}], 'group_by': 'daypart'},
     {'cohorts': [{'key': 'a', 'label': 'A', 'filters': {'dataset_id': 'OTHER'}}]},
-    {'cohorts': [{'key': str(i), 'label': 'A', 'filters': {}} for i in range(5)]}, {'title': '   '},
+    {'cohorts': [{'key': 'cohort' + str(i), 'label': 'A', 'filters': {}} for i in range(5)]}, {'title': '   '},
 ])
 def test_analysis_allowlist_and_cohort_constraints(patch):
     with pytest.raises(ValidationError):

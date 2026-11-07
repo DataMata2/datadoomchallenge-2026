@@ -29,6 +29,10 @@ from .exports import build_baseline_export
 from .analytics import analyze, filtering_options, scheduling_summary, select_conversations, CALENDAR
 from .analytics_models import AnalysisOutput, AnalysisSpec, FilterSpec, Report, ReportPage
 from .reports import Reports
+from .assistant import Assistant, AssistantRequest, AssistantResponse, MessageRequest
+from .custom_metrics import CustomMetrics, MetricConflict
+from .metric_models import CustomAssessment
+from .models import CustomMetricDefinition
 
 
 def create_app(settings: Settings | None = None, *, model_client=None) -> FastAPI:
@@ -41,6 +45,8 @@ def create_app(settings: Settings | None = None, *, model_client=None) -> FastAP
     jobs = JobManager(store, evaluator)
     workflows = Workflows(store)
     reports = Reports(store)
+    metrics = CustomMetrics(store, jobs)
+    assistant = Assistant(store, reports, metrics, model_client)
 
     @asynccontextmanager
     async def lifespan(_app):
@@ -50,7 +56,7 @@ def create_app(settings: Settings | None = None, *, model_client=None) -> FastAP
         finally:
             await asyncio.to_thread(jobs.close)
 
-    app = FastAPI(lifespan=lifespan, title="CQA API", version="0.1.0", description="Local conversation quality analytics. Only implemented routes appear here; planned routes are documented in docs/api-contract.md.")
+    app = FastAPI(lifespan=lifespan, title="CQA API", version="0.1.0", description="Local conversation quality analytics with deterministic saved reports, assistant actions and independent custom metrics.")
     app.state.store = store
     app.state.settings = settings
     app.state.budget = budget
@@ -59,6 +65,8 @@ def create_app(settings: Settings | None = None, *, model_client=None) -> FastAP
     app.state.jobs = jobs
     app.state.workflows = workflows
     app.state.reports = reports
+    app.state.metrics = metrics
+    app.state.assistant = assistant
     app.add_middleware(CORSMiddleware, allow_origins=list(settings.cors_origins), allow_methods=["GET", "POST"], allow_headers=["Content-Type"])
 
     @app.exception_handler(RequestValidationError)
@@ -81,7 +89,7 @@ def create_app(settings: Settings | None = None, *, model_client=None) -> FastAP
                 "datasets": [{"id": id, "total_records": sum(row["dataset_id"] == id for row in rows)} for id in datasets],
                 "scheduling": scheduling, "available_periods": scheduling["periods"],
                 "filtering_options": filtering_options(), "holiday_calendar": CALENDAR,
-                "implemented_features": ["dataset_import", "conversation_read", "checklist_read", "evaluation_runs", "run_cancellation", "usage_accounting", "checklist_versions", "appeals", "baseline_export", "conversation_search", "analytics", "saved_reports"]}
+                "implemented_features": ["dataset_import", "conversation_read", "checklist_read", "evaluation_runs", "run_cancellation", "usage_accounting", "checklist_versions", "appeals", "baseline_export", "conversation_search", "analytics", "saved_reports", "assistant", "custom_metrics"]}
 
     @app.post("/api/datasets/import", response_model=DatasetImportResult)
     def dataset_import(request: DatasetImportRequest) -> dict:
@@ -138,6 +146,55 @@ def create_app(settings: Settings | None = None, *, model_client=None) -> FastAP
             return reports.refresh(id)
         except KeyError as error:
             raise HTTPException(404, detail=error.args[0]) from None
+        except ValueError as error:
+            raise HTTPException(422, detail=str(error)) from None
+
+    @app.post("/api/assistant", response_model=AssistantResponse)
+    def assistant_message(request: AssistantRequest) -> dict:
+        try:
+            return assistant.message(request.content, request.report_id)
+        except KeyError as error:
+            raise HTTPException(404, detail=error.args[0]) from None
+
+    @app.post("/api/reports/{id}/messages", response_model=AssistantResponse)
+    def report_message(id: str, request: MessageRequest) -> dict:
+        try:
+            return assistant.message(request.content, id)
+        except KeyError as error:
+            raise HTTPException(404, detail=error.args[0]) from None
+
+    @app.post("/api/reports/{id}/metrics", response_model=Run, status_code=202)
+    def add_metric(id: str, request: CustomMetricDefinition) -> dict:
+        try:
+            return metrics.start(id, request.model_dump())
+        except KeyError as error:
+            raise HTTPException(404, detail=error.args[0]) from None
+        except MetricConflict as error:
+            raise HTTPException(409, detail=str(error)) from None
+        except ValueError as error:
+            raise HTTPException(422, detail=str(error)) from None
+        except RuntimeError as error:
+            raise HTTPException(503, detail=str(error)) from None
+
+    @app.post("/api/reports/{id}/metrics/{metric_id}/runs", response_model=Run, status_code=202)
+    def rerun_metric(id: str, metric_id: str) -> dict:
+        try:
+            return metrics.start(id, metric_id=metric_id)
+        except KeyError as error:
+            raise HTTPException(404, detail=error.args[0]) from None
+        except MetricConflict as error:
+            raise HTTPException(409, detail=str(error)) from None
+        except ValueError as error:
+            raise HTTPException(422, detail=str(error)) from None
+        except RuntimeError as error:
+            raise HTTPException(503, detail=str(error)) from None
+
+    @app.get("/api/custom-assessments/{id}", response_model=CustomAssessment)
+    def custom_assessment(id: str) -> dict:
+        row = store.get('custom_assessments', id)
+        if row is None:
+            raise HTTPException(404, detail="Custom assessment not found")
+        return row
 
     @app.get("/api/conversations/{id}", response_model=ConversationResponse)
     def conversation(id: str, dataset_id: str = "DEV", checklist_version_id: str = "cqa-v1") -> dict:

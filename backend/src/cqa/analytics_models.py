@@ -6,6 +6,7 @@ from typing import Annotated, Literal
 from pydantic import Field, StrictBool, StrictFloat, StrictInt, StrictStr, field_validator, model_validator
 
 from .models import Channel, Language, NonemptyString, ScoreResult, StrictModel
+from .metric_models import ReportMetric
 
 Percentage = Annotated[StrictInt, Field(ge=0, le=100)] | Annotated[StrictFloat, Field(ge=0, le=100, allow_inf_nan=False)]
 Hour = Annotated[StrictInt, Field(ge=0, le=23)]
@@ -150,18 +151,28 @@ class ReportMessage(StrictModel):
     role: Literal['user', 'assistant']
     content: StrictStr
     created_at: StrictStr
+    usage_attempt_ids: list[StrictStr] = Field(default_factory=list)
 
 
 class Report(StrictModel):
     id: StrictStr
     title: StrictStr
-    spec: AnalysisSpec
-    output: AnalysisOutput
+    status: Literal['draft', 'ready'] = 'ready'
+    spec: AnalysisSpec | None
+    output: AnalysisOutput | None
     created_at: StrictStr
     updated_at: StrictStr
     messages: list[ReportMessage]
-    custom_metrics: list[dict]
+    custom_metrics: list[ReportMetric]
     stale: StrictBool
+
+    @model_validator(mode='after')
+    def valid_status(self):
+        if self.status == 'draft' and (self.spec is not None or self.output is not None or self.stale):
+            raise ValueError('Draft reports have no saved analysis and cannot be stale')
+        if self.status == 'ready' and (self.spec is None or self.output is None):
+            raise ValueError('Ready reports require both a spec and output')
+        return self
 
 
 class ReportPage(StrictModel):

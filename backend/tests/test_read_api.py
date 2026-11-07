@@ -64,6 +64,8 @@ def test_openapi_publishes_only_implemented_routes_and_typed_envelope(tmp_path):
         "/api/appeals", "/api/appeals/{id}/decision", "/api/exports/{dataset_id}",
         "/api/conversations/search", "/api/analytics", "/api/reports",
         "/api/reports/{id}", "/api/reports/{id}/refresh",
+        "/api/assistant", "/api/reports/{id}/messages", "/api/reports/{id}/metrics",
+        "/api/reports/{id}/metrics/{metric_id}/runs", "/api/custom-assessments/{id}",
     }
     assert schema["components"]["schemas"]["DatasetImportRequest"]["properties"]["payload"]["$ref"].endswith("/SourceEnvelope")
     assert schema["components"]["schemas"]["ConversationResponse"]["properties"]["transcript"]["items"]["$ref"].endswith("/SourceTurn")
