@@ -43,7 +43,7 @@ Ruling: one integrated plan is appropriate because the report/assistant/frontend
 | --- | --- | --- | --- | --- |
 | 1 | `/root/task1_foundation`; reviewer `/root/task1_review` | Complete | `442238c..0a22cd7`; review approved | Minor Meta note deferred to Task 4 |
 | 2 | `/root/task2_evaluation`; reviewer `/root/task2_review` | Complete after fix round 1 | `7092424..ed24562`; scoped re-review approved | None |
-| 3 | Pending | Queued | Pending | Task 2 |
+| 3 | `/root/task3_workflows`; reviewer `/root/task3_review` | Complete after fix round 1 | `8edcf84..a264d45`; scoped re-review approved | Minor OpenAPI note deferred to Task 4 |
 | 4 | Pending | Queued | Pending | Task 3 |
 | 5 | Pending | Queued | Pending | Task 4 |
 | 6 | Pending | Queued | Pending | Task 5 |
@@ -74,3 +74,20 @@ Task 2: fix round 1/5 (2 addressed, 0 open; commits b2ebc79..ed24562). Review co
 Task 2: complete (commits 7092424..ed24562, review approved). Parent independently read the real run/source/usage database without printing content: DEV run 34f4496c-876a-4e03-9f6e-72c92d89a556 is 65/65, all original source fields preserved, all stored original/final scores recomputed; 8 critical flags, scores 12.5–100.0. Smoke run 3e4718cc-8bb2-4b10-8dfc-7a6a21b61f54 is RU/KZ/EN 3/3, measured USD0.041122. Total68 attempts USD1.029502, outstanding reservations0. Exact model claude-sonnet-5-5. No new paid calls or real env migration occurred in fix round. Human grading accuracy remains unverified.
 
 Coordinator questions pending asynchronously: teammate frontend branch/repository; official team_name for export. Neither blocks implementation. Final submission files must use the actual team name; do not invent one. Until provided, validate export code and real DEV structure in memory with explicitly synthetic metadata rather than tracking a misleading official file.
+
+Task 3: dispatched `/root/task3_workflows`; BASE8edcf849b68c4b7c3dea932272029f2fd07f2d8c. Reviewed engine+contract pushed privately.
+
+Demo-case discovery: `/root/demo_case_selection` returned exploratory cases in demo-selection.md. Parent independently inspected targeted source turns for p1-en-001 (general login guidance; N/A demonstration), p1-en-006 (escalation/follow-up plus successful report guidance; plausible consultation review), and p1-en-013 (explicit outside paid advice at turn12). Cases are source-grounded; consultation/SLA correctness remains an interpretation, not an accuracy benchmark.
+Ruling: categorical next-contact ownership proposed by discovery is exploratory only. Initial custom metric contract remains boolean/discrete numeric; use an operator-led-follow-up boolean with explicit N/A conditions if choosing that demo, and do not imply client-led contact is automatically poor quality. No custom metric has been run yet.
+
+Task 4 interface ruling: original user examples include arbitrary start/end windows and day/night comparison. Add optional typed comparison cohorts (global predicates intersected with each cohort), plus day_night grouping; keep existing simple group_by contracts and baseline arithmetic. No generated SQL or model-produced aggregates. This implements the agreed comparisons rather than silently approximating every request as month halves. Conditions/denominators remain inspectable.
+
+Task 4 transparency ruling: saved report IDs alone are insufficient because an evaluation final value can change after appeal. Store final-value observations/revisions with report output; compute a nonmutating stale indicator and refresh explicitly. This also supplies the exact per-conversation inputs behind aggregate metric inspection. Report/custom-metric updates must preserve snapshot provenance and coverage.
+
+## Task 3 verified completion and user handoff
+
+Task 3: fix round 1/5 (1 Important addressed,0open; commits480dd2b..a264d45). Combined finite weights could overflow aggregate float outputs; shared aggregate validation now rejects this before version creation and direct scoring. Valid large values, NA and critical semantics retain coverage. Scoped re-review approved. Parent read the implementation/fix diffs and independently ran the final suite:143 passed in3.77s.
+Task 3: complete (commits8edcf84..a264d45, review approved). Parent independently validated actual results/dev/results.json against read-only DEV sources:65ok records, exactly8criteria each, exact team_name404 Dauren Not Found, actual external_api/claude-sonnet-5-5,8critical flags, recomputed totals, no transcript/audio fields. Artifact remained uncommitted until this reviewed gate.
+Task 3: minor (deferred to Task 4): generated OpenAPI union-number bounds use ignored ge/le keywords; emit standard minimum/maximum and test Draft202012 rejection of invalid boundary samples. Runtime validation currently works.
+
+User answered coordination questions: frontend work will be in this same GitHub repository; watch for his branch rather than another repo. Official team_name is exactly404 Dauren Not Found. At the latest GitHub check, gojosatorukz write invitation remained pending and effective permission was none; recipient must accept. Branches were main and feat/cqa-prototype. User was given the invitation URL and suggested a frontend branch; no external message was sent.
