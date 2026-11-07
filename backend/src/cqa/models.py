@@ -1,5 +1,6 @@
 """Strict source and assessment boundary models."""
 
+from decimal import Decimal
 from math import isfinite
 from typing import Annotated, Literal
 
@@ -112,6 +113,13 @@ class CriterionDefinition(StrictModel):
         return self
 
 
+def validate_aggregate_weight(criteria: list[CriterionDefinition]) -> None:
+    """Reject configurations whose maximum applicable weight cannot be serialized."""
+    total = sum((Decimal(str(criterion.weight)) for criterion in criteria), Decimal(0))
+    if not isfinite(float(total)):
+        raise ValueError("Aggregate criterion weight must be finite and representable")
+
+
 class ChecklistCreateRequest(StrictModel):
     name: NonemptyString
     criteria: Annotated[list[CriterionDefinition], Field(min_length=1)]
@@ -131,6 +139,7 @@ class ChecklistCreateRequest(StrictModel):
             raise ValueError("Criterion IDs must be unique")
         if not any(c.weight > 0 and not c.critical for c in self.criteria):
             raise ValueError("A checklist requires at least one positively weighted criterion")
+        validate_aggregate_weight(self.criteria)
         return self
 
 

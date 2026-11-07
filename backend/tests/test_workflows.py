@@ -222,3 +222,27 @@ def test_appeal_missing_failed_and_unknown_criterion_are_actionable(workflow):
     source = app.state.store.list("conversations")[0]
     failure = app.state.evaluator.failure(source, default_checklist(), "synthetic-failure", "Synthetic failure")
     assert client.post("/api/appeals", json={**body, "evaluation_id": failure["id"], "criterion_id": "contact"}).status_code == 422
+
+
+def test_checklist_rejects_unrepresentable_aggregate_weight_before_evaluation(workflow):
+    app, client, model = workflow
+    criteria = [default_checklist()["criteria"][0], default_checklist()["criteria"][4]]
+    for criterion in criteria:
+        criterion["weight"] = 1e308
+    response = new_checklist(client, criteria)
+    assert response.status_code == 422, response.text
+    assert "aggregate" in response.text.lower()
+    assert client.get("/api/checklists").json()["total"] == 1
+    assert app.state.store.list("evaluations") == []
+    assert model.checklists == []
+
+
+def test_checklist_accepts_representable_large_aggregate_weight(workflow):
+    _, client, model = workflow
+    criteria = [default_checklist()["criteria"][0], default_checklist()["criteria"][4]]
+    for criterion in criteria:
+        criterion["weight"] = 8e307
+    response = new_checklist(client, criteria)
+    assert response.status_code == 201, response.text
+    assert [criterion["weight"] for criterion in response.json()["criteria"]] == [8e307, 8e307]
+    assert model.checklists == []

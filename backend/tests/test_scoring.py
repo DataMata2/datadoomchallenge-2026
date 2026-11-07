@@ -1,4 +1,6 @@
+import json
 from copy import deepcopy
+from math import isfinite
 
 import pytest
 
@@ -98,3 +100,36 @@ def test_empty_rationale_rejected(rationale):
     rows[0]["rationale"] = rationale
     with pytest.raises(ValueError):
         score_criteria(default_checklist()["criteria"], rows, 8)
+
+
+@pytest.mark.parametrize("values", [(True, True), (False, False), (None, None)])
+def test_unrepresentable_aggregate_weight_is_rejected_by_direct_scoring(values):
+    definitions = [default_checklist()["criteria"][0], default_checklist()["criteria"][4]]
+    for criterion in definitions:
+        criterion.update(weight=1e308, allow_na=True, na_condition="Synthetic applicability condition.")
+    rows = [{"criterion_id": criterion["id"], "value": value,
+             "rationale": "Synthetic checked region.", "evidence_turns": [1]}
+            for criterion, value in zip(definitions, values)]
+    with pytest.raises(ValueError, match="[Aa]ggregate"):
+        score_criteria(definitions, rows, 1)
+
+
+@pytest.mark.parametrize("weights,second_value,expected_score", [
+    ((8e307, 8e307), False, 50),
+    ((1e308, 7e307), None, 100),
+    ((1.7976931348623157e308, 0), False, 100),
+])
+def test_representable_large_aggregate_weight_keeps_finite_scoring_and_na_critical_semantics(weights, second_value, expected_score):
+    definitions = [default_checklist()["criteria"][0], default_checklist()["criteria"][4], default_checklist()["criteria"][-1]]
+    for criterion, weight in zip(definitions, weights):
+        criterion["weight"] = weight
+    definitions[1].update(allow_na=True, na_condition="Synthetic applicability condition.")
+    rows = [{"criterion_id": criterion["id"], "value": value,
+             "rationale": "Synthetic checked region.", "evidence_turns": [1]}
+            for criterion, value in zip(definitions, (True, second_value, True))]
+    result = score_criteria(definitions, rows, 1)
+    assert result["final_score"] == expected_score
+    assert result["critical_flag"] is True
+    assert result["criteria"][1]["applicable"] is (second_value is not None)
+    assert isfinite(result["earned_points"]) and isfinite(result["applicable_weight"])
+    json.dumps(result, allow_nan=False)

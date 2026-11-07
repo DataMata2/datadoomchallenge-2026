@@ -3,7 +3,7 @@
 from decimal import Decimal, ROUND_HALF_UP
 from math import isfinite
 
-from .models import CriterionDefinition, CriterionJudgment
+from .models import CriterionDefinition, CriterionJudgment, validate_aggregate_weight
 
 
 def _numeric(value) -> bool:
@@ -13,7 +13,9 @@ def _numeric(value) -> bool:
 def score_criteria(definitions: list[dict], judgments: list[dict], turn_count: int) -> dict:
     if type(turn_count) is not int or turn_count < 1:
         raise ValueError("turn_count must be a positive integer")
-    definitions = [CriterionDefinition.model_validate(d).model_dump() for d in definitions]
+    validated = [CriterionDefinition.model_validate(d) for d in definitions]
+    validate_aggregate_weight(validated)
+    definitions = [definition.model_dump() for definition in validated]
     ids = [definition["id"] for definition in definitions]
     if len(set(ids)) != len(ids) or not ids:
         raise ValueError("Criterion definitions must have unique IDs")
