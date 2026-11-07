@@ -38,7 +38,10 @@ def normalize_credential(path):
     candidates = set(re.findall(r"(?<![A-Za-z0-9_-])sk-ant-[A-Za-z0-9_-]+", contents))
     if len(candidates) != 1:
         raise ValueError("Credential normalization needs exactly one unambiguous credential")
-    # Replace the same ignored file in place. No backups or key-derived artifacts.
+    assignments = re.findall(r"(?m)^[ \t]*(?:export[ \t]+)?([A-Za-z_][A-Za-z0-9_]*)[ \t]*=", contents)
+    if any(name != "ANTHROPIC_API_KEY" for name in assignments):
+        raise ValueError("Credential normalization refuses files with other active settings; file unchanged")
+    # Replace only a dedicated credential file. Refuse unrelated settings before mutation.
     descriptor = os.open(path, os.O_WRONLY | os.O_TRUNC, 0o600)
     with os.fdopen(descriptor, "w") as file:
         os.fchmod(file.fileno(), 0o600)
@@ -83,10 +86,12 @@ def run_stage(settings: Settings, stage: str, *, repeat: bool = False) -> dict:
             selected = rows
         manager = JobManager(store, Evaluator(store, client))
         manager.startup()
+        run = None
         try:
-            run = manager.start("DEV", [row["conversation_id"] for row in selected], "cqa-v1")
-            record = {"run_id": run["id"], "model": client.model, "prompt_version": PROMPT_VERSION, "status": "running", "created_at": now()}
+            run = manager.start("DEV", [row["conversation_id"] for row in selected], "cqa-v1", background=False)
+            record = {"run_id": run["id"], "model": client.model, "prompt_version": PROMPT_VERSION, "status": "queued", "created_at": now()}
             store.put("preparation", stage, record)
+            manager.dispatch(run["id"])
             # Emit only IDs/counts, never transcripts, prompts or credential fragments.
             print(json.dumps({"stage": stage, "run_id": run["id"], "total": run["total"]}), flush=True)
             while manager.get(run["id"])["status"] in {"queued", "running"}:
@@ -104,7 +109,8 @@ def run_stage(settings: Settings, stage: str, *, repeat: bool = False) -> dict:
                     "spent_usd": usage["spent_usd"], "reserved_usd": usage["reserved_usd"],
                     "errors": [item["error"] for item in final["items"] if item["error"]]}
         except KeyboardInterrupt:
-            manager.cancel(run["id"])
+            if run is not None:
+                manager.cancel(run["id"])
             raise
         finally:
             manager.close()

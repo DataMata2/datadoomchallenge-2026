@@ -191,3 +191,34 @@ def test_evaluation_api_and_checklist_specific_latest_reference(tmp_path, envelo
         assert client.post("/api/runs", json={**body, "conversation_ids": ["fiction-001", "fiction-001"]}).status_code == 422
         assert client.post("/api/runs", json={**body, "conversation_ids": ["missing"]}).status_code == 404
         assert client.post("/api/runs", json={**body, "unexpected": True}).status_code == 422
+
+
+def test_explicit_dispatch_starts_one_coordinator_and_never_redispatches(tmp_path, envelope):
+    from concurrent.futures import ThreadPoolExecutor
+    store = prepared(tmp_path, envelope, 3)
+    manager = JobManager(store, Evaluator(store, FixtureClient()))
+    run = manager.start("DEV", [f"fiction-{i}" for i in range(3)], "cqa-v1", background=False)
+    assert store.list("evaluations") == []
+    entered, release = threading.Event(), threading.Event()
+    count = 0
+    real_process = manager._process
+    def process(id):
+        nonlocal count
+        count += 1
+        entered.set()
+        assert release.wait(5)
+        real_process(id)
+    manager._process = process
+    try:
+        with ThreadPoolExecutor(max_workers=8) as pool:
+            dispatched = list(pool.map(lambda _: manager.dispatch(run["id"]), range(16)))
+        assert entered.wait(5)
+        assert dispatched.count(True) == 1 and dispatched.count(False) == 15
+    finally:
+        release.set()
+        try:
+            manager.wait(run["id"])
+            assert manager.dispatch(run["id"]) is False
+        finally:
+            manager.close()
+    assert count == 1 and len(store.list("evaluations")) == 3

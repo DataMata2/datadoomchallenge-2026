@@ -81,11 +81,25 @@ class JobManager:
                "model": {"mode": "external_api", "name": self.evaluator.client.model}, "checklist_snapshot": copy.deepcopy(checklist)}
         self.store.insert_immutable("runs", {run["id"]: run})
         if background:
-            thread = threading.Thread(target=self._process, args=(run["id"],), name=f"cqa-run-{run['id']}", daemon=True)
-            with self._guard:
-                self._threads[run["id"]] = thread
-                thread.start()
+            self.dispatch(run["id"])
         return run
+
+    def dispatch(self, id: str) -> bool:
+        """Launch a queued run once, after callers persist any required markers."""
+        self.startup()
+        with self._guard:
+            if self._closed:
+                raise ValueError("Job manager is closed")
+            if id in self._threads or self.get(id)["status"] != "queued":
+                return False
+            thread = threading.Thread(target=self._process, args=(id,), name=f"cqa-run-{id}", daemon=True)
+            self._threads[id] = thread
+            try:
+                thread.start()
+            except Exception:
+                del self._threads[id]
+                raise
+            return True
 
     def get(self, id: str) -> dict:
         run = self.store.get("runs", id)
