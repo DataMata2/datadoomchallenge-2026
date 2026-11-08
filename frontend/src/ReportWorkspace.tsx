@@ -204,8 +204,8 @@ export default function ReportWorkspace({
         <aside className="assistant-pane">
           <div className="section-head">
             <div>
-              <span className="assistant-orbit">
-                <Icon name="sparkle" size={25} />
+              <span className="assistant-symbol">
+                <Icon name="chat" size={22} />
               </span>
               <h2>{t("Analysis assistant")}</h2>
               <p>
