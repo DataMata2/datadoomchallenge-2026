@@ -12,6 +12,7 @@ import ConversationDrawer from "./ConversationDrawer";
 import ReportWorkspace from "./ReportWorkspace";
 import DatasetImport from "./DatasetImport";
 import { setLocale } from "./i18n";
+import { metricIds, metricNames } from "./ui";
 import type {
   AnalysisOutput,
   Checklist,
@@ -1042,4 +1043,20 @@ test("localized checklist controls retain protocol values and the user's draft",
     assert.equal(title.value, "Overview · Мой критерий · Менің өлшемім");
   }
   assert.equal(calls.length, requests);
+});
+
+test("localized metric labels remain compatible with React Refresh object inspection", async () => {
+  for (const locale of ["ru", "en", "kk"] as const) {
+    setLocale(locale);
+    assert.equal(Reflect.get(metricNames, "constructor"), Object);
+    assert.equal(
+      Reflect.get(metricNames, "toString"),
+      Object.prototype.toString,
+    );
+    assert.equal(Reflect.get(metricNames, Symbol.toStringTag), undefined);
+    assert.equal(Reflect.get(metricNames, "not_a_metric"), undefined);
+    assert.deepEqual(Object.keys(metricNames), metricIds);
+    for (const key of metricIds)
+      assert.equal(typeof metricNames[key], "string");
+  }
 });

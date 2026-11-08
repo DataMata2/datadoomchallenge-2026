@@ -22,7 +22,9 @@ const metricLabels: Record<string, string> = {
 };
 export const metricNames: Record<string, string> = new Proxy(metricLabels, {
   get: (target, key) =>
-    typeof key === "string" && key in target ? t(target[key]) : undefined,
+    typeof key === "string" && Object.hasOwn(target, key)
+      ? t(target[key])
+      : Reflect.get(target, key),
 });
 export const metricIds = Object.keys(metricNames) as Array<
   | "final_score"
