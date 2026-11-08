@@ -1,5 +1,6 @@
 import { activeRun, raw } from "./domain";
-import { useEffect, useRef, useId, type ReactNode } from "react";
+import { useEffect, useRef, useId, useState, type ReactNode } from "react";
+import Icon from "./Icon";
 import type {
   AnalysisOutput,
   ConversationResponse,
@@ -58,11 +59,13 @@ export function Dialog({
   close,
   children,
   wide = false,
+  busy = false,
 }: {
   title: string;
   close: () => void;
   children: ReactNode;
   wide?: boolean;
+  busy?: boolean;
 }) {
   const ref = useRef<HTMLDialogElement>(null);
   const titleId = useId();
@@ -76,15 +79,23 @@ export function Dialog({
       ref={ref}
       aria-labelledby={titleId}
       className={wide ? "modal wide" : "modal"}
-      onCancel={close}
+      onCancel={(e) => {
+        if (busy) e.preventDefault();
+        else close();
+      }}
       onClick={(e) => {
-        if (e.target === e.currentTarget) close();
+        if (!busy && e.target === e.currentTarget) close();
       }}
     >
       <header className="dialog-head">
         <h2 id={titleId}>{title}</h2>
-        <button className="icon" onClick={close} aria-label="Close dialog">
-          ×
+        <button
+          className="icon"
+          disabled={busy}
+          onClick={close}
+          aria-label="Close dialog"
+        >
+          <Icon name="close" />
         </button>
       </header>
       {children}
@@ -169,76 +180,162 @@ export function ConversationTable({
   sources,
   open,
   ids,
+  searchable = false,
 }: {
   output: AnalysisOutput;
   sources: ConversationResponse[];
   open: (id: string, metric?: string) => void;
   ids?: string[];
+  searchable?: boolean;
 }) {
+  const [query, setQuery] = useState("");
+  const [state, setState] = useState("all");
   const rows = output.observations.filter(
-    (row) => !ids || ids.includes(row.conversation_id),
+    (row) =>
+      (!ids || ids.includes(row.conversation_id)) &&
+      (!searchable ||
+        (row.conversation_id
+          .toLowerCase()
+          .includes(query.toLowerCase().trim()) &&
+          (state === "all" ||
+            (state === "critical"
+              ? row.final?.critical_flag
+              : state === "unevaluated"
+                ? row.evaluation_status === "unevaluated"
+                : row.evaluation_status === "error")))),
   );
-  if (!rows.length)
+  if (!rows.length && !searchable)
     return (
       <Empty>
         No conversations match this selection. Adjust the filters to broaden it.
       </Empty>
     );
   return (
-    <div className="table-wrap">
-      <table>
-        <thead>
-          <tr>
-            <th>Conversation</th>
-            <th>Assigned demo date</th>
-            <th>Channel / language</th>
-            <th>Quality score</th>
-            <th>Review state</th>
-          </tr>
-        </thead>
-        <tbody>
-          {rows.map((row) => {
-            const source = sources.find(
-              (s) => s.conversation_id === row.conversation_id,
-            );
-            return (
-              <tr key={row.conversation_id}>
-                <td>
-                  <button
-                    className="text-button"
-                    onClick={() => open(row.conversation_id)}
-                  >
-                    {row.conversation_id}
-                  </button>
-                </td>
-                <td>{time(source?.demo_started_at)}</td>
-                <td>
-                  {source
-                    ? `${source.channel} / ${source.language}`
-                    : "Source loading"}
-                </td>
-                <td>
-                  <button
-                    className="text-button score"
-                    onClick={() => open(row.conversation_id, "final_score")}
-                  >
-                    {score(row.final?.final_score)}
-                  </button>
-                </td>
-                <td>
-                  <span className={`status ${row.evaluation_status}`}>
-                    {row.evaluation_status}
-                  </span>
-                  {row.final?.critical_flag && (
-                    <span className="critical">Critical flag</span>
-                  )}
-                </td>
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
-    </div>
+    <>
+      {searchable && (
+        <div className="table-toolbar">
+          <label className="search-input">
+            <Icon name="search" size={18} />
+            <input
+              aria-label="Search conversations"
+              placeholder="Search by conversation ID…"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+            />
+          </label>
+          <label className="table-state">
+            <span className="sr-only">Review filter</span>
+            <select
+              aria-label="Review filter"
+              value={state}
+              onChange={(e) => setState(e.target.value)}
+            >
+              <option value="all">All conversations</option>
+              <option value="critical">Critical flagged</option>
+              <option value="unevaluated">Awaiting evaluation</option>
+              <option value="error">Evaluation failed</option>
+            </select>
+          </label>
+          <span className="table-count">{rows.length} conversations</span>
+        </div>
+      )}
+      <div className="table-wrap conversation-table">
+        <table>
+          <thead>
+            <tr>
+              <th>Conversation</th>
+              <th>Demo date</th>
+              <th>Channel / language</th>
+              <th>Quality score</th>
+              <th>Review state</th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((row) => {
+              const source = sources.find(
+                (s) => s.conversation_id === row.conversation_id,
+              );
+              return (
+                <tr key={row.conversation_id}>
+                  <td>
+                    <div className="conversation-cell">
+                      <span
+                        className={`channel-icon ${source?.channel === "voice call" ? "voice" : ""}`}
+                      >
+                        <Icon
+                          name={
+                            source?.channel === "voice call" ? "phone" : "chat"
+                          }
+                          size={17}
+                        />
+                      </span>
+                      <button
+                        className="text-button"
+                        onClick={() => open(row.conversation_id)}
+                      >
+                        {row.conversation_id}
+                      </button>
+                    </div>
+                  </td>
+                  <td>{time(source?.demo_started_at)}</td>
+                  <td>
+                    {source ? (
+                      <div className="source-tags">
+                        <span>
+                          {source.channel === "voice call"
+                            ? "Voice call"
+                            : "Chat"}
+                        </span>
+                        <span className="language-tag">{source.language}</span>
+                      </div>
+                    ) : (
+                      "Source loading"
+                    )}
+                  </td>
+                  <td>
+                    <button
+                      className={`text-button score score-pill ${row.final?.final_score == null ? "unknown-score" : ""}`}
+                      onClick={() => open(row.conversation_id, "final_score")}
+                    >
+                      {score(row.final?.final_score)}
+                    </button>
+                  </td>
+                  <td>
+                    <span className={`status ${row.evaluation_status}`}>
+                      {row.evaluation_status === "ok" ? (
+                        <>
+                          <Icon name="check" size={12} />
+                          Evaluated
+                        </>
+                      ) : row.evaluation_status === "error" ? (
+                        "Failed"
+                      ) : (
+                        "Awaiting evaluation"
+                      )}
+                    </span>
+                    {row.final?.critical_flag && (
+                      <span className="critical">Critical flag</span>
+                    )}
+                    <button
+                      className="row-open"
+                      aria-label={`Open ${row.conversation_id}`}
+                      onClick={() => open(row.conversation_id)}
+                    >
+                      <Icon name="chevron" size={15} />
+                    </button>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+        {!rows.length && (
+          <Empty>
+            No conversations match your search. Try another ID or review filter.
+          </Empty>
+        )}
+      </div>
+    </>
   );
 }
 export function JudgmentValue({ criterion }: { criterion: ScoredCriterion }) {

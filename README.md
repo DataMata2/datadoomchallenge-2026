@@ -2,7 +2,7 @@
 
 CQA helps a quality lead discover patterns in conversation quality, inspect original source evidence, and record review decisions. The local React/TypeScript frontend includes a filtered overview, a saved assistant/report workspace, versioned checklists, individual evaluation progress, and criterion appeals with reviewer history.
 
-The frontend is a functional reference for teammate integration. Its API adapter is independent of the visual components. See [the frontend handoff](docs/coordination/implementation/task-6-handoff.md), [the API contract](docs/api-contract.md), and [the confirmed product design](docs/coordination/product-discovery/product-design.md).
+The frontend uses a Freedom-inspired visual system with responsive navigation, searchable conversations, a dedicated analytics view, paired transcript/assessment review, and JSON import with a preview. The teammate’s evaluation, review, report, and checklist contracts are preserved. Its API adapter is independent of the visual components. See [the frontend handoff](docs/coordination/implementation/task-6-handoff.md), [the API contract](docs/api-contract.md), and [the confirmed product design](docs/coordination/product-discovery/product-design.md).
 
 ## Install and start locally
 
@@ -23,7 +23,7 @@ CQA_MODEL_LOCK="$cqa_project/runtime/model-jobs.lock" \
 bash scripts/dev.sh
 ```
 
-Open <http://127.0.0.1:5173>. The Vite proxy sends `/api` to the single API at <http://127.0.0.1:8000>; interactive API documentation is at <http://127.0.0.1:8000/docs>. The startup script prints owner/backend/frontend PIDs. Stop that owner with Ctrl+C; it stops both children. It refuses occupied ports or a second script owner for the same database. Do not start another API process, use Uvicorn reload, or launch multiple workers against the live database. Startup recovers unfinished work without resending requests, so wait for in-flight work before replacing the owner.
+Open <http://127.0.0.1:5173>. The Vite proxy sends `/api` to the single API at <http://127.0.0.1:8000>; interactive API documentation is at <http://127.0.0.1:8000/docs>. The startup script works with the default macOS Bash 3.2 and on Linux. A Python standard-library supervisor manages the owner lock, readiness, signals and both child processes; no `flock` command or Bash `wait -n` is required. The startup script prints owner/backend/frontend PIDs. Stop that owner with Ctrl+C; it stops both children. It refuses occupied ports or a second script owner for the same database. Do not start another API process, use Uvicorn reload, or launch multiple workers against the live database. Startup recovers unfinished work without resending requests, so wait for in-flight work before replacing the owner.
 
 For the current prepared demonstration, preserve the existing canonical runtime and original backend secret file even if launching from another source checkout:
 
@@ -38,6 +38,23 @@ bash scripts/dev.sh
 ```
 
 Reuse an already running pair. Startup performs no import, evaluation, reset, or model request. The frontend uses no external runtime fonts or images.
+
+## Import conversations through the interface
+
+Choose **Import conversations** from any workspace screen. Select or drop a JSON file (up to 20 MB), or choose **Paste JSON**. The interface accepts the organizer response envelope, an array of source conversations, or one source conversation object. A single object/array uses the entered dataset ID; an organizer response retains its own `dataset_group_id`.
+
+Preview the conversation count, channels, languages and source IDs, then import. The frontend calls the existing `POST /api/datasets/import` contract. The backend validates timestamps and the complete dataset atomically, rejects conflicts, and treats identical reimports as idempotent. Import does not evaluate, call the model, or replace existing assessments. After success, **Open dataset** selects the imported dataset and clears previous filters so the new conversations are visible.
+
+Original IDs, text, roles and timestamps stay intact. Optional October 2026 demonstration dates are **off by default** and are separate from original timestamps. For source-only data, use all dates rather than filtering by a demonstration calendar.
+
+For a Mac without `uv`, a Python 3.12 installation can also prepare the backend:
+
+```bash
+python3.12 -m venv backend/.venv
+backend/.venv/bin/python -m pip install -e ./backend
+npm --prefix frontend ci
+bash scripts/dev.sh
+```
 
 ## Import local DEV data
 
@@ -80,7 +97,7 @@ For the real ten-record control dataset, use its actual dataset ID and `results/
 
 See [the reproducible demo and control workflow](docs/demo.md) for prepared source/evaluation/report IDs, ready model prompts, read-only HTTP/export checks and the exact import → evaluate/resume → validate/export sequence for the real ten-record control source when released. [The presentation comparison](docs/presentation-model-comparison.md) records the initial import failure, verified packaging correction, five local outcomes and their limits; it does not claim gold-label accuracy or a controlled speed advantage.
 
-Current verification limits: private DEV model calls remain pending authorization and CUA visual QA is unavailable. Two wholly fictional assistant actions and one fictional custom judgment passed native-provider acceptance after a compact transport fix; the earlier two rejected attempts remain in billing history. Retained DEV read/analysis/export works. These fictional checks do not establish a complete live DEV model workflow.
+Current verification limits: additional private DEV model calls remain unverified. The Freedom UI has been checked locally in a browser with historical DEV results in a disposable database; this does not verify the original teammate runtime or a fresh paid workflow. Two wholly fictional assistant actions and one fictional custom judgment passed native-provider acceptance after a compact transport fix; the earlier two rejected attempts remain in billing history. Retained DEV read/analysis/export works. These fictional checks do not establish a complete live DEV model workflow.
 
 ## Troubleshooting
 
@@ -93,12 +110,12 @@ Current verification limits: private DEV model calls remain pending authorizatio
 ## Checks
 
 ```bash
-flock runtime/model-jobs.lock npm --prefix frontend test
-flock runtime/model-jobs.lock npm --prefix frontend run build
+npm --prefix frontend test
+npm --prefix frontend run build
 npm --prefix frontend run format:check
 backend/.venv/bin/python -m unittest discover -s scripts -p 'test_*.py'
 CQA_DATABASE_PATH="$PWD/runtime/test-checks.sqlite3" \
-  flock runtime/model-jobs.lock backend/.venv/bin/python -m pytest -q backend/tests
+  backend/.venv/bin/python -m pytest -q backend/tests
 ```
 
 Run backend tests with a separate ignored database, preserving the live ledger. After an API schema change, run `npm --prefix frontend run generate:types` followed by `npm --prefix frontend run format`. Do not start paid model requests as an incidental test or startup check.

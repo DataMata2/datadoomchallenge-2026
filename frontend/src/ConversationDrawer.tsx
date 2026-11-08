@@ -54,6 +54,7 @@ export default function ConversationDrawer({
   const [run, setRun] = useState<Run>();
   const [runError, setRunError] = useState("");
   const [reload, setReload] = useState(0);
+  const [mobilePane, setMobilePane] = useState("assessment");
   const turnRefs = useRef(new Map<number, HTMLLIElement>());
   useEffect(() => {
     let alive = true;
@@ -153,7 +154,8 @@ export default function ConversationDrawer({
   const definition = evaluation?.checklist_snapshot.criteria.find(
     (c) => c.id === criterionId,
   );
-  const jump = (turns: number[]) => {
+  const jump = (turns: number[], reveal = true) => {
+    if (reveal) setMobilePane("transcript");
     setHighlight(turns);
     requestAnimationFrame(() =>
       turnRefs.current
@@ -202,7 +204,25 @@ export default function ConversationDrawer({
       ) : (
         conversation && (
           <>
-            <div className="conversation-layout">
+            <div
+              className="mobile-review-tabs"
+              role="group"
+              aria-label="Conversation panel"
+            >
+              <button
+                aria-pressed={mobilePane === "transcript"}
+                onClick={() => setMobilePane("transcript")}
+              >
+                Transcript
+              </button>
+              <button
+                aria-pressed={mobilePane === "assessment"}
+                onClick={() => setMobilePane("assessment")}
+              >
+                Assessment
+              </button>
+            </div>
+            <div className="conversation-layout" data-mobile-pane={mobilePane}>
               <section className="transcript">
                 <div className="section-head">
                   <div>
@@ -247,7 +267,7 @@ export default function ConversationDrawer({
                           #{index + 1}
                         </button>
                         <strong>{turn.speaker}</strong>
-                        <time>{turn.timestamp}</time>
+                        <time title={turn.timestamp}>{turn.timestamp}</time>
                       </div>
                       <p>{turn.text}</p>
                     </li>
@@ -432,7 +452,7 @@ export default function ConversationDrawer({
                           }
                           onClick={() => {
                             setCriterionId(c.criterion_id);
-                            jump(c.evidence_turns);
+                            jump(c.evidence_turns, false);
                           }}
                           key={c.criterion_id}
                         >
@@ -473,7 +493,7 @@ export default function ConversationDrawer({
                                     className="text-button"
                                     onClick={() => {
                                       setCriterionId(c.criterion_id);
-                                      jump(c.evidence_turns);
+                                      jump(c.evidence_turns, false);
                                     }}
                                   >
                                     {metricNames[c.criterion_id] ||

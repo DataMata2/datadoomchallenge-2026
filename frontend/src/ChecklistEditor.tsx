@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { api, type Checklist, type CriterionDefinition } from "./api";
 import { Empty, ErrorBox, errorText } from "./ui";
+import Icon from "./Icon";
 type Draft = CriterionDefinition & {
   rowKey: number;
   scaleText: string;
@@ -150,13 +151,29 @@ export default function ChecklistEditor({
             />
           </label>
         </div>
-        <div className="notice">
-          Weighted criteria normalize over applicable weight. Critical is a
-          separate boolean with zero weight. N/A requires an explicit
-          applicability condition. To replace a criterion, remove its draft row
-          and add a criterion with a new ID. Saving retains all earlier versions
-          and assessment snapshots.
+        <div className="rubric-summary">
+          <Icon name="shield" size={26} />
+          <div>
+            <strong>
+              {criteria.length} criteria ·{" "}
+              {criteria.filter((c) => c.allow_na).length} support N/A
+            </strong>
+            <small>
+              Changes save as a new version. Existing assessments keep their
+              original checklist.
+            </small>
+          </div>
         </div>
+        <details>
+          <summary>How scoring and versions work</summary>
+          <p>
+            Weighted criteria normalize over applicable weight. Critical is a
+            separate boolean with zero weight. N/A requires an explicit
+            applicability condition. To replace a criterion, remove its draft
+            row and add a criterion with a new ID. Prior versions and
+            assessments are preserved.
+          </p>
+        </details>
         {criteria.map((c, index) => (
           <details
             className="criterion-editor"
@@ -299,6 +316,7 @@ export default function ChecklistEditor({
               <div className="full">
                 <button
                   type="button"
+                  className="danger-button"
                   disabled={busy}
                   onClick={() => {
                     setCriteria((list) =>
@@ -313,18 +331,20 @@ export default function ChecklistEditor({
             </div>
           </details>
         ))}
-        <button type="button" disabled={busy} onClick={add}>
-          Add criterion
-        </button>
         {error && <ErrorBox>{error}</ErrorBox>}
         {success && (
           <div className="notice" role="status">
             {success}
           </div>
         )}
-        <button className="primary" disabled={busy || !name.trim()}>
-          {busy ? "Saving new version…" : "Save new checklist version"}
-        </button>
+        <div className="checklist-actions">
+          <button type="button" disabled={busy} onClick={add}>
+            Add criterion
+          </button>
+          <button className="primary" disabled={busy || !name.trim()}>
+            {busy ? "Saving new version…" : "Save new checklist version"}
+          </button>
+        </div>
       </form>
     </section>
   );

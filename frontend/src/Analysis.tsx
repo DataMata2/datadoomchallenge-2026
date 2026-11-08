@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useId, useState } from "react";
+import Icon from "./Icon";
 import type {
   AnalysisOutput,
   AnalysisGroup,
@@ -57,6 +58,8 @@ export default function Analysis({
   } | null>(null);
   const [groupKey, setGroupKey] = useState("");
   const [chartMetric, setChartMetric] = useState("final_score");
+  const [tab, setTab] = useState(saved ? "analytics" : "conversations");
+  const tabId = useId();
   const aggregate =
     output.groups.find((g) => g.key === groupKey) || output.groups[0];
   const chartId =
@@ -65,143 +68,253 @@ export default function Analysis({
     "final_score";
   return (
     <>
-      <FilterChips output={output} />
       <div className="stat-strip">
-        <div>
+        <div className="stat-card">
+          <span className="stat-label">
+            Selected conversations
+            <Icon name="chat" size={18} />
+          </span>
           <strong>{output.counts.selected}</strong>
-          <span>Selected conversations</span>
+          <span>Across the current selection</span>
         </div>
-        <div>
-          <strong>{output.counts.evaluated}</strong>
-          <span>Evaluated successfully</span>
+        <div className="stat-card featured">
+          <span className="stat-label">
+            Average quality score
+            <Icon name="sparkle" size={18} />
+          </span>
+          <strong>
+            {score(aggregate?.metrics.final_score?.value)}
+            <small>/100</small>
+          </strong>
+          <span>
+            {aggregate?.metrics.final_score?.sample_count || 0} eligible
+            conversations
+            {output.groups.length > 1 && aggregate
+              ? ` · ${aggregate.label}`
+              : ""}
+          </span>
         </div>
-        <div>
-          <strong>{output.counts.unevaluated}</strong>
-          <span>Awaiting evaluation</span>
+        <div className="stat-card">
+          <span className="stat-label">
+            Critical violations
+            <Icon name="shield" size={18} />
+          </span>
+          <strong>
+            {output.observations.filter((o) => o.final?.critical_flag).length}
+          </strong>
+          <span>Flagged separately from the score</span>
         </div>
-        <div>
-          <strong>{output.counts.failed}</strong>
-          <span>Evaluation failed</span>
+        <div className="stat-card">
+          <span className="stat-label">
+            Evaluation coverage
+            <Icon name="checklist" size={18} />
+          </span>
+          <strong>
+            {output.counts.evaluated}
+            <small>/{output.counts.selected}</small>
+          </strong>
+          <span>
+            {output.counts.unevaluated} awaiting · {output.counts.failed} failed
+          </span>
         </div>
       </div>
-      {aggregate && (
-        <section className="panel">
+      <div
+        className="analysis-tabs"
+        role="tablist"
+        aria-label="Overview content"
+      >
+        <button
+          role="tab"
+          id={`${tabId}-conversations-tab`}
+          aria-controls={`${tabId}-conversations`}
+          aria-selected={tab === "conversations"}
+          tabIndex={tab === "conversations" ? 0 : -1}
+          onKeyDown={(e) => {
+            if (e.key === "ArrowRight" || e.key === "ArrowLeft") {
+              e.preventDefault();
+              setTab("analytics");
+              document.getElementById(`${tabId}-analytics-tab`)?.focus();
+            }
+          }}
+          onClick={() => setTab("conversations")}
+        >
+          <Icon name="chat" size={17} />
+          Conversations<span>{output.counts.selected}</span>
+        </button>
+        <button
+          role="tab"
+          id={`${tabId}-analytics-tab`}
+          aria-controls={`${tabId}-analytics`}
+          aria-selected={tab === "analytics"}
+          tabIndex={tab === "analytics" ? 0 : -1}
+          onKeyDown={(e) => {
+            if (e.key === "ArrowRight" || e.key === "ArrowLeft") {
+              e.preventDefault();
+              setTab("conversations");
+              document.getElementById(`${tabId}-conversations-tab`)?.focus();
+            }
+          }}
+          onClick={() => setTab("analytics")}
+        >
+          <Icon name="overview" size={17} />
+          Quality analytics
+        </button>
+      </div>
+      <div className="analysis-selection">
+        <FilterChips output={output} />
+      </div>
+      <div
+        role="tabpanel"
+        aria-labelledby={`${tabId}-conversations-tab`}
+        id={`${tabId}-conversations`}
+        hidden={tab !== "conversations"}
+      >
+        <section className="panel conversations-panel">
           <div className="section-head">
             <div>
-              <h2>
-                Quality at a glance
-                {output.groups.length > 1 ? ` · ${aggregate.label}` : ""}
-              </h2>
+              <span className="eyebrow">THE CONVERSATION, IN CONTEXT</span>
+              <h2>Conversations behind the numbers</h2>
               <p>
-                Inspect any measure to see its denominator and source
-                conversations.
+                Open a conversation to explore its assessment and original
+                evidence.
               </p>
             </div>
-            {output.groups.length > 1 ? (
-              <label>
-                Measure group
-                <select
-                  value={aggregate.key}
-                  onChange={(e) => setGroupKey(e.target.value)}
+            <span className="panel-icon">
+              <Icon name="chat" />
+            </span>
+          </div>
+          <ConversationTable
+            output={output}
+            sources={sources}
+            open={open}
+            searchable
+          />
+          <div className="table-footer">
+            <Icon name="shield" size={14} />
+            <span>
+              Original transcripts · Traceable assessments · Human review
+            </span>
+          </div>
+        </section>
+      </div>
+      <div
+        role="tabpanel"
+        aria-labelledby={`${tabId}-analytics-tab`}
+        id={`${tabId}-analytics`}
+        hidden={tab !== "analytics"}
+      >
+        {aggregate && (
+          <section className="panel">
+            <div className="section-head">
+              <div>
+                <h2>
+                  Quality at a glance
+                  {output.groups.length > 1 ? ` · ${aggregate.label}` : ""}
+                </h2>
+                <p>
+                  Inspect any measure to see its denominator and source
+                  conversations.
+                </p>
+              </div>
+              {output.groups.length > 1 ? (
+                <label>
+                  Measure group
+                  <select
+                    value={aggregate.key}
+                    onChange={(e) => setGroupKey(e.target.value)}
+                  >
+                    {output.groups.map((g) => (
+                      <option key={g.key} value={g.key}>
+                        {g.label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              ) : (
+                <small>Baseline checklist cqa-v1</small>
+              )}
+            </div>
+            <div className="metric-grid">
+              {Object.entries(aggregate.metrics).map(([metric, value]) => (
+                <button
+                  className={`metric-tile ${metric === "final_score" ? "primary-metric" : ""}`}
+                  key={metric}
+                  onClick={() => setInspect({ metric, group: aggregate })}
                 >
-                  {output.groups.map((g) => (
-                    <option key={g.key} value={g.key}>
-                      {g.label}
+                  <span>{metricNames[metric] || metric}</span>
+                  <strong>
+                    {score(value.value)}
+                    {value.value != null && <small>%</small>}
+                  </strong>
+                  <span>
+                    {value.sample_count} eligible · {value.na_count} N/A
+                  </span>
+                  <span
+                    className={`metric-meter ${metric === "critical" ? "critical-meter" : ""}`}
+                    aria-hidden="true"
+                  >
+                    <i style={{ width: `${value.value ?? 0}%` }} />
+                  </span>
+                </button>
+              ))}
+            </div>
+          </section>
+        )}
+        {comparison && (
+          <section className="panel">
+            <div className="section-head">
+              <div>
+                <h2>Compare the selection</h2>
+                <p>
+                  Each bar uses its own eligible denominator. Select a bar to
+                  inspect.
+                </p>
+              </div>
+              <label>
+                Compare measure
+                <select
+                  value={chartId}
+                  onChange={(e) => setChartMetric(e.target.value)}
+                >
+                  {comparison.spec.metric_ids?.map((id) => (
+                    <option key={id} value={id}>
+                      {metricNames[id]}
                     </option>
                   ))}
                 </select>
               </label>
+            </div>
+            {comparison.groups.length ? (
+              <div className="bar-chart">
+                {comparison.groups.map((group) => {
+                  const metric = group.metrics[chartId];
+                  return (
+                    <button
+                      className="bar-row"
+                      key={group.key}
+                      onClick={() => setInspect({ metric: chartId, group })}
+                    >
+                      <span>
+                        {group.label}
+                        <small>{group.counts.selected} selected</small>
+                      </span>
+                      <span className="bar-track">
+                        <span style={{ width: `${metric?.value || 0}%` }} />
+                      </span>
+                      <strong>
+                        {score(metric?.value)}
+                        <small>n={metric?.sample_count || 0}</small>
+                      </strong>
+                    </button>
+                  );
+                })}
+              </div>
             ) : (
-              <small>Baseline checklist cqa-v1</small>
+              <Empty>No groups in this selection.</Empty>
             )}
-          </div>
-          <div className="metric-grid">
-            {Object.entries(aggregate.metrics).map(([metric, value]) => (
-              <button
-                className={`metric-tile ${metric === "final_score" ? "primary-metric" : ""}`}
-                key={metric}
-                onClick={() => setInspect({ metric, group: aggregate })}
-              >
-                <span>{metricNames[metric] || metric}</span>
-                <strong>
-                  {score(value.value)}
-                  {value.value != null && <small>%</small>}
-                </strong>
-                <span>
-                  {value.sample_count} eligible · {value.na_count} N/A
-                </span>
-              </button>
-            ))}
-          </div>
-        </section>
-      )}
-      {comparison && (
-        <section className="panel">
-          <div className="section-head">
-            <div>
-              <h2>Compare the selection</h2>
-              <p>
-                Each bar uses its own eligible denominator. Select a bar to
-                inspect.
-              </p>
-            </div>
-            <label>
-              Compare measure
-              <select
-                value={chartId}
-                onChange={(e) => setChartMetric(e.target.value)}
-              >
-                {comparison.spec.metric_ids?.map((id) => (
-                  <option key={id} value={id}>
-                    {metricNames[id]}
-                  </option>
-                ))}
-              </select>
-            </label>
-          </div>
-          {comparison.groups.length ? (
-            <div className="bar-chart">
-              {comparison.groups.map((group) => {
-                const metric = group.metrics[chartId];
-                return (
-                  <button
-                    className="bar-row"
-                    key={group.key}
-                    onClick={() => setInspect({ metric: chartId, group })}
-                  >
-                    <span>
-                      {group.label}
-                      <small>{group.counts.selected} selected</small>
-                    </span>
-                    <span className="bar-track">
-                      <span style={{ width: `${metric?.value || 0}%` }} />
-                    </span>
-                    <strong>
-                      {score(metric?.value)}
-                      <small>n={metric?.sample_count || 0}</small>
-                    </strong>
-                  </button>
-                );
-              })}
-            </div>
-          ) : (
-            <Empty>No groups in this selection.</Empty>
-          )}
-        </section>
-      )}
-      <section className="panel">
-        <div className="section-head">
-          <div>
-            <h2>Conversations behind the numbers</h2>
-            <p>
-              Open a conversation to inspect the original transcript and
-              assessment evidence.
-            </p>
-          </div>
-          <small>{output.observations.length} records</small>
-        </div>
-        <ConversationTable output={output} sources={sources} open={open} />
-      </section>
+          </section>
+        )}
+      </div>
       {inspect && (
         <Dialog
           title={`${metricNames[inspect.metric]} · ${inspect.group.label}`}
