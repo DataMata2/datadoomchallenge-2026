@@ -18,9 +18,10 @@ class DevLifecycleTest(unittest.TestCase):
             (root / 'scripts').mkdir()
             (root / 'frontend/node_modules/.bin').mkdir(parents=True)
             shutil.copyfile(SCRIPT, root / 'scripts/dev.sh')
+            shutil.copyfile(SCRIPT.with_name('dev.py'), root / 'scripts/dev.py')
             interpreter = root / 'mock-python'
             interpreter.write_text('''#!/usr/bin/env python3
-import os,pathlib,signal,sys,time
+import os,pathlib,signal,sys,time,shutil
 root=pathlib.Path(os.environ['CQA_LIFECYCLE_ROOT'])
 mode=os.environ['CQA_LIFECYCLE_MODE']
 if sys.argv[1]=='-':
@@ -35,12 +36,12 @@ if sys.argv[1]=='-':
             os.kill(os.getppid(),getattr(signal,'SIG'+mode.split('_')[1]))
     sys.exit(0)
 (root/'backend-started').write_text(str(os.getpid()))
-os.execl('/usr/bin/sleep','sleep','30')
+os.execl(shutil.which('sleep'),'sleep','30')
 ''')
             interpreter.chmod(0o755)
             vite = root / 'frontend/node_modules/.bin/vite'
             vite.write_text('''#!/usr/bin/env python3
-import os,pathlib,time
+import os,pathlib,time,shutil
 root=pathlib.Path(os.environ['CQA_LIFECYCLE_ROOT'])
 (root/'vite-started').write_text(str(os.getpid()))
 if os.environ['CQA_LIFECYCLE_MODE']=='normal_exit':
@@ -49,7 +50,7 @@ if os.environ['CQA_LIFECYCLE_MODE']=='normal_exit':
         if time.monotonic()>deadline:raise SystemExit(2)
         time.sleep(.01)
 else:
-    os.execl('/usr/bin/sleep','sleep','30')
+    os.execl(shutil.which('sleep'),'sleep','30')
 ''')
             vite.chmod(0o755)
             env = {
@@ -67,10 +68,15 @@ else:
                 deadline = time.monotonic() + 2
                 marker = 'signal-sent' if mode.startswith('startup_') else 'vite-started'
                 while not (root / marker).exists():
-                    self.assertIsNone(owner.poll(), 'Owner exited before lifecycle fixture reached its trigger')
+                    if owner.poll() is not None:
+                        self.fail('Owner exited before lifecycle trigger: ' + owner.communicate()[0])
                     self.assertLess(time.monotonic(), deadline, 'Lifecycle fixture did not reach its trigger')
                     time.sleep(.01)
                 if mode == 'normal_exit':
+                    duplicate = subprocess.run(['bash', 'scripts/dev.sh'], cwd=root, env=env,
+                                               capture_output=True, text=True, timeout=2)
+                    self.assertEqual(duplicate.returncode, 1)
+                    self.assertIn('already owns this database', duplicate.stderr)
                     (root / 'finish-vite').touch()
                 try:
                     output = owner.communicate(timeout=2)[0]

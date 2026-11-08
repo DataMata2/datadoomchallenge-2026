@@ -10,6 +10,7 @@ import {
   type SavedObservation,
 } from "./api";
 import Analysis from "./Analysis";
+import Icon from "./Icon";
 import {
   activeRun,
   Dialog,
@@ -201,6 +202,9 @@ export default function ReportWorkspace({
         <aside className="assistant-pane">
           <div className="section-head">
             <div>
+              <span className="assistant-orbit">
+                <Icon name="sparkle" size={25} />
+              </span>
               <h2>Analysis assistant</h2>
               <p>
                 Ask a question, refine the selection or define an independent
@@ -237,6 +241,30 @@ export default function ReportWorkspace({
             }}
           >
             <label htmlFor="assistant-message">Your question</label>
+            <div className="prompt-suggestions">
+              <button
+                type="button"
+                disabled={sending}
+                onClick={() =>
+                  setContent(
+                    "For DEV agent chats in October 2026, compare quality by language.",
+                  )
+                }
+              >
+                Compare languages
+              </button>
+              <button
+                type="button"
+                disabled={sending}
+                onClick={() =>
+                  setContent(
+                    "For DEV in October 2026, show conversations with critical violations.",
+                  )
+                }
+              >
+                Explore critical flags
+              </button>
+            </div>
             <textarea
               id="assistant-message"
               required

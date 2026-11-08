@@ -21,6 +21,8 @@ import type {
   UsageSummary,
   CustomMetricDefinition,
   Observation,
+  DatasetImportRequest,
+  DatasetImportResult,
 } from "./api-types";
 export * from "./api-types";
 export type SavedObservation = {
@@ -67,6 +69,8 @@ async function request<T>(path: string, body?: unknown): Promise<T> {
 }
 const id = encodeURIComponent;
 export const api = {
+  importDataset: (body: DatasetImportRequest) =>
+    request<DatasetImportResult>("/datasets/import", body),
   meta: () => request<MetaResponse>("/meta"),
   usage: () => request<UsageSummary>("/usage"),
   search: (filters: FilterSpec) =>

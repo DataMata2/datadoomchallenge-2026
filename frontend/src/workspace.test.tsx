@@ -10,6 +10,7 @@ import App from "./App";
 import Analysis from "./Analysis";
 import ConversationDrawer from "./ConversationDrawer";
 import ReportWorkspace from "./ReportWorkspace";
+import DatasetImport from "./DatasetImport";
 import type {
   AnalysisOutput,
   Checklist,
@@ -714,7 +715,7 @@ test("saved source metadata survives score and critical drift without refreshing
   ).find((b) => b.textContent === observed.conversation_id);
   assert.ok(source);
   const row = source.closest("tr")!;
-  assert.match(row.textContent || "", /agent chat \/ EN/);
+  assert.match(row.querySelector(".source-tags")?.textContent || "", /ChatEN/);
   assert.match(row.textContent || "", /2026/);
   assert.ok(row.textContent?.includes(observed.final.final_score.toFixed(2)));
   assert.match(row.textContent || "", /Critical flag/);
@@ -741,5 +742,139 @@ test("saved source metadata survives score and critical drift without refreshing
         c.path === "/api/assistant",
     ),
     false,
+  );
+});
+
+test("JSON import previews and submits the existing atomic API without starting evaluation", async () => {
+  const record = {
+    conversation_id: "upload-001",
+    channel: "agent chat",
+    language: "EN",
+    audio_url: null,
+    transcript: [
+      { timestamp: "00:01", speaker: "client", text: "Synthetic upload only" },
+    ],
+  };
+  let opened = false;
+  const originalRoute = route;
+  route = (path, body) =>
+    path === "/api/datasets/import"
+      ? {
+          dataset_id: body.group_id,
+          total_records: 1,
+          assign_demo_dates: false,
+          scheduling_seed: null,
+        }
+      : originalRoute(path, body);
+  await act(async () =>
+    root.render(
+      <DatasetImport
+        close={() => {}}
+        imported={async () => {
+          opened = true;
+        }}
+      />,
+    ),
+  );
+  await act(async () => button("Paste JSON").click());
+  const textarea = container.querySelector("textarea")!;
+  await typeValue(textarea, JSON.stringify([record]));
+  await act(async () => button("Preview conversations").click());
+  assert.match(
+    container.querySelector("[aria-label='Import preview']")?.textContent || "",
+    /upload-001/,
+  );
+  assert.equal(calls.length, 0);
+  await act(async () => button("Import 1 conversations").click());
+  await settle();
+  assert.deepEqual(calls, [
+    {
+      path: "/api/datasets/import",
+      body: {
+        group_id: "IMPORT",
+        payload: {
+          error: "",
+          isSuccess: true,
+          data: {
+            dataset_group_id: "IMPORT",
+            total_records: 1,
+            records: [record],
+          },
+        },
+        assign_demo_dates: false,
+      },
+    },
+  ]);
+  assert.match(container.textContent || "", /Your conversations are in/);
+  await act(async () => button("Open dataset").click());
+  assert.equal(opened, true);
+});
+
+test("invalid pasted JSON stays actionable and sends no API requests", async () => {
+  await act(async () =>
+    root.render(<DatasetImport close={() => {}} imported={async () => {}} />),
+  );
+  await act(async () => button("Paste JSON").click());
+  await typeValue(container.querySelector("textarea")!, "{bad-json");
+  await act(async () => button("Preview conversations").click());
+  assert.match(
+    container.querySelector("[role='alert']")?.textContent || "",
+    /not valid JSON/,
+  );
+  assert.equal(button("Import conversations").disabled, true);
+  assert.equal(calls.length, 0);
+});
+
+test("refresh failure after import keeps the saved result and never repeats the import request", async () => {
+  const record = {
+    conversation_id: "refresh-check",
+    channel: "agent chat",
+    language: "RU",
+    audio_url: null,
+    transcript: [
+      {
+        timestamp: "00:01",
+        speaker: "client",
+        text: "Synthetic refresh check",
+      },
+    ],
+  };
+  let refreshes = 0;
+  route = (path) => {
+    assert.equal(path, "/api/datasets/import");
+    return {
+      dataset_id: "IMPORT",
+      total_records: 1,
+      assign_demo_dates: false,
+      scheduling_seed: null,
+    };
+  };
+  await act(async () =>
+    root.render(
+      <DatasetImport
+        close={() => {}}
+        imported={async () => {
+          refreshes++;
+          if (refreshes === 1) throw new Error("Offline");
+        }}
+      />,
+    ),
+  );
+  await act(async () => button("Paste JSON").click());
+  await typeValue(container.querySelector("textarea")!, JSON.stringify(record));
+  await act(async () => button("Preview conversations").click());
+  await act(async () => button("Import 1 conversations").click());
+  await settle();
+  await act(async () => button("Open dataset").click());
+  assert.match(
+    container.querySelector("[role='alert']")?.textContent || "",
+    /Import succeeded/,
+  );
+  assert.match(container.textContent || "", /Your conversations are in/);
+  await act(async () => button("Open dataset").click());
+  assert.equal(refreshes, 2);
+  assert.equal(
+    calls.filter((c) => c.path === "/api/datasets/import").length,
+    1,
   );
 });
