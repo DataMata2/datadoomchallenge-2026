@@ -68,7 +68,7 @@ def test_initial_report_and_language_only_followup_preserve_period(analytics_dat
     assert second['output']['counts']['selected'] == 1 and 'n=1' in second['message']['content']
     assert model.prompts[1]['current_spec'] == first['spec']
     assert model.prompts[0]['available_datasets'][0]['id'] == 'DEV'
-    assert model.prompts[0]['prompt_version'] == 'cqa-assistant-v2'
+    assert model.prompts[0]['prompt_version'] == 'cqa-assistant-v3'
     assert model.prompts[0]['analysis_spec_schema'] == AnalysisSpec.model_json_schema()
     assert 'target_json' not in first['action']['patch'] and first['action']['patch']['target'] == spec
     assert model.prompts[0]['timezone'] == 'Asia/Almaty' and model.prompts[0]['calendar']['jurisdiction'] == 'KZ'

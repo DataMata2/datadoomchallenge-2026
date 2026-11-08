@@ -24,6 +24,60 @@
         }
       }
     },
+    "/api/settings": {
+      "get": {
+        "summary": "Workspace Settings",
+        "operationId": "workspace_settings_api_settings_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WorkspaceSettings"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "Save Workspace Settings",
+        "operationId": "save_workspace_settings_api_settings_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WorkspaceSettings"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WorkspaceSettings"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/meta": {
       "get": {
         "summary": "Meta",
@@ -2328,6 +2382,16 @@
       },
       "CustomAssessment": {
         "properties": {
+          "analysis_language": {
+            "type": "string",
+            "enum": [
+              "RU",
+              "KZ",
+              "EN"
+            ],
+            "title": "Analysis Language",
+            "default": "EN"
+          },
           "id": {
             "type": "string",
             "title": "Id"
@@ -2623,6 +2687,16 @@
       },
       "Evaluation": {
         "properties": {
+          "analysis_language": {
+            "type": "string",
+            "enum": [
+              "RU",
+              "KZ",
+              "EN"
+            ],
+            "title": "Analysis Language",
+            "default": "EN"
+          },
           "id": {
             "type": "string",
             "title": "Id"
@@ -3636,6 +3710,16 @@
       },
       "ReportMessage": {
         "properties": {
+          "analysis_language": {
+            "type": "string",
+            "enum": [
+              "RU",
+              "KZ",
+              "EN"
+            ],
+            "title": "Analysis Language",
+            "default": "EN"
+          },
           "id": {
             "type": "string",
             "title": "Id"
@@ -3778,6 +3862,16 @@
       },
       "Run": {
         "properties": {
+          "analysis_language": {
+            "type": "string",
+            "enum": [
+              "RU",
+              "KZ",
+              "EN"
+            ],
+            "title": "Analysis Language",
+            "default": "EN"
+          },
           "id": {
             "type": "string",
             "title": "Id"
@@ -4812,6 +4906,23 @@
           "type"
         ],
         "title": "ValidationError"
+      },
+      "WorkspaceSettings": {
+        "properties": {
+          "analysis_language": {
+            "type": "string",
+            "enum": [
+              "RU",
+              "KZ",
+              "EN"
+            ],
+            "title": "Analysis Language",
+            "default": "RU"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "WorkspaceSettings"
       }
     }
   }

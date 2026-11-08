@@ -9,6 +9,8 @@ from .analytics_models import AnalysisSpec, Report
 from .budget import now
 from .evaluations import latest_evaluations
 from .storage import Store
+from .models import Language
+from .preferences import Preferences
 
 
 class Reports:
@@ -24,9 +26,10 @@ class Reports:
         with lock:
             yield
 
-    def draft(self):
+    def draft(self, analysis_language: Language | None = None):
+        language = analysis_language or Preferences(self.store).get().analysis_language
         stamp = now()
-        report = {'id': str(uuid4()), 'title': 'New analysis', 'status': 'draft', 'spec': None, 'output': None,
+        report = {'id': str(uuid4()), 'title': {'RU': 'Новый анализ', 'KZ': 'Жаңа талдау', 'EN': 'New analysis'}[language], 'status': 'draft', 'spec': None, 'output': None,
                   'created_at': stamp, 'updated_at': stamp, 'messages': [], 'custom_metrics': []}
         self.store.insert_immutable('reports', {report['id']: report})
         return self.get(report['id'])
@@ -39,8 +42,9 @@ class Reports:
         self.store.insert_immutable('reports', {report['id']: report})
         return self.get(report['id'])
 
-    def add_message(self, id, role, content, attempts=None):
-        message = {'id': str(uuid4()), 'role': role, 'content': content, 'created_at': now(), 'usage_attempt_ids': attempts or []}
+    def add_message(self, id, role, content, attempts=None, *, analysis_language: Language | None = None):
+        language = analysis_language or Preferences(self.store).get().analysis_language
+        message = {'id': str(uuid4()), 'role': role, 'content': content, 'created_at': now(), 'usage_attempt_ids': attempts or [], 'analysis_language': language}
         def append(current):
             current['messages'] = (current['messages'] + [message])[-40:]
             current['updated_at'] = message['created_at']

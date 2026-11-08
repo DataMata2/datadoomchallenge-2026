@@ -18,7 +18,7 @@ from urllib.request import Request, urlopen
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / 'backend/src'))
 from jsonschema import Draft202012Validator
-from cqa.evaluations import Assessment, PROMPT_VERSION, SYSTEM
+from cqa.evaluations import Assessment, LEGACY_PROMPT_VERSION as PROMPT_VERSION, LEGACY_SYSTEM as SYSTEM
 from cqa.prepare import model_job_lock
 from cqa.provider import _finite_float, _unique_object
 from cqa.scoring import score_criteria

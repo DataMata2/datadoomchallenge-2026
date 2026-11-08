@@ -4,7 +4,7 @@ from typing import Annotated, Literal
 
 from pydantic import Field, StrictBool, StrictFloat, StrictInt, StrictStr, model_validator
 
-from .models import CustomMetricDefinition, ModelIdentity, Run, StrictModel
+from .models import CustomMetricDefinition, Language, ModelIdentity, Run, StrictModel
 
 
 class MetricJudgment(StrictModel):
@@ -20,6 +20,7 @@ class MetricJudgment(StrictModel):
 
 
 class CustomAssessment(StrictModel):
+    analysis_language: Language = "EN"
     id: StrictStr
     dataset_id: StrictStr
     conversation_id: StrictStr

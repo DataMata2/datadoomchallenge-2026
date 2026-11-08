@@ -147,6 +147,7 @@ class AnalysisOutput(StrictModel):
 
 
 class ReportMessage(StrictModel):
+    analysis_language: Language = "EN"
     id: StrictStr
     role: Literal['user', 'assistant']
     content: StrictStr

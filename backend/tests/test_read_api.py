@@ -58,7 +58,7 @@ def test_openapi_publishes_only_implemented_routes_and_typed_envelope(tmp_path):
     client = TestClient(create_app(Settings(database_path=tmp_path / "api.db")))
     schema = client.get("/openapi.json").json()
     assert set(schema["paths"]) == {
-        "/api/health", "/api/meta", "/api/datasets/import", "/api/conversations",
+        "/api/health", "/api/meta", "/api/settings", "/api/datasets/import", "/api/conversations",
         "/api/conversations/{id}", "/api/checklists", "/api/checklists/{id}",
         "/api/runs", "/api/runs/{id}", "/api/runs/{id}/cancel", "/api/evaluations/{id}", "/api/usage",
         "/api/appeals", "/api/appeals/{id}/decision", "/api/exports/{dataset_id}",

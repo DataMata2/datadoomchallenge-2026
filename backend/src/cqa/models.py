@@ -16,6 +16,10 @@ class StrictModel(BaseModel):
     model_config = ConfigDict(extra="forbid", strict=True)
 
 
+class WorkspaceSettings(StrictModel):
+    analysis_language: Language = "RU"
+
+
 class SourceTurn(StrictModel):
     timestamp: NonemptyString
     speaker: Literal["client", "operator", "bot", "system"]
@@ -356,6 +360,7 @@ class RunItem(StrictModel):
 
 
 class Run(StrictModel):
+    analysis_language: Language = "EN"
     id: StrictStr
     kind: Literal["evaluation", "custom_metric"]
     dataset_id: StrictStr
@@ -390,6 +395,7 @@ class Run(StrictModel):
 
 
 class Evaluation(StrictModel):
+    analysis_language: Language = "EN"
     id: StrictStr
     dataset_id: StrictStr
     conversation_id: StrictStr

@@ -19,9 +19,10 @@ from .datasets import conversation_key, import_dataset
 from .models import (
     Channel, Checklist, ChecklistPage, ConversationPage, ConversationResponse,
     DatasetImportRequest, DatasetImportResult, HealthResponse, Language, MetaResponse,
-    Run, RunRequest, Evaluation, UsageSummary,
+    Run, RunRequest, Evaluation, UsageSummary, WorkspaceSettings,
     Appeal, AppealPage, AppealRequest, ChecklistCreateRequest, DecisionRequest, BaselineExport,
 )
+from .preferences import Preferences
 from .rubric import default_checklist
 from .storage import Store
 from .workflows import ReviewConflict, Workflows
@@ -43,6 +44,7 @@ def create_app(settings: Settings | None = None, *, model_client=None) -> FastAP
     model_client = model_client or ModelClient(budget, settings=settings)
     evaluator = Evaluator(store, model_client)
     jobs = JobManager(store, evaluator)
+    preferences = Preferences(store)
     workflows = Workflows(store)
     reports = Reports(store)
     metrics = CustomMetrics(store, jobs)
@@ -57,6 +59,7 @@ def create_app(settings: Settings | None = None, *, model_client=None) -> FastAP
             await asyncio.to_thread(jobs.close)
 
     app = FastAPI(lifespan=lifespan, title="CQA API", version="0.1.0", description="Local conversation quality analytics with deterministic saved reports, assistant actions and independent custom metrics.")
+    app.state.preferences = preferences
     app.state.store = store
     app.state.settings = settings
     app.state.budget = budget
@@ -79,6 +82,14 @@ def create_app(settings: Settings | None = None, *, model_client=None) -> FastAP
     def health() -> dict:
         return {"status": "ok"}
 
+    @app.get("/api/settings", response_model=WorkspaceSettings)
+    def workspace_settings() -> WorkspaceSettings:
+        return preferences.get()
+
+    @app.post("/api/settings", response_model=WorkspaceSettings)
+    def save_workspace_settings(request: WorkspaceSettings) -> WorkspaceSettings:
+        return preferences.save(request)
+
     @app.get("/api/meta", response_model=MetaResponse)
     def meta() -> dict:
         rows = store.list("conversations")
@@ -89,7 +100,7 @@ def create_app(settings: Settings | None = None, *, model_client=None) -> FastAP
                 "datasets": [{"id": id, "total_records": sum(row["dataset_id"] == id for row in rows)} for id in datasets],
                 "scheduling": scheduling, "available_periods": scheduling["periods"],
                 "filtering_options": filtering_options(), "holiday_calendar": CALENDAR,
-                "implemented_features": ["dataset_import", "conversation_read", "checklist_read", "evaluation_runs", "run_cancellation", "usage_accounting", "checklist_versions", "appeals", "baseline_export", "conversation_search", "analytics", "saved_reports", "assistant", "custom_metrics"]}
+                "implemented_features": ["dataset_import", "conversation_read", "checklist_read", "evaluation_runs", "run_cancellation", "usage_accounting", "checklist_versions", "appeals", "baseline_export", "conversation_search", "analytics", "saved_reports", "assistant", "custom_metrics", "workspace_settings"]}
 
     @app.post("/api/datasets/import", response_model=DatasetImportResult)
     def dataset_import(request: DatasetImportRequest) -> dict:

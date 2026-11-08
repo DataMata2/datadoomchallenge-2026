@@ -228,6 +228,7 @@ export type CriterionJudgment = {
 };
 
 export type CustomAssessment = {
+  analysis_language?: "RU" | "KZ" | "EN";
   id: string;
   dataset_id: string;
   conversation_id: string;
@@ -280,6 +281,7 @@ export type DecisionRequest = {
 };
 
 export type Evaluation = {
+  analysis_language?: "RU" | "KZ" | "EN";
   id: string;
   dataset_id: string;
   conversation_id: string;
@@ -435,6 +437,7 @@ export type Report = {
 };
 
 export type ReportMessage = {
+  analysis_language?: "RU" | "KZ" | "EN";
   id: string;
   role: "user" | "assistant";
   content: string;
@@ -467,6 +470,7 @@ export type ReportPage = {
 };
 
 export type Run = {
+  analysis_language?: "RU" | "KZ" | "EN";
   id: string;
   kind: "evaluation" | "custom_metric";
   dataset_id: string;
@@ -614,4 +618,8 @@ export type ValidationError = {
   type: string;
   input?: unknown;
   ctx?: Record<string, unknown>;
+};
+
+export type WorkspaceSettings = {
+  analysis_language?: "RU" | "KZ" | "EN";
 };

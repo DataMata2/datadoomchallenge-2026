@@ -9,6 +9,7 @@ from .budget import now
 from .datasets import conversation_key
 from .evaluations import latest_evaluations
 from .provider import CancelledBeforeSend, provider_context
+from .preferences import Preferences
 from .storage import Store
 
 ACTIVE = {"queued", "running"}
@@ -82,7 +83,7 @@ class JobManager:
             raise KeyError("Checklist version not found")
         if any(self.store.get("conversations", conversation_key(dataset_id, id)) is None for id in conversation_ids):
             raise KeyError("Conversation not found in the selected dataset")
-        run = {"id": str(uuid4()), "kind": "evaluation", "dataset_id": dataset_id, "conversation_ids": conversation_ids,
+        run = {"id": str(uuid4()), "kind": "evaluation", "analysis_language": Preferences(self.store).get().analysis_language, "dataset_id": dataset_id, "conversation_ids": conversation_ids,
                "checklist_version_id": checklist_version_id, "status": "queued", "total": len(conversation_ids),
                "completed": 0, "failed": 0, "items": [{"conversation_id": id, "status": "queued", "evaluation_id": None, "error": None} for id in conversation_ids],
                "created_at": now(), "started_at": None, "finished_at": None, "error": None,
