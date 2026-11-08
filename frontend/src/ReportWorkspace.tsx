@@ -1,3 +1,4 @@
+import { groupLabel, message, t } from "./i18n";
 import { useEffect, useState } from "react";
 import {
   api,
@@ -152,12 +153,12 @@ export default function ReportWorkspace({
     <>
       <div className="report-toolbar">
         <label className="grow">
-          Saved report
+          {t("Saved report")}
           <select value={selectedId} onChange={(e) => select(e.target.value)}>
-            <option value="">New assistant conversation</option>
+            <option value="">{t("New assistant conversation")}</option>
             {reports.map((r) => (
               <option key={r.id} value={r.id}>
-                {r.title} ({r.status})
+                {t(r.title)} ({t(r.status || "")})
               </option>
             ))}
           </select>
@@ -168,7 +169,7 @@ export default function ReportWorkspace({
             setError("");
           }}
         >
-          New conversation
+          {t("New conversation")}
         </button>
         {report?.status === "ready" && (
           <button
@@ -186,15 +187,15 @@ export default function ReportWorkspace({
               }
             }}
           >
-            {refreshing ? "Refreshing…" : "Refresh saved analysis"}
+            {refreshing ? t("Refreshing…") : t("Refresh saved analysis")}
           </button>
         )}
       </div>
       {error && (
         <ErrorBox>
-          {error}{" "}
+          {message(error)}{" "}
           <button onClick={() => setRevision((v) => v + 1)}>
-            Retry report
+            {t("Retry report")}
           </button>
         </ErrorBox>
       )}
@@ -205,10 +206,11 @@ export default function ReportWorkspace({
               <span className="assistant-orbit">
                 <Icon name="sparkle" size={25} />
               </span>
-              <h2>Analysis assistant</h2>
+              <h2>{t("Analysis assistant")}</h2>
               <p>
-                Ask a question, refine the selection or define an independent
-                metric.
+                {t(
+                  "Ask a question, refine the selection or define an independent metric.",
+                )}
               </p>
             </div>
           </div>
@@ -216,20 +218,23 @@ export default function ReportWorkspace({
             {report?.messages.length ? (
               report.messages.map((m) => (
                 <article key={m.id} className={`message ${m.role}`}>
-                  <strong>{m.role === "user" ? "You" : "CQA assistant"}</strong>
-                  <p>{m.content}</p>
+                  <strong>
+                    {m.role === "user" ? t("You") : t("CQA assistant")}
+                  </strong>
+                  <p translate="no">{m.content}</p>
                   <time>{time(m.created_at)}</time>
                 </article>
               ))
             ) : (
               <Empty>
-                Start with a concrete period and question. For example: “Compare
-                day and night quality for agent chats in October 2026.”
+                {t(
+                  "Start with a concrete period and question. For example: “Compare day and night quality for agent chats in October 2026.”",
+                )}
               </Empty>
             )}
             {sending && (
               <div className="message assistant" role="status">
-                Interpreting your question and preparing the analysis…
+                {t("Interpreting your question and preparing the analysis…")}
               </div>
             )}
           </div>
@@ -240,29 +245,33 @@ export default function ReportWorkspace({
               void send();
             }}
           >
-            <label htmlFor="assistant-message">Your question</label>
+            <label htmlFor="assistant-message">{t("Your question")}</label>
             <div className="prompt-suggestions">
               <button
                 type="button"
                 disabled={sending}
                 onClick={() =>
                   setContent(
-                    "For DEV agent chats in October 2026, compare quality by language.",
+                    t(
+                      "For DEV agent chats in October 2026, compare quality by language.",
+                    ),
                   )
                 }
               >
-                Compare languages
+                {t("Compare languages")}
               </button>
               <button
                 type="button"
                 disabled={sending}
                 onClick={() =>
                   setContent(
-                    "For DEV in October 2026, show conversations with critical violations.",
+                    t(
+                      "For DEV in October 2026, show conversations with critical violations.",
+                    ),
                   )
                 }
               >
-                Explore critical flags
+                {t("Explore critical flags")}
               </button>
             </div>
             <textarea
@@ -271,47 +280,50 @@ export default function ReportWorkspace({
               maxLength={8000}
               value={content}
               onChange={(e) => setContent(e.target.value)}
-              placeholder="Compare October 2026 agent chats by day and night…"
+              placeholder={t(
+                "Compare October 2026 agent chats by day and night…",
+              )}
             />
             <button className="primary" disabled={sending || !content.trim()}>
-              {sending ? "Preparing response…" : "Send question"}
+              {sending ? t("Preparing response…") : t("Send question")}
             </button>
             <small>
-              The assistant can request clarification. Custom assessment
-              requests start model work; filters alone do not reevaluate
-              conversations.
+              {t(
+                "The assistant can request clarification. Custom assessment requests start model work; filters alone do not reevaluate conversations.",
+              )}
             </small>
           </form>
         </aside>
         <div className="report-canvas">
           {loading ? (
-            <Empty>Opening the saved report…</Empty>
+            <Empty>{t("Opening the saved report…")}</Empty>
           ) : !report ? (
             <Empty>
-              Your report will appear here with its interpreted filters,
-              denominators and sources. You can also save the current overview
-              selection as a report.
+              {t(
+                "Your report will appear here with its interpreted filters, denominators and sources. You can also save the current overview selection as a report.",
+              )}
             </Empty>
           ) : (
             <>
               <div className="section-head">
                 <div>
-                  <h2>{report.title}</h2>
+                  <h2>{t(report.title)}</h2>
                   <p>
-                    Saved {time(report.updated_at)} · {report.status}
+                    {t("Saved ")}
+                    {time(report.updated_at)} · {t(report.status || "")}
                   </p>
                 </div>
                 {report.status === "ready" && (
                   <button onClick={() => setMetricForm(true)}>
-                    Define custom metric
+                    {t("Define custom metric")}
                   </button>
                 )}
               </div>
               {report.stale && (
                 <div className="notice">
-                  Source assessments have changed since this report was saved.
-                  Refresh the saved analysis to update its numbers; custom
-                  results remain in history.
+                  {t(
+                    "Source assessments have changed since this report was saved. Refresh the saved analysis to update its numbers; custom results remain in history.",
+                  )}
                 </div>
               )}
               {report.output ? (
@@ -338,8 +350,9 @@ export default function ReportWorkspace({
                 />
               ) : (
                 <Empty>
-                  This report is a draft. Answer the assistant’s clarification
-                  to produce an analysis.
+                  {t(
+                    "This report is a draft. Answer the assistant’s clarification to produce an analysis.",
+                  )}
                 </Empty>
               )}
               {run && (
@@ -358,10 +371,11 @@ export default function ReportWorkspace({
               <section className="panel">
                 <div className="section-head">
                   <div>
-                    <h2>Independent custom metrics</h2>
+                    <h2>{t("Independent custom metrics")}</h2>
                     <p>
-                      Custom metrics have their own evidence and coverage. They
-                      never change the regular quality score.
+                      {t(
+                        "Custom metrics have their own evidence and coverage. They never change the regular quality score.",
+                      )}
                     </p>
                   </div>
                 </div>
@@ -376,10 +390,10 @@ export default function ReportWorkspace({
                         <span>
                           <strong>{m.definition.title}</strong>
                           <small>
-                            {m.status} ·{" "}
+                            {t(m.status)} ·{" "}
                             {m.definition.answer_type === "boolean"
-                              ? "Yes percentage"
-                              : "Raw-scale mean"}
+                              ? t("Yes percentage")
+                              : t("Raw-scale mean")}
                           </small>
                         </span>
                         <strong>
@@ -390,18 +404,24 @@ export default function ReportWorkspace({
                             : ""}
                         </strong>
                         <small>
-                          {m.aggregate.sample_count} applicable /{" "}
-                          {m.aggregate.selected_count} selected ·{" "}
-                          {m.aggregate.pending_count} pending ·{" "}
-                          {m.aggregate.uncovered_count} uncovered
+                          {t(
+                            "{applicable} applicable / {selected} selected · {pending} pending · {uncovered} uncovered",
+                            {
+                              applicable: m.aggregate.sample_count,
+                              selected: m.aggregate.selected_count,
+                              pending: m.aggregate.pending_count,
+                              uncovered: m.aggregate.uncovered_count,
+                            },
+                          )}
                         </small>
                       </button>
                     ))}
                   </div>
                 ) : (
                   <Empty>
-                    No custom metric has been assessed for this report. Define a
-                    metric or ask the assistant for one.
+                    {t(
+                      "No custom metric has been assessed for this report. Define a metric or ask the assistant for one.",
+                    )}
                   </Empty>
                 )}
               </section>
@@ -460,7 +480,7 @@ function MetricForm({
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
   return (
-    <Dialog title="Define an independent metric" close={close}>
+    <Dialog title={t("Define an independent metric")} close={close}>
       <form
         className="dialog-body"
         onSubmit={async (e) => {
@@ -495,11 +515,12 @@ function MetricForm({
         }}
       >
         <p>
-          Describe one observable property of a conversation. This starts a
-          separate assessment of the report’s current selection.
+          {t(
+            "Describe one observable property of a conversation. This starts a separate assessment of the report’s current selection.",
+          )}
         </p>
         <label>
-          Metric ID
+          {t("Metric ID")}
           <input
             required
             pattern="[a-z][a-z0-9_-]{0,63}"
@@ -509,7 +530,7 @@ function MetricForm({
           />
         </label>
         <label>
-          Title
+          {t("Title")}
           <input
             required
             value={title}
@@ -517,7 +538,7 @@ function MetricForm({
           />
         </label>
         <label>
-          Definition and judgment instructions
+          {t("Definition and judgment instructions")}
           <textarea
             required
             value={description}
@@ -525,18 +546,18 @@ function MetricForm({
           />
         </label>
         <label>
-          Answer type
+          {t("Answer type")}
           <select
             value={kind}
             onChange={(e) => setKind(e.target.value as typeof kind)}
           >
-            <option value="boolean">Boolean (No / Yes)</option>
-            <option value="scale">Numeric scale</option>
+            <option value="boolean">{t("Boolean (No / Yes)")}</option>
+            <option value="scale">{t("Numeric scale")}</option>
           </select>
         </label>
         {kind === "scale" && (
           <label>
-            Allowed raw steps
+            {t("Allowed raw steps")}
             <input
               required
               value={values}
@@ -550,11 +571,11 @@ function MetricForm({
             checked={allowNa}
             onChange={(e) => setAllowNa(e.target.checked)}
           />
-          Allow N/A
+          {t("Allow N/A")}
         </label>
         {allowNa && (
           <label>
-            N/A condition
+            {t("N/A condition")}
             <textarea
               required
               value={na}
@@ -563,13 +584,15 @@ function MetricForm({
           </label>
         )}
         <p className="notice">
-          Boolean results show the percentage of applicable conversations marked
-          Yes. A No answer is not automatically a negative quality grade. N/A is
-          excluded from the denominator.
+          {t(
+            "Boolean results show the percentage of applicable conversations marked Yes. A No answer is not automatically a negative quality grade. N/A is excluded from the denominator.",
+          )}
         </p>
-        {error && <ErrorBox>{error}</ErrorBox>}
+        {error && <ErrorBox>{message(error)}</ErrorBox>}
         <button className="primary" disabled={busy}>
-          {busy ? "Starting assessment…" : "Create metric and assess selection"}
+          {busy
+            ? t("Starting assessment…")
+            : t("Create metric and assess selection")}
         </button>
       </form>
     </Dialog>
@@ -599,48 +622,59 @@ function MetricDialog({
       <div className="dialog-body">
         <p>{metric.definition.description}</p>
         <p>
-          Raw domain: {metric.definition.allowed_values.map(raw).join(", ")}.{" "}
+          {t("Raw domain: ")}
+          {metric.definition.allowed_values.map(raw).join(", ")}.{" "}
           {metric.definition.allow_na
-            ? `N/A condition: ${metric.definition.na_condition}. N/A is excluded from the applicable denominator.`
-            : "N/A is not allowed."}
+            ? t(
+                "N/A condition: {arg0}. N/A is excluded from the applicable denominator.",
+                { arg0: metric.definition.na_condition },
+              )
+            : t("N/A is not allowed.")}
         </p>
         <div className="coverage">
           <strong>
             {score(a.value)}
-            {a.unit === "percent_true" ? "%" : " raw mean"}
+            {a.unit === "percent_true" ? "%" : t(" raw mean")}
           </strong>
-          <span>{a.sample_count} applicable</span>
-          <span>{a.assessed_count} assessed</span>
-          <span>{a.selected_count} selected</span>
+          <span>{t("{count} applicable", { count: a.sample_count })}</span>
+          <span>{t("{count} assessed", { count: a.assessed_count })}</span>
+          <span>{t("{count} selected", { count: a.selected_count })}</span>
           <span>{a.na_count} N/A</span>
-          <span>{a.failed_count} failed</span>
-          <span>{a.pending_count} pending</span>
-          <span>{a.cancelled_count} cancelled</span>
-          <span>{a.interrupted_count} interrupted</span>
-          <span>{a.uncovered_count} uncovered</span>
-          <span>{metric.out_of_scope_count} outside current selection</span>
+          <span>{t("{count} failed", { count: a.failed_count })}</span>
+          <span>{t("{count} pending", { count: a.pending_count })}</span>
+          <span>{t("{count} cancelled", { count: a.cancelled_count })}</span>
+          <span>
+            {t("{count} interrupted", { count: a.interrupted_count })}
+          </span>
+          <span>{t("{count} uncovered", { count: a.uncovered_count })}</span>
+          <span>
+            {t("{count} outside current selection", {
+              count: metric.out_of_scope_count,
+            })}
+          </span>
         </div>
         {a.uncovered_count > 0 && (
           <p className="notice">
-            Some selected conversations have no assessment for this metric.
-            Changing report filters does not automatically assess new sources.
+            {t(
+              "Some selected conversations have no assessment for this metric. Changing report filters does not automatically assess new sources.",
+            )}
           </p>
         )}
         {metric.groups.length > 0 && (
           <div className="bar-chart">
             {metric.groups.map((g) => (
               <div className="row" key={g.key}>
-                <strong>{g.label}</strong>
+                <strong>{groupLabel(g.label)}</strong>
                 <span>
                   {score(g.aggregate.value)}
-                  {a.unit === "percent_true" ? "%" : ""} · n=
+                  {a.unit === "percent_true" ? "%" : ""} {t(" · n= ")}
                   {g.aggregate.sample_count} · {g.aggregate.na_count} N/A
                 </span>
               </div>
             ))}
           </div>
         )}
-        <h3>Source judgments</h3>
+        <h3>{t("Source judgments")}</h3>
         {metric.results.length ? (
           metric.results.map((result) => (
             <article className="custom-result" key={result.id}>
@@ -656,12 +690,12 @@ function MetricDialog({
                 <strong>
                   {result.status === "ok"
                     ? raw(result.judgment?.value)
-                    : "Failed"}
+                    : t("Failed")}
                 </strong>
               </div>
               {result.judgment ? (
                 <>
-                  <p>{result.judgment.rationale}</p>
+                  <p translate="no">{result.judgment.rationale}</p>
                   <div className="row">
                     {result.judgment.evidence_turns.map((turn) => (
                       <button
@@ -676,14 +710,15 @@ function MetricDialog({
                           )
                         }
                       >
-                        Source turn #{turn}
+                        {t("Source turn #")}
+                        {turn}
                       </button>
                     ))}
                   </div>
                 </>
               ) : (
                 <ErrorBox>
-                  {result.error || "No valid judgment is available."}
+                  {result.error || t("No valid judgment is available.")}
                 </ErrorBox>
               )}
               <small>
@@ -692,9 +727,9 @@ function MetricDialog({
             </article>
           ))
         ) : (
-          <Empty>No source judgments are available yet.</Empty>
+          <Empty>{t("No source judgments are available yet.")}</Empty>
         )}
-        <h3>Assessment history</h3>
+        <h3>{t("Assessment history")}</h3>
         {metric.runs.map((run) => (
           <RunProgress
             key={run.id}
@@ -718,12 +753,14 @@ function MetricDialog({
             }
           }}
         >
-          {busy ? "Starting…" : "Reassess current report selection"}
+          {busy ? t("Starting…") : t("Reassess current report selection")}
         </button>
         <small>
-          Dataset {dataset}. Prior results and runs remain in history.
+          {t("Dataset ")}
+          {dataset}
+          {t(". Prior results and runs remain in history.")}
         </small>
-        {error && <ErrorBox>{error}</ErrorBox>}
+        {error && <ErrorBox>{message(error)}</ErrorBox>}
       </div>
     </Dialog>
   );

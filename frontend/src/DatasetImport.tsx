@@ -1,3 +1,4 @@
+import { message, t, count } from "./i18n";
 import { useRef, useState } from "react";
 import { api, type DatasetImportResult, type SourceEnvelope } from "./api";
 import { prepareImport } from "./import-data";
@@ -74,36 +75,45 @@ export default function DatasetImport({
     }
   };
   return (
-    <Dialog title="Import conversations" close={close} busy={busy}>
+    <Dialog title={t("Import conversations")} close={close} busy={busy}>
       <div className="import-body">
         {result ? (
           <div className="import-success" role="status">
             <span className="success-orbit">
               <Icon name="check" size={32} />
             </span>
-            <span className="eyebrow">READY FOR REVIEW</span>
-            <h3>Your conversations are in.</h3>
+            <span className="eyebrow">{t("READY FOR REVIEW")}</span>
+            <h3>{t("Your conversations are in.")}</h3>
             <p>
-              {result.total_records} conversations are available in{" "}
-              <strong>{result.dataset_id}</strong>. Importing keeps existing
-              assessments and does not start a model evaluation.
+              {t("Dataset {dataset} now contains {count}.", {
+                dataset: result.dataset_id,
+                count: count("conversations", result.total_records),
+              })}{" "}
+              {t(
+                "Importing keeps existing assessments and does not start a model evaluation.",
+              )}
             </p>
             <button
               className="primary"
               disabled={busy}
               onClick={() => void openDataset()}
             >
-              {busy ? "Opening dataset…" : "Open dataset"}
+              {busy ? t("Opening dataset…") : t("Open dataset")}
               <Icon name="arrow" size={16} />
             </button>
           </div>
         ) : (
           <>
             <p className="import-intro">
-              Bring your conversations into one workspace. Preview the data
-              before you import.
+              {t(
+                "Bring your conversations into one workspace. Preview the data before you import.",
+              )}
             </p>
-            <div className="segmented" role="group" aria-label="Import method">
+            <div
+              className="segmented"
+              role="group"
+              aria-label={t("Import method")}
+            >
               <button
                 className={mode === "file" ? "selected" : ""}
                 aria-pressed={mode === "file"}
@@ -115,7 +125,7 @@ export default function DatasetImport({
                   setError("");
                 }}
               >
-                Upload file
+                {t("Upload file")}
               </button>
               <button
                 className={mode === "paste" ? "selected" : ""}
@@ -128,12 +138,12 @@ export default function DatasetImport({
                   setError("");
                 }}
               >
-                Paste JSON
+                {t("Paste JSON")}
               </button>
             </div>
             {!payload && (
               <label>
-                Dataset ID for a single conversation or array
+                {t("Dataset ID for a single conversation or array")}
                 <input
                   value={group}
                   maxLength={128}
@@ -141,7 +151,9 @@ export default function DatasetImport({
                   onChange={(e) => setGroup(e.target.value)}
                 />
                 <small>
-                  Organizer responses use the dataset ID already in the file.
+                  {t(
+                    "Organizer responses use the dataset ID already in the file.",
+                  )}
                 </small>
               </label>
             )}
@@ -168,17 +180,18 @@ export default function DatasetImport({
                   <Icon name="upload" size={25} />
                 </span>
                 <strong>
-                  {payload ? filename : "Drop your JSON file here"}
+                  {payload ? filename : t("Drop your JSON file here")}
                 </strong>
                 <span>
-                  Organizer response, conversation array or single conversation
-                  · up to 20 MB
+                  {t(
+                    "Organizer response, conversation array or single conversation · up to 20 MB",
+                  )}
                 </span>
                 <input
                   ref={fileInput}
                   type="file"
                   accept=".json,application/json"
-                  aria-label="Conversation JSON file"
+                  aria-label={t("Conversation JSON file")}
                   disabled={busy}
                   onChange={(e) => {
                     void readFile(e.target.files?.[0]);
@@ -190,13 +203,13 @@ export default function DatasetImport({
                   disabled={busy}
                   onClick={() => fileInput.current?.click()}
                 >
-                  {payload ? "Choose another file" : "Browse files"}
+                  {payload ? t("Choose another file") : t("Browse files")}
                 </button>
               </div>
             ) : (
               <div className="paste-input">
                 <label>
-                  Conversation JSON
+                  {t("Conversation JSON")}
                   <textarea
                     value={text}
                     disabled={busy}
@@ -213,39 +226,42 @@ export default function DatasetImport({
                   disabled={busy || !text.trim()}
                   onClick={() => preview(text, "Pasted JSON")}
                 >
-                  Preview conversations
+                  {t("Preview conversations")}
                 </button>
               </div>
             )}
             {payload && (
-              <section className="import-preview" aria-label="Import preview">
+              <section
+                className="import-preview"
+                aria-label={t("Import preview")}
+              >
                 <div className="row">
                   <Icon name="file" />
                   <strong>{payload.data.dataset_group_id}</strong>
-                  <span className="status ok">Ready to import</span>
+                  <span className="status ok">{t("Ready to import")}</span>
                 </div>
                 <div className="import-counts">
                   <div>
                     <strong>{records.length}</strong>
-                    <small>conversations</small>
+                    <small>{t("conversations")}</small>
                   </div>
                   <div>
                     <strong>
                       {records.filter((r) => r.channel === "agent chat").length}
                     </strong>
-                    <small>chats</small>
+                    <small>{t("chats")}</small>
                   </div>
                   <div>
                     <strong>
                       {records.filter((r) => r.channel === "voice call").length}
                     </strong>
-                    <small>calls</small>
+                    <small>{t("calls")}</small>
                   </div>
                   <div>
                     <strong>
                       {[...new Set(records.map((r) => r.language))].join(" · ")}
                     </strong>
-                    <small>languages</small>
+                    <small>{t("languages")}</small>
                   </div>
                 </div>
                 <div className="preview-records">
@@ -253,12 +269,15 @@ export default function DatasetImport({
                     <div key={r.conversation_id}>
                       <span>{r.conversation_id}</span>
                       <small>
-                        {r.language} · {r.transcript.length} turns
+                        {r.language} · {count("turns", r.transcript.length)}
                       </small>
                     </div>
                   ))}
                   {records.length > 3 && (
-                    <small>and {records.length - 3} more conversations</small>
+                    <small>
+                      {t(" and ")}
+                      {records.length - 3} {t(" more conversations")}
+                    </small>
                   )}
                 </div>
                 <label className="inline-label">
@@ -268,26 +287,27 @@ export default function DatasetImport({
                     disabled={busy}
                     onChange={(e) => setDemoDates(e.target.checked)}
                   />
-                  Add demonstration dates in October 2026
+                  {t("Add demonstration dates in October 2026")}
                 </label>
                 <small>
-                  Original transcript timestamps are preserved. Demo dates only
-                  enable calendar comparisons.
+                  {t(
+                    "Original transcript timestamps are preserved. Demo dates only enable calendar comparisons.",
+                  )}
                 </small>
               </section>
             )}
             <details className="format-help">
-              <summary>Which JSON formats are supported?</summary>
+              <summary>{t("Which JSON formats are supported?")}</summary>
               <p>
-                Use the organizer API response, an array of records, or one
-                record. Each conversation needs conversation_id, channel,
-                language, transcript and audio_url. Each turn needs timestamp,
-                speaker and text. Use audio_url: null for chats.
+                {t(
+                  "Use the organizer API response, an array of records, or one record. Each conversation needs conversation_id, channel, language, transcript and audio_url. Each turn needs timestamp, speaker and text. Use audio_url: null for chats.",
+                )}
               </p>
             </details>
             <div className="import-actions">
               <span>
-                <Icon name="shield" size={15} /> Import only · no model request
+                <Icon name="shield" size={15} />{" "}
+                {t(" Import only · no model request")}
               </span>
               <button
                 className="primary"
@@ -312,14 +332,18 @@ export default function DatasetImport({
                 }}
               >
                 {busy
-                  ? "Importing…"
-                  : `Import${payload ? ` ${records.length}` : ""} conversations`}
+                  ? t("Importing…")
+                  : payload
+                    ? t("Import {count}", {
+                        count: count("conversations", records.length),
+                      })
+                    : t("Import conversations")}
                 <Icon name="arrow" size={16} />
               </button>
             </div>
           </>
         )}
-        {error && <ErrorBox>{error}</ErrorBox>}
+        {error && <ErrorBox>{message(error)}</ErrorBox>}
       </div>
     </Dialog>
   );

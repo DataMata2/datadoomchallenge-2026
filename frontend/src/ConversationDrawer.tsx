@@ -1,3 +1,4 @@
+import { message, t } from "./i18n";
 import { useEffect, useRef, useState } from "react";
 import {
   api,
@@ -191,45 +192,46 @@ export default function ConversationDrawer({
     }
   };
   return (
-    <Dialog title={`Conversation ${id}`} close={close} wide>
+    <Dialog title={t("Conversation {arg0}", { arg0: id })} close={close} wide>
       <div className="conversation-meta">
         <span>{dataset}</span>
-        <span>{conversation?.channel}</span>
+        <span>{conversation?.channel ? t(conversation.channel) : ""}</span>
         <span>{conversation?.language}</span>
         <span>{time(conversation?.demo_started_at)}</span>
       </div>
-      {error && <ErrorBox>{error}</ErrorBox>}
+      {error && <ErrorBox>{message(error)}</ErrorBox>}
       {loading ? (
-        <Empty>Loading the source and assessment…</Empty>
+        <Empty>{t("Loading the source and assessment…")}</Empty>
       ) : (
         conversation && (
           <>
             <div
               className="mobile-review-tabs"
               role="group"
-              aria-label="Conversation panel"
+              aria-label={t("Conversation panel")}
             >
               <button
                 aria-pressed={mobilePane === "transcript"}
                 onClick={() => setMobilePane("transcript")}
               >
-                Transcript
+                {t("Transcript")}
               </button>
               <button
                 aria-pressed={mobilePane === "assessment"}
                 onClick={() => setMobilePane("assessment")}
               >
-                Assessment
+                {t("Assessment")}
               </button>
             </div>
             <div className="conversation-layout" data-mobile-pane={mobilePane}>
               <section className="transcript">
                 <div className="section-head">
                   <div>
-                    <h3>Original transcript</h3>
+                    <h3>{t("Original transcript")}</h3>
                     <p>
-                      One-based turn numbers include every speaker. Original
-                      timestamps are preserved.
+                      {t(
+                        "One-based turn numbers include every speaker. Original timestamps are preserved.",
+                      )}
                     </p>
                   </div>
                 </div>
@@ -241,14 +243,14 @@ export default function ConversationDrawer({
                         target="_blank"
                         rel="noreferrer"
                       >
-                        Open source recording
+                        {t("Open source recording")}
                       </a>
                       <audio
                         controls
                         preload="none"
                         src={conversation.audio_url}
                       >
-                        Use the recording link to listen.
+                        {t("Use the recording link to listen.")}
                       </audio>
                     </div>
                   )}
@@ -266,28 +268,40 @@ export default function ConversationDrawer({
                         <button onClick={() => setHighlight([index + 1])}>
                           #{index + 1}
                         </button>
-                        <strong>{turn.speaker}</strong>
+                        <strong>{t(turn.speaker)}</strong>
                         <time title={turn.timestamp}>{turn.timestamp}</time>
                       </div>
-                      <p>{turn.text}</p>
+                      <p
+                        translate="no"
+                        lang={
+                          { RU: "ru", KZ: "kk", EN: "en" }[
+                            conversation.language
+                          ]
+                        }
+                      >
+                        {turn.text}
+                      </p>
                     </li>
                   ))}
                 </ol>
                 <details>
-                  <summary>Timestamp and scheduling provenance</summary>
+                  <summary>{t("Timestamp and scheduling provenance")}</summary>
                   <p>
-                    Observed source span:{" "}
-                    {conversation.observed_span.started_at} to{" "}
+                    {t("Observed source span:")}{" "}
+                    {conversation.observed_span.started_at} {t(" to ")}{" "}
                     {conversation.observed_span.ended_at} (
-                    {conversation.observed_span.duration_seconds} seconds). This
-                    derives from the first and last transcript turns.
+                    {conversation.observed_span.duration_seconds}{" "}
+                    {t(
+                      " seconds). This derives from the first and last transcript turns.",
+                    )}
                   </p>
                   <p>
-                    {conversation.scheduling.interpretation} Mode:{" "}
-                    {conversation.scheduling.mode}; seed:{" "}
-                    {conversation.scheduling.seed ?? "none"}; algorithm:{" "}
-                    {conversation.scheduling.algorithm ?? "none"}. Scheduling is
-                    independent of quality scores.
+                    {t(conversation.scheduling.interpretation)} {t(" Mode:")}{" "}
+                    {t(conversation.scheduling.mode)}
+                    {t(" ; seed: ")} {conversation.scheduling.seed ?? t("none")}
+                    {t(" ; algorithm: ")}{" "}
+                    {conversation.scheduling.algorithm ?? t("none")}
+                    {t(". Scheduling is independent of quality scores.")}
                   </p>
                 </details>
               </section>
@@ -295,32 +309,36 @@ export default function ConversationDrawer({
                 {saved && (
                   <section
                     className="notice saved-observation"
-                    aria-label="Saved report observation"
+                    aria-label={t("Saved report observation")}
                   >
-                    <h3>Saved report observation</h3>
+                    <h3>{t("Saved report observation")}</h3>
                     <p>
-                      Generated: {saved.generatedAt}. Checklist:{" "}
-                      {saved.checklistVersionId}.
+                      {t("Generated: ")}
+                      {saved.generatedAt}
+                      {t(". Checklist:")} {saved.checklistVersionId}.
                     </p>
                     <p>
-                      Evaluation: {saved.observation.evaluation_id || "none"}.
-                      Revision: {saved.observation.revision || "none"}. Status:{" "}
-                      {saved.observation.evaluation_status}.
+                      {t("Evaluation: ")}
+                      {saved.observation.evaluation_id || t("none")}
+                      {t(". Revision: ")}
+                      {saved.observation.revision || t("none")}
+                      {t(". Status:")} {t(saved.observation.evaluation_status)}.
                     </p>
                     <p>
-                      Copied quality score:{" "}
-                      {score(saved.observation.final?.final_score)}. Critical
-                      flag: {raw(saved.observation.final?.critical_flag)}.
+                      {t("Copied quality score:")}{" "}
+                      {score(saved.observation.final?.final_score)}
+                      {t(". Critical flag: ")}
+                      {raw(saved.observation.final?.critical_flag)}.
                     </p>
                     {savedCriterion && (
                       <>
                         <p>
-                          {metricNames[criterionId]} copied raw value:{" "}
+                          {metricNames[criterionId]} {t(" copied raw value:")}{" "}
                           {raw(savedCriterion.value)}.{" "}
                           {savedCriterion.rationale}
                         </p>
                         <p>
-                          Saved evidence:{" "}
+                          {t("Saved evidence:")}{" "}
                           {savedCriterion.evidence_turns.map((turn) => (
                             <button
                               className="turn-link"
@@ -334,21 +352,22 @@ export default function ConversationDrawer({
                       </>
                     )}
                     <p>
-                      The saved report remains unchanged until explicitly
-                      refreshed.
+                      {t(
+                        "The saved report remains unchanged until explicitly refreshed.",
+                      )}
                     </p>
                   </section>
                 )}
                 {saved && (
                   <h3>
                     {differs
-                      ? "Current values differ from saved report values"
-                      : "Current values match saved report values"}
+                      ? t("Current values differ from saved report values")
+                      : t("Current values match saved report values")}
                   </h3>
                 )}
                 <div className="evaluation-controls">
                   <label>
-                    Checklist version
+                    {t("Checklist version")}
                     <select
                       value={version}
                       onChange={(e) => {
@@ -358,7 +377,7 @@ export default function ConversationDrawer({
                     >
                       {checklists.map((c) => (
                         <option key={c.id} value={c.id}>
-                          {c.name} ({c.id})
+                          {t(c.name)} ({c.id})
                         </option>
                       ))}
                     </select>
@@ -368,11 +387,12 @@ export default function ConversationDrawer({
                     disabled={busy || !!(run && activeRun(run))}
                     onClick={evaluate}
                   >
-                    {busy ? "Starting…" : "Evaluate this conversation"}
+                    {busy ? t("Starting…") : t("Evaluate this conversation")}
                   </button>
                   <small>
-                    Starts a model assessment using the selected checklist.
-                    Existing results remain in history.
+                    {t(
+                      "Starts a model assessment using the selected checklist. Existing results remain in history.",
+                    )}
                   </small>
                 </div>
                 {run && (
@@ -389,21 +409,23 @@ export default function ConversationDrawer({
                 )}
                 {runError && (
                   <ErrorBox>
-                    {runError}{" "}
+                    {message(runError)}{" "}
                     <button onClick={() => setRunError("")}>
-                      Retry progress
+                      {t("Retry progress")}
                     </button>
                   </ErrorBox>
                 )}
                 {!evaluation ? (
                   <Empty>
-                    No evaluation exists for this checklist version. Start an
-                    evaluation to assess it.
+                    {t(
+                      "No evaluation exists for this checklist version. Start an evaluation to assess it.",
+                    )}
                   </Empty>
                 ) : evaluation.status === "error" ? (
                   <ErrorBox>
-                    Evaluation failed: {evaluation.error}. No quality score is
-                    available.
+                    {t("Evaluation failed: ")}
+                    {evaluation.error}
+                    {t(". No quality score is available.")}
                   </ErrorBox>
                 ) : (
                   <>
@@ -415,12 +437,13 @@ export default function ConversationDrawer({
                       <div>
                         <span>
                           {current?.critical_flag
-                            ? "Critical violation flagged"
-                            : "No critical violation flagged"}
+                            ? t("Critical violation flagged")
+                            : t("No critical violation flagged")}
                         </span>
                         <p>
-                          Critical is unscored and does not automatically zero
-                          the total.
+                          {t(
+                            "Critical is unscored and does not automatically zero the total.",
+                          )}
                         </p>
                       </div>
                     </div>
@@ -430,12 +453,12 @@ export default function ConversationDrawer({
                         checked={original}
                         onChange={(e) => setOriginal(e.target.checked)}
                       />
-                      Show original assessment before review
+                      {t("Show original assessment before review")}
                     </label>
                     <div
                       className="criterion-tabs"
                       role="group"
-                      aria-label="Inspect criterion"
+                      aria-label={t("Inspect criterion")}
                     >
                       <button
                         className={
@@ -443,7 +466,7 @@ export default function ConversationDrawer({
                         }
                         onClick={() => setCriterionId("final_score")}
                       >
-                        Score calculation
+                        {t("Score calculation")}
                       </button>
                       {current?.criteria.map((c) => (
                         <button
@@ -463,26 +486,26 @@ export default function ConversationDrawer({
                     </div>
                     {criterionId === "final_score" ? (
                       <div className="criterion-detail">
-                        <h3>How this score is calculated</h3>
+                        <h3>{t("How this score is calculated")}</h3>
                         <p>
-                          Earned points {score(current?.earned_points)} ÷
-                          applicable weight {score(current?.applicable_weight)}{" "}
-                          × 100 = <strong>{score(current?.final_score)}</strong>
-                          .
+                          {t("Earned points ")}
+                          {score(current?.earned_points)}{" "}
+                          {t(" ÷ applicable weight ")}
+                          {score(current?.applicable_weight)} × 100 ={" "}
+                          <strong>{score(current?.final_score)}</strong>.
                         </p>
                         <p>
-                          N/A criteria contribute no points and are excluded
-                          from applicable weight. The backend normalizes over
-                          applicable weight and rounds the total to two decimal
-                          places.
+                          {t(
+                            "N/A criteria contribute no points and are excluded from applicable weight. The backend normalizes over applicable weight and rounds the total to two decimal places.",
+                          )}
                         </p>
                         <table>
                           <thead>
                             <tr>
-                              <th>Criterion</th>
-                              <th>Raw</th>
-                              <th>Points</th>
-                              <th>Contribution /100</th>
+                              <th>{t("Criterion")}</th>
+                              <th>{t("Raw")}</th>
+                              <th>{t("Points")}</th>
+                              <th>{t("Contribution /100")}</th>
                             </tr>
                           </thead>
                           <tbody>
@@ -506,7 +529,7 @@ export default function ConversationDrawer({
                                 </td>
                                 <td>
                                   {c.weighted_score == null
-                                    ? "Unscored"
+                                    ? t("Unscored")
                                     : score(c.weighted_score)}
                                 </td>
                               </tr>
@@ -528,17 +551,22 @@ export default function ConversationDrawer({
                       )
                     )}
                     <details className="assessment-identity">
-                      <summary>Assessment provenance</summary>
+                      <summary>{t("Assessment provenance")}</summary>
                       <p>
-                        Checklist: {evaluation.checklist_version_id}
+                        {t("Checklist: ")}
+                        {evaluation.checklist_version_id}
                         <br />
-                        Model: {evaluation.model.name} ({evaluation.model.mode})
+                        {t("Model: ")}
+                        {evaluation.model.name} ({t(evaluation.model.mode)})
                         <br />
-                        Prompt version: {evaluation.prompt_version}
+                        {t("Prompt version: ")}
+                        {evaluation.prompt_version}
                         <br />
-                        Created: {time(evaluation.created_at)}
+                        {t("Created: ")}
+                        {time(evaluation.created_at)}
                         <br />
-                        Assessment: {evaluation.id}
+                        {t("Assessment: ")}
+                        {evaluation.id}
                       </p>
                     </details>
                   </>
@@ -578,18 +606,18 @@ function CriterionDetail({
   }, [criterion.criterion_id]);
   return (
     <div className="criterion-detail">
-      <h3>{definition.title}</h3>
-      <p>{definition.description}</p>
+      <h3>{t(definition.title)}</h3>
+      <p>{t(definition.description)}</p>
       <dl className="score-facts">
         <div>
-          <dt>Raw value</dt>
+          <dt>{t("Raw value")}</dt>
           <dd>{raw(criterion.value)}</dd>
         </div>
         <div>
-          <dt>Maximum</dt>
+          <dt>{t("Maximum")}</dt>
           <dd>
             {definition.answer_type === "boolean"
-              ? "Yes"
+              ? t("Yes")
               : Math.max(
                   ...(definition.allowed_values.filter(
                     (v) => typeof v === "number",
@@ -598,56 +626,59 @@ function CriterionDetail({
           </dd>
         </div>
         <div>
-          <dt>Weight</dt>
+          <dt>{t("Weight")}</dt>
           <dd>{definition.weight}</dd>
         </div>
         <div>
-          <dt>Weighted contribution</dt>
+          <dt>{t("Weighted contribution")}</dt>
           <dd>
             {criterion.weighted_score == null
-              ? "Unscored / N/A"
+              ? t("Unscored / N/A")
               : `${score(criterion.weighted_score)} /100`}
           </dd>
         </div>
       </dl>
       <p>
         {criterion.applicable
-          ? "Applicable to this conversation."
-          : "Not applicable; excluded from the score denominator."}{" "}
+          ? t("Applicable to this conversation.")
+          : t("Not applicable; excluded from the score denominator.")}{" "}
         {definition.allow_na
-          ? `N/A condition: ${definition.na_condition}`
-          : "N/A is not permitted."}
+          ? t("N/A condition: {arg0}", {
+              arg0: t(definition.na_condition || ""),
+            })
+          : t("N/A is not permitted.")}
       </p>
       {Object.keys(definition.scale_meanings || {}).length > 0 && (
         <details>
-          <summary>Scoring scale</summary>
+          <summary>{t("Scoring scale")}</summary>
           <ul>
             {Object.entries(definition.scale_meanings || {}).map(
               ([value, meaning]) => (
                 <li key={value}>
-                  <strong>{value}</strong>: {meaning}
+                  <strong>{t(value)}</strong>: {t(meaning)}
                 </li>
               ),
             )}
           </ul>
         </details>
       )}
-      <blockquote>{criterion.rationale}</blockquote>
+      <blockquote translate="no">{criterion.rationale}</blockquote>
       <div className="row">
-        <strong>Source evidence</strong>
+        <strong>{t("Source evidence")}</strong>
         {criterion.evidence_turns.map((turn) => (
           <button className="turn-link" key={turn} onClick={() => jump([turn])}>
-            Turn #{turn}
+            {t("Turn #")}
+            {turn}
           </button>
         ))}
         <button
           className="text-button"
           onClick={() => jump(criterion.evidence_turns)}
         >
-          Highlight all evidence
+          {t("Highlight all evidence")}
         </button>
       </div>
-      <h4>Appeal and review history</h4>
+      <h4>{t("Appeal and review history")}</h4>
       {appeals.length ? (
         appeals.map((a) => (
           <AppealCard
@@ -658,12 +689,13 @@ function CriterionDetail({
           />
         ))
       ) : (
-        <p className="muted">No appeals for this criterion.</p>
+        <p className="muted">{t("No appeals for this criterion.")}</p>
       )}
       {original && (
         <p className="notice">
-          You are viewing the original assessment. A new appeal addresses the
-          current final value.
+          {t(
+            "You are viewing the original assessment. A new appeal addresses the current final value.",
+          )}
         </p>
       )}
       <form
@@ -687,19 +719,21 @@ function CriterionDetail({
         }}
       >
         <label>
-          Reason for appeal
+          {t("Reason for appeal")}
           <textarea
             required
             value={comment}
             onChange={(e) => setComment(e.target.value)}
-            placeholder="Explain the disputed judgment and refer to source turns."
+            placeholder={t(
+              "Explain the disputed judgment and refer to source turns.",
+            )}
           />
         </label>
         <button disabled={busy || !comment.trim()}>
-          {busy ? "Saving…" : "Submit appeal"}
+          {busy ? t("Saving…") : t("Submit appeal")}
         </button>
       </form>
-      {error && <ErrorBox>{error}</ErrorBox>}
+      {error && <ErrorBox>{message(error)}</ErrorBox>}
     </div>
   );
 }
@@ -722,18 +756,18 @@ function AppealCard({
   return (
     <article className="appeal">
       <div className="row">
-        <strong>{appeal.status}</strong>
+        <strong>{t(appeal.status)}</strong>
         <time>{time(appeal.created_at)}</time>
       </div>
-      <p>{appeal.comment}</p>
+      <p translate="no">{appeal.comment}</p>
       {appeal.decision ? (
         <div className="decision">
           <strong>
             {appeal.decision.action === "change"
-              ? `Changed to ${raw(appeal.decision.value)}`
-              : `Confirmed ${raw(appeal.decision.value)}`}
+              ? t("Changed to {arg0}", { arg0: raw(appeal.decision.value) })
+              : t("Confirmed {arg0}", { arg0: raw(appeal.decision.value) })}
           </strong>
-          <p>{appeal.decision.reason}</p>
+          <p translate="no">{appeal.decision.reason}</p>
           <small>{time(appeal.decision.created_at)}</small>
         </div>
       ) : (
@@ -762,18 +796,18 @@ function AppealCard({
           }}
         >
           <label>
-            Reviewer decision
+            {t("Reviewer decision")}
             <select
               value={action}
               onChange={(e) => setAction(e.target.value as typeof action)}
             >
-              <option value="confirm">Confirm current value</option>
-              <option value="change">Change value</option>
+              <option value="confirm">{t("Confirm current value")}</option>
+              <option value="change">{t("Change value")}</option>
             </select>
           </label>
           {action === "change" && (
             <label>
-              Reviewed value
+              {t("Reviewed value")}
               <select value={value} onChange={(e) => setValue(e.target.value)}>
                 {definition.allowed_values.map((v) => (
                   <option key={JSON.stringify(v)} value={JSON.stringify(v)}>
@@ -785,7 +819,7 @@ function AppealCard({
             </label>
           )}
           <label>
-            Decision reason
+            {t("Decision reason")}
             <textarea
               required
               value={reason}
@@ -793,11 +827,11 @@ function AppealCard({
             />
           </label>
           <button disabled={busy || !reason.trim()}>
-            {busy ? "Recording…" : "Record reviewer decision"}
+            {busy ? t("Recording…") : t("Record reviewer decision")}
           </button>
         </form>
       )}
-      {error && <ErrorBox>{error}</ErrorBox>}
+      {error && <ErrorBox>{message(error)}</ErrorBox>}
     </article>
   );
 }

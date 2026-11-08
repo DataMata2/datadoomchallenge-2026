@@ -39,6 +39,12 @@ bash scripts/dev.sh
 
 Reuse an already running pair. Startup performs no import, evaluation, reset, or model request. The frontend uses no external runtime fonts or images.
 
+## Interface languages
+
+Use the language selector in the top bar or an open dialog to switch between **Русский**, **English** and **Қазақша**. Russian is the default. The preference is saved in this browser; the selected language also controls interface date formatting and document language. Switching does not refetch data, evaluate conversations, save forms or clear drafts.
+
+Localization covers navigation, forms, statuses, validation messages, score explanations and baseline criterion descriptions. Original RU/KZ/EN transcript text, source timestamps, IDs, AI rationales, comments and user-authored content are preserved. Checklist editor inputs retain the configured source text, so changing interface language does not rewrite the checklist. API enum values and the separate conversation-language filter are unchanged.
+
 ## Import conversations through the interface
 
 Choose **Import conversations** from any workspace screen. Select or drop a JSON file (up to 20 MB), or choose **Paste JSON**. The interface accepts the organizer response envelope, an array of source conversations, or one source conversation object. A single object/array uses the entered dataset ID; an organizer response retains its own `dataset_group_id`.

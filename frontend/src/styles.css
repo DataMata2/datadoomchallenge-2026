@@ -2550,3 +2550,157 @@ progress {
   color: #7d8b81;
   background: #f1f4f2;
 }
+.locale-switcher {
+  position: relative;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  color: #6c8374;
+  flex-shrink: 0;
+}
+.locale-switcher > svg {
+  position: absolute;
+  left: 10px;
+  pointer-events: none;
+}
+.locale-switcher select {
+  padding: 8px 24px 8px 33px;
+  font-size: 12px;
+  min-width: 135px;
+  height: 36px;
+  background: #f8fbf9;
+  color: #4e6b58;
+  border-color: #e2ebe5;
+}
+html[lang="ru"] .brand-name > span,
+html[lang="kk"] .brand-name > span {
+  letter-spacing: 1px;
+}
+.sidebar nav button {
+  min-height: 44px;
+  line-height: 1.5;
+}
+.sidebar nav button svg {
+  flex-shrink: 0;
+}
+.stat-label {
+  min-height: 34px;
+}
+.stat-card > strong {
+  flex-wrap: wrap;
+}
+.criterion-tabs button {
+  overflow-wrap: anywhere;
+}
+.import-counts {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+@media (max-width: 1200px) {
+  .topbar-right {
+    gap: 14px;
+  }
+  .timezone {
+    display: none;
+  }
+}
+@media (max-width: 700px) {
+  .locale-switcher select {
+    font-size: 11px;
+    min-width: 120px;
+    padding-right: 18px;
+  }
+  .breadcrumb {
+    gap: 7px;
+    font-size: 10px;
+  }
+  .topbar-right {
+    gap: 10px;
+  }
+  .sidebar nav button {
+    white-space: normal;
+  }
+  .sidebar nav {
+    flex: 1;
+  }
+  .report-toolbar button {
+    white-space: normal;
+  }
+  .stat-label {
+    font-size: 11px;
+    min-height: 36px;
+  }
+}
+@media (max-width: 450px) {
+  .topbar .avatar {
+    display: none;
+  }
+  .sidebar nav {
+    gap: 2px;
+  }
+  .sidebar nav button {
+    padding: 8px 10px;
+    font-size: 10px;
+  }
+  .import-preview .row {
+    flex-wrap: wrap;
+  }
+  .import-counts {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .page-head h1 {
+    font-size: 26px;
+  }
+  .dialog-head h2 {
+    font-size: 14px;
+  }
+}
+.dialog-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
+}
+.dialog-head h2 {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+@media (max-width: 700px) {
+  .dialog-actions {
+    gap: 7px;
+  }
+  .dialog-actions .locale-switcher select {
+    min-width: 103px;
+    max-width: 112px;
+    font-size: 10px;
+    height: 32px;
+    padding: 7px 17px 7px 27px;
+  }
+  .dialog-actions .locale-switcher > svg {
+    width: 13px;
+    left: 8px;
+  }
+  .dialog-actions .icon {
+    width: 32px;
+    height: 32px;
+  }
+}
+.breadcrumb {
+  min-width: 0;
+}
+.breadcrumb > svg {
+  flex-shrink: 0;
+}
+.breadcrumb strong {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.topbar-right {
+  flex-shrink: 0;
+}
+.stat-card > strong.unknown-stat {
+  font-size: 20px;
+  letter-spacing: -0.5px;
+  line-height: 1.4;
+}
