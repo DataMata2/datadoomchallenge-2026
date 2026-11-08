@@ -1,0 +1,26 @@
+# Default-deny build context: no credentials, runtime, evidence, Git or artifacts.
+**
+!backend/
+!backend/pyproject.toml
+!backend/uv.lock
+!backend/src/
+!backend/src/cqa/
+!backend/src/cqa/*.py
+!frontend/
+!frontend/package.json
+!frontend/package-lock.json
+!frontend/index.html
+!frontend/tsconfig.json
+!frontend/vite.config.ts
+!frontend/src/
+!frontend/src/**
+!deploy/
+!deploy/Caddyfile.web
+# Defense against accidental secret files inside an allowed source directory.
+**/.env
+**/.env.*
+**/*.key
+**/*.pem
+**/__pycache__/**
+**/node_modules/**
+**/dist/**

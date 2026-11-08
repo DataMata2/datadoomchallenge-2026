@@ -1,0 +1,79 @@
+name: cqa
+
+services:
+  cqa-api:
+    container_name: cqa-api
+    image: cqa-api:${CQA_RELEASE:?Set CQA_RELEASE to the reviewed commit SHA}
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile.api
+    restart: unless-stopped
+    stop_grace_period: 150s
+    read_only: true
+    tmpfs:
+      - /tmp:mode=1777
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    environment:
+      CQA_DATABASE_PATH: /data/cqa.sqlite3
+      CQA_MODEL_LOCK: /data/model-jobs.lock
+      CQA_ENV_FILE: /run/secrets/backend.env
+      CQA_CORS_ORIGINS: ""
+    volumes:
+      - type: bind
+        source: ${CQA_DATA_DIR:?Set CQA_DATA_DIR to the absolute private data directory}
+        target: /data
+        bind:
+          create_host_path: false
+      - type: bind
+        source: ${CQA_BACKEND_ENV_FILE:?Set CQA_BACKEND_ENV_FILE to the absolute backend secret-file path}
+        target: /run/secrets/backend.env
+        read_only: true
+        bind:
+          create_host_path: false
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/api/health', timeout=3).close()"]
+      interval: 15s
+      timeout: 5s
+      retries: 4
+      start_period: 15s
+    networks:
+      - backend
+
+  cqa-web:
+    container_name: cqa-web
+    image: cqa-web:${CQA_RELEASE:?Set CQA_RELEASE to the reviewed commit SHA}
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile.web
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    depends_on:
+      cqa-api:
+        condition: service_healthy
+    environment:
+      CQA_BASIC_USER: ${CQA_BASIC_USER:?Set the private-site username}
+      CQA_BASIC_PASSWORD_HASH: ${CQA_BASIC_PASSWORD_HASH:?Set the Caddy bcrypt password hash}
+    ports:
+      - "8443:443"
+    volumes:
+      - type: bind
+        source: /var/lib/docker/volumes/agileai_caddy_data/_data/caddy/certificates/acme-v02.api.letsencrypt.org-directory/incode.kz
+        target: /tls/incode.kz
+        read_only: true
+        bind:
+          create_host_path: false
+    networks:
+      - backend
+      - agileai
+
+networks:
+  # Normal bridge permits outbound provider HTTPS; the API has no host port.
+  backend:
+    driver: bridge
+  agileai:
+    external: true
+    name: agileai_default

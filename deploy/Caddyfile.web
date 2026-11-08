@@ -1,0 +1,37 @@
+{
+    auto_https off
+}
+
+(cqa_routes) {
+    route {
+        basic_auth {
+            {$CQA_BASIC_USER} {$CQA_BASIC_PASSWORD_HASH}
+        }
+        @api path /api /api/*
+        handle @api {
+            reverse_proxy cqa-api:8000 {
+                # Authentication has succeeded; do not forward the user's password.
+                header_up -Authorization
+                transport http {
+                    response_header_timeout 180s
+                }
+            }
+        }
+        handle {
+            root * /srv
+            try_files {path} /index.html
+            file_server
+        }
+    }
+}
+
+# Private Docker-network listener; only the existing main Caddy may proxy to it.
+http://:80 {
+    import cqa_routes
+}
+
+# Temporary public fallback; renewal remains owned by the existing main Caddy.
+https://:443 {
+    tls /tls/incode.kz/incode.kz.crt /tls/incode.kz/incode.kz.key
+    import cqa_routes
+}

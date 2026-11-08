@@ -1,0 +1,9 @@
+# Append this site to the existing main Caddyfile after freedom.incode.kz DNS works.
+# Preserve Authorization: cqa-web performs whole-site authentication itself.
+freedom.incode.kz {
+    reverse_proxy cqa-web:80 {
+        transport http {
+            response_header_timeout 180s
+        }
+    }
+}
