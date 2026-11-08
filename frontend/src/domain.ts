@@ -1,18 +1,19 @@
 import type { FilterSpec, Run } from "./api";
+import { t, formattingLocale } from "./i18n";
 export const activeRun = (run: Pick<Run, "status" | "finished_at">) =>
   run.status === "queued" ||
   run.status === "running" ||
   (run.status === "cancelled" && !run.finished_at);
 export const raw = (value: boolean | number | null | undefined) =>
   value === undefined
-    ? "Неизвестно"
+    ? t("Unknown")
     : value === null
-      ? "Н/П"
+      ? t("N/A")
       : typeof value === "boolean"
         ? value
-          ? "Да"
-          : "Нет"
-        : value.toLocaleString("ru-RU", {
+          ? t("Yes")
+          : t("No")
+        : value.toLocaleString(formattingLocale(), {
             useGrouping: false,
             maximumFractionDigits: 20,
           });

@@ -63,7 +63,7 @@ async function request<T>(path: string, body?: unknown): Promise<T> {
                   `${e.loc.join(".")}: ${e.msg}`,
               )
               .join("; ")
-          : `Ошибка запроса (${response.status}). Проверьте доступность API.`;
+          : `Request failed (${response.status}). Check that the API is running.`;
     throw new ApiError(response.status, message);
   }
   return result as T;

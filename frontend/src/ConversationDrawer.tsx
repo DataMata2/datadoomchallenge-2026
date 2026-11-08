@@ -1,3 +1,4 @@
+import { message, t } from "./i18n";
 import { useEffect, useRef, useState } from "react";
 import {
   api,
@@ -23,13 +24,10 @@ import {
   time,
 } from "./ui";
 import {
-  channelName,
-  languageName,
-  label,
-  metadataText,
   analysisLanguage,
-  checklistName,
   criterionDisplay,
+  checklistName,
+  languageName,
 } from "./locale";
 type Props = {
   id: string;
@@ -210,45 +208,46 @@ export default function ConversationDrawer({
     }
   };
   return (
-    <Dialog title={`Диалог ${id}`} close={close} wide>
+    <Dialog title={t("Conversation {arg0}", { arg0: id })} close={close} wide>
       <div className="conversation-meta">
         <span>{dataset}</span>
-        <span>{channelName(conversation?.channel)}</span>
+        <span>{conversation?.channel ? t(conversation.channel) : ""}</span>
         <span>{languageName(conversation?.language)}</span>
         <span>{time(conversation?.demo_started_at)}</span>
       </div>
-      {error && <ErrorBox>{error}</ErrorBox>}
+      {error && <ErrorBox>{message(error)}</ErrorBox>}
       {loading ? (
-        <Empty>Загрузка исходного диалога и оценки…</Empty>
+        <Empty>{t("Loading the source and assessment…")}</Empty>
       ) : (
         conversation && (
           <>
             <div
               className="mobile-review-tabs"
               role="group"
-              aria-label="Панель диалога"
+              aria-label={t("Conversation panel")}
             >
               <button
                 aria-pressed={mobilePane === "transcript"}
                 onClick={() => setMobilePane("transcript")}
               >
-                Расшифровка
+                {t("Transcript")}
               </button>
               <button
                 aria-pressed={mobilePane === "assessment"}
                 onClick={() => setMobilePane("assessment")}
               >
-                Оценка
+                {t("Assessment")}
               </button>
             </div>
             <div className="conversation-layout" data-mobile-pane={mobilePane}>
               <section className="transcript">
                 <div className="section-head">
                   <div>
-                    <h3>Исходная расшифровка</h3>
+                    <h3>{t("Original transcript")}</h3>
                     <p>
-                      Реплики всех участников нумеруются с единицы. Исходные
-                      временные метки сохранены.
+                      {t(
+                        "One-based turn numbers include every speaker. Original timestamps are preserved.",
+                      )}
                     </p>
                   </div>
                 </div>
@@ -260,14 +259,14 @@ export default function ConversationDrawer({
                         target="_blank"
                         rel="noreferrer"
                       >
-                        Открыть исходную запись
+                        {t("Open source recording")}
                       </a>
                       <audio
                         controls
                         preload="none"
                         src={conversation.audio_url}
                       >
-                        Воспользуйтесь ссылкой на запись для прослушивания.
+                        {t("Use the recording link to listen.")}
                       </audio>
                     </div>
                   )}
@@ -285,28 +284,42 @@ export default function ConversationDrawer({
                         <button onClick={() => setHighlight([index + 1])}>
                           #{index + 1}
                         </button>
-                        <strong>{label(turn.speaker)}</strong>
+                        <strong>{t(turn.speaker)}</strong>
                         <time title={turn.timestamp}>{turn.timestamp}</time>
                       </div>
-                      <p>{turn.text}</p>
+                      <p
+                        translate="no"
+                        lang={
+                          { RU: "ru", KZ: "kk", EN: "en" }[
+                            conversation.language
+                          ]
+                        }
+                      >
+                        {turn.text}
+                      </p>
                     </li>
                   ))}
                 </ol>
                 <details>
-                  <summary>Происхождение временных меток и дат</summary>
+                  <summary>{t("Timestamp and scheduling provenance")}</summary>
                   <p>
-                    Исходный временной интервал:{" "}
-                    {conversation.observed_span.started_at} до{" "}
+                    {t("Observed source span:")}{" "}
+                    {conversation.observed_span.started_at} {t(" to ")}{" "}
                     {conversation.observed_span.ended_at} (
-                    {conversation.observed_span.duration_seconds} секунд).
-                    Рассчитан по первой и последней реплике расшифровки.
+                    {conversation.observed_span.duration_seconds}{" "}
+                    {t(
+                      " seconds). This derives from the first and last transcript turns.",
+                    )}
                   </p>
                   <p>
-                    {metadataText(conversation.scheduling.interpretation)}{" "}
-                    Режим: {label(conversation.scheduling.mode)}; начальное
-                    значение: {conversation.scheduling.seed ?? "нет"}; алгоритм:{" "}
-                    {label(conversation.scheduling.algorithm)}. Назначение дат
-                    не зависит от оценок качества.
+                    {t(conversation.scheduling.interpretation)} {t(" Mode:")}{" "}
+                    {t(conversation.scheduling.mode)}
+                    {t(" ; seed: ")} {conversation.scheduling.seed ?? t("none")}
+                    {t(" ; algorithm: ")}{" "}
+                    {conversation.scheduling.algorithm
+                      ? t(conversation.scheduling.algorithm)
+                      : t("none")}
+                    {t(". Scheduling is independent of quality scores.")}
                   </p>
                 </details>
               </section>
@@ -314,35 +327,38 @@ export default function ConversationDrawer({
                 {saved && (
                   <section
                     className="notice saved-observation"
-                    aria-label="Сохранённая оценка отчёта"
+                    aria-label={t("Saved report observation")}
                   >
-                    <h3>Сохранённая оценка отчёта</h3>
+                    <h3>{t("Saved report observation")}</h3>
                     <p>
-                      Сформировано:{" "}
+                      {t("Generated: ")}
                       <time title={saved.generatedAt}>
                         {time(saved.generatedAt)}
                       </time>
-                      . Чек-лист: {saved.checklistVersionId}.
+                      {t(". Checklist:")} {saved.checklistVersionId}.
                     </p>
                     <p>
-                      Оценка: {saved.observation.evaluation_id || "нет"}.
-                      Ревизия: {saved.observation.revision || "нет"}. Статус:{" "}
-                      {label(saved.observation.evaluation_status)}.
+                      {t("Evaluation: ")}
+                      {saved.observation.evaluation_id || t("none")}
+                      {t(". Revision: ")}
+                      {saved.observation.revision || t("none")}
+                      {t(". Status:")} {t(saved.observation.evaluation_status)}.
                     </p>
                     <p>
-                      Сохранённая оценка качества:{" "}
-                      {score(saved.observation.final?.final_score)}. Критическое
-                      нарушение: {raw(saved.observation.final?.critical_flag)}.
+                      {t("Copied quality score:")}{" "}
+                      {score(saved.observation.final?.final_score)}
+                      {t(". Critical flag: ")}
+                      {raw(saved.observation.final?.critical_flag)}.
                     </p>
                     {savedCriterion && (
                       <>
                         <p>
-                          {metricNames[criterionId]} сохранённое исходное
-                          значение: {raw(savedCriterion.value)}.{" "}
+                          {metricNames[criterionId]} {t(" copied raw value:")}{" "}
+                          {raw(savedCriterion.value)}.{" "}
                           {savedCriterion.rationale}
                         </p>
                         <p>
-                          Сохранённые доказательства:{" "}
+                          {t("Saved evidence:")}{" "}
                           {savedCriterion.evidence_turns.map((turn) => (
                             <button
                               className="turn-link"
@@ -356,20 +372,22 @@ export default function ConversationDrawer({
                       </>
                     )}
                     <p>
-                      Сохранённый отчёт меняется только после явного обновления.
+                      {t(
+                        "The saved report remains unchanged until explicitly refreshed.",
+                      )}
                     </p>
                   </section>
                 )}
                 {saved && (
                   <h3>
                     {differs
-                      ? "Текущие значения отличаются от сохранённых в отчёте"
-                      : "Текущие значения совпадают с сохранёнными в отчёте"}
+                      ? t("Current values differ from saved report values")
+                      : t("Current values match saved report values")}
                   </h3>
                 )}
                 <div className="evaluation-controls">
                   <label>
-                    Версия чек-листа
+                    {t("Checklist version")}
                     <select
                       value={version}
                       onChange={(e) => {
@@ -389,11 +407,12 @@ export default function ConversationDrawer({
                     disabled={busy || !!(run && activeRun(run))}
                     onClick={evaluate}
                   >
-                    {busy ? "Запуск…" : "Оценить этот диалог"}
+                    {busy ? t("Starting…") : t("Evaluate this conversation")}
                   </button>
                   <small>
-                    Запускает оценку моделью по выбранному чек-листу.
-                    Существующие результаты сохраняются в истории.
+                    {t(
+                      "Starts a model assessment using the selected checklist. Existing results remain in history.",
+                    )}
                   </small>
                 </div>
                 {run && (
@@ -410,21 +429,23 @@ export default function ConversationDrawer({
                 )}
                 {runError && (
                   <ErrorBox>
-                    {runError}{" "}
+                    {message(runError)}{" "}
                     <button onClick={() => setRunError("")}>
-                      Повторить загрузку хода оценки
+                      {t("Retry progress")}
                     </button>
                   </ErrorBox>
                 )}
                 {!evaluation ? (
                   <Empty>
-                    Для этой версии чек-листа ещё нет оценки. Запустите оценку
-                    диалога.
+                    {t(
+                      "No evaluation exists for this checklist version. Start an evaluation to assess it.",
+                    )}
                   </Empty>
                 ) : evaluation.status === "error" ? (
                   <ErrorBox>
-                    Ошибка оценки: {evaluation.error}. Оценка качества
-                    недоступна.
+                    {t("Evaluation failed: ")}
+                    {evaluation.error}
+                    {t(". No quality score is available.")}
                   </ErrorBox>
                 ) : (
                   <>
@@ -436,12 +457,13 @@ export default function ConversationDrawer({
                       <div>
                         <span>
                           {current?.critical_flag
-                            ? "Обнаружено критическое нарушение"
-                            : "Критическое нарушение не обнаружено"}
+                            ? t("Critical violation flagged")
+                            : t("No critical violation flagged")}
                         </span>
                         <p>
-                          Критическое нарушение учитывается без баллов и не
-                          обнуляет итог автоматически.
+                          {t(
+                            "Critical is unscored and does not automatically zero the total.",
+                          )}
                         </p>
                       </div>
                     </div>
@@ -451,12 +473,12 @@ export default function ConversationDrawer({
                         checked={original}
                         onChange={(e) => setOriginal(e.target.checked)}
                       />
-                      Показать исходную оценку до проверки
+                      {t("Show original assessment before review")}
                     </label>
                     <div
                       className="criterion-tabs"
                       role="group"
-                      aria-label="Проверить критерий"
+                      aria-label={t("Inspect criterion")}
                     >
                       <button
                         className={
@@ -464,7 +486,7 @@ export default function ConversationDrawer({
                         }
                         onClick={() => setCriterionId("final_score")}
                       >
-                        Расчёт оценки
+                        {t("Score calculation")}
                       </button>
                       {current?.criteria.map((c) => (
                         <button
@@ -484,24 +506,26 @@ export default function ConversationDrawer({
                     </div>
                     {criterionId === "final_score" ? (
                       <div className="criterion-detail">
-                        <h3>Как рассчитывается оценка</h3>
+                        <h3>{t("How this score is calculated")}</h3>
                         <p>
-                          Набрано баллов {score(current?.earned_points)} ÷
-                          применимый вес {score(current?.applicable_weight)} ×
-                          100 = <strong>{score(current?.final_score)}</strong>.
+                          {t("Earned points ")}
+                          {score(current?.earned_points)}{" "}
+                          {t(" ÷ applicable weight ")}
+                          {score(current?.applicable_weight)} × 100 ={" "}
+                          <strong>{score(current?.final_score)}</strong>.
                         </p>
                         <p>
-                          Неприменимые критерии не дают баллов и исключаются из
-                          применимого веса. Итог нормируется по применимому весу
-                          и округляется до двух знаков.
+                          {t(
+                            "N/A criteria contribute no points and are excluded from applicable weight. The backend normalizes over applicable weight and rounds the total to two decimal places.",
+                          )}
                         </p>
                         <table>
                           <thead>
                             <tr>
-                              <th>Критерий</th>
-                              <th>Исходное</th>
-                              <th>Баллы</th>
-                              <th>Вклад /100</th>
+                              <th>{t("Criterion")}</th>
+                              <th>{t("Raw")}</th>
+                              <th>{t("Points")}</th>
+                              <th>{t("Contribution /100")}</th>
                             </tr>
                           </thead>
                           <tbody>
@@ -520,11 +544,11 @@ export default function ConversationDrawer({
                                 </td>
                                 <td>{raw(c.value)}</td>
                                 <td>
-                                  {c.points == null ? "Н/П" : score(c.points)}
+                                  {c.points == null ? "N/A" : score(c.points)}
                                 </td>
                                 <td>
                                   {c.weighted_score == null
-                                    ? "Без баллов"
+                                    ? t("Unscored")
                                     : score(c.weighted_score)}
                                 </td>
                               </tr>
@@ -546,21 +570,25 @@ export default function ConversationDrawer({
                       )
                     )}
                     <details className="assessment-identity">
-                      <summary>Происхождение оценки</summary>
+                      <summary>{t("Assessment provenance")}</summary>
                       <p>
-                        Чек-лист: {evaluation.checklist_version_id}
+                        {t("Checklist: ")}
+                        {evaluation.checklist_version_id}
                         <br />
-                        Модель: {evaluation.model.name} (
-                        {label(evaluation.model.mode)})
+                        {t("Model: ")}
+                        {evaluation.model.name} ({t(evaluation.model.mode)})
                         <br />
-                        Язык анализа:{" "}
+                        {t("Analysis language")}:{" "}
                         {analysisLanguage(evaluation.analysis_language)}
                         <br />
-                        Версия запроса модели: {evaluation.prompt_version}
+                        {t("Prompt version: ")}
+                        {evaluation.prompt_version}
                         <br />
-                        Создано: {time(evaluation.created_at)}
+                        {t("Created: ")}
+                        {time(evaluation.created_at)}
                         <br />
-                        Оценка: {evaluation.id}
+                        {t("Assessment: ")}
+                        {evaluation.id}
                       </p>
                     </details>
                   </>
@@ -604,79 +632,77 @@ function CriterionDetail({
       <p>{definition.description}</p>
       <dl className="score-facts">
         <div>
-          <dt>Исходное значение</dt>
+          <dt>{t("Raw value")}</dt>
           <dd>{raw(criterion.value)}</dd>
         </div>
         <div>
-          <dt>Максимум</dt>
+          <dt>{t("Maximum")}</dt>
           <dd>
             {definition.answer_type === "boolean"
-              ? "Да"
-              : Math.max(
-                  ...(definition.allowed_values.filter(
-                    (v) => typeof v === "number",
-                  ) as number[]),
+              ? t("Yes")
+              : raw(
+                  Math.max(
+                    ...(definition.allowed_values.filter(
+                      (v) => typeof v === "number",
+                    ) as number[]),
+                  ),
                 )}
           </dd>
         </div>
         <div>
-          <dt>Вес</dt>
-          <dd>{definition.weight}</dd>
+          <dt>{t("Weight")}</dt>
+          <dd>{raw(definition.weight)}</dd>
         </div>
         <div>
-          <dt>Взвешенный вклад</dt>
+          <dt>{t("Weighted contribution")}</dt>
           <dd>
             {criterion.weighted_score == null
-              ? "Без баллов / Н/П"
+              ? t("Unscored / N/A")
               : `${score(criterion.weighted_score)} /100`}
           </dd>
         </div>
       </dl>
       <p>
         {criterion.applicable
-          ? "Применимо к этому диалогу."
-          : "Неприменимо; исключено из знаменателя оценки."}{" "}
+          ? t("Applicable to this conversation.")
+          : t("Not applicable; excluded from the score denominator.")}{" "}
         {definition.allow_na
-          ? `Условие Н/П: ${definition.na_condition}`
-          : "Н/П не допускается."}
+          ? t("N/A condition: {arg0}", {
+              arg0: definition.na_condition || "",
+            })
+          : t("N/A is not permitted.")}
       </p>
       {Object.keys(definition.scale_meanings || {}).length > 0 && (
         <details>
-          <summary>Шкала оценки</summary>
+          <summary>{t("Scoring scale")}</summary>
           <ul>
             {Object.entries(definition.scale_meanings || {}).map(
               ([value, meaning]) => (
                 <li key={value}>
-                  <strong>
-                    {value === "true"
-                      ? "Да"
-                      : value === "false"
-                        ? "Нет"
-                        : value}
-                  </strong>
-                  : {meaning}
+                  <strong>{t(value)}</strong>: {meaning}
                 </li>
               ),
             )}
           </ul>
         </details>
       )}
-      <blockquote>{criterion.rationale}</blockquote>
+      <blockquote translate="no">{criterion.rationale}</blockquote>
       <div className="row">
-        <strong>Исходные доказательства</strong>
+        <strong>{t("Source evidence")}</strong>
         {criterion.evidence_turns.map((turn) => (
           <button className="turn-link" key={turn} onClick={() => jump([turn])}>
-            Реплика №{turn}
+            {t("Turn #")}
+            {turn}
           </button>
         ))}
         <button
           className="text-button"
           onClick={() => jump(criterion.evidence_turns)}
         >
-          Выделить все доказательства
+          {t("Highlight all evidence")}
         </button>
       </div>
-      <h4>История апелляций и проверок</h4>
+      <h4>{t("Appeal and review history")}</h4>
       {appeals.length ? (
         appeals.map((a) => (
           <AppealCard
@@ -687,12 +713,13 @@ function CriterionDetail({
           />
         ))
       ) : (
-        <p className="muted">Для этого критерия нет апелляций.</p>
+        <p className="muted">{t("No appeals for this criterion.")}</p>
       )}
       {original && (
         <p className="notice">
-          Вы просматриваете исходную оценку. Новая апелляция относится к
-          текущему итоговому значению.
+          {t(
+            "You are viewing the original assessment. A new appeal addresses the current final value.",
+          )}
         </p>
       )}
       <form
@@ -716,19 +743,21 @@ function CriterionDetail({
         }}
       >
         <label>
-          Причина апелляции
+          {t("Reason for appeal")}
           <textarea
             required
             value={comment}
             onChange={(e) => setComment(e.target.value)}
-            placeholder="Объясните, почему вы оспариваете оценку, и укажите исходные реплики."
+            placeholder={t(
+              "Explain the disputed judgment and refer to source turns.",
+            )}
           />
         </label>
         <button disabled={busy || !comment.trim()}>
-          {busy ? "Сохранение…" : "Подать апелляцию"}
+          {busy ? t("Saving…") : t("Submit appeal")}
         </button>
       </form>
-      {error && <ErrorBox>{error}</ErrorBox>}
+      {error && <ErrorBox>{message(error)}</ErrorBox>}
     </div>
   );
 }
@@ -751,18 +780,18 @@ function AppealCard({
   return (
     <article className="appeal">
       <div className="row">
-        <strong>{label(appeal.status)}</strong>
+        <strong>{t(appeal.status)}</strong>
         <time>{time(appeal.created_at)}</time>
       </div>
-      <p>{appeal.comment}</p>
+      <p translate="no">{appeal.comment}</p>
       {appeal.decision ? (
         <div className="decision">
           <strong>
             {appeal.decision.action === "change"
-              ? `Изменено на ${raw(appeal.decision.value)}`
-              : `Подтверждено: ${raw(appeal.decision.value)}`}
+              ? t("Changed to {arg0}", { arg0: raw(appeal.decision.value) })
+              : t("Confirmed {arg0}", { arg0: raw(appeal.decision.value) })}
           </strong>
-          <p>{appeal.decision.reason}</p>
+          <p translate="no">{appeal.decision.reason}</p>
           <small>{time(appeal.decision.created_at)}</small>
         </div>
       ) : (
@@ -791,30 +820,30 @@ function AppealCard({
           }}
         >
           <label>
-            Решение проверяющего
+            {t("Reviewer decision")}
             <select
               value={action}
               onChange={(e) => setAction(e.target.value as typeof action)}
             >
-              <option value="confirm">Подтвердить текущее значение</option>
-              <option value="change">Изменить значение</option>
+              <option value="confirm">{t("Confirm current value")}</option>
+              <option value="change">{t("Change value")}</option>
             </select>
           </label>
           {action === "change" && (
             <label>
-              Проверенное значение
+              {t("Reviewed value")}
               <select value={value} onChange={(e) => setValue(e.target.value)}>
                 {definition.allowed_values.map((v) => (
                   <option key={JSON.stringify(v)} value={JSON.stringify(v)}>
                     {raw(v)}
                   </option>
                 ))}
-                {definition.allow_na && <option value="null">Н/П</option>}
+                {definition.allow_na && <option value="null">N/A</option>}
               </select>
             </label>
           )}
           <label>
-            Обоснование решения
+            {t("Decision reason")}
             <textarea
               required
               value={reason}
@@ -822,11 +851,11 @@ function AppealCard({
             />
           </label>
           <button disabled={busy || !reason.trim()}>
-            {busy ? "Запись…" : "Записать решение проверяющего"}
+            {busy ? t("Recording…") : t("Record reviewer decision")}
           </button>
         </form>
       )}
-      {error && <ErrorBox>{error}</ErrorBox>}
+      {error && <ErrorBox>{message(error)}</ErrorBox>}
     </article>
   );
 }

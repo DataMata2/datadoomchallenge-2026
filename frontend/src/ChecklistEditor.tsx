@@ -1,3 +1,4 @@
+import { message, t } from "./i18n";
 import { useEffect, useRef, useState } from "react";
 import { api, type Checklist, type CriterionDefinition } from "./api";
 import { Empty, ErrorBox, errorText } from "./ui";
@@ -26,7 +27,7 @@ export default function ChecklistEditor({
   useEffect(() => {
     const source = checklists.find((c) => c.id === parent);
     if (source) {
-      setName(`${checklistName(source.id, source.name)} · новая версия`);
+      setName(`${checklistName(source.id, source.name)} · ${t("revised")}`);
       setCriteria(
         source.criteria.map((c) => ({
           ...structuredClone(criterionDisplay(c, source.id)),
@@ -73,10 +74,10 @@ export default function ChecklistEditor({
     try {
       if (criteria.some((c) => !/^[a-z][a-z0-9_-]{0,63}$/.test(c.id)))
         throw new Error(
-          "Идентификатор критерия должен начинаться со строчной латинской буквы и содержать до 64 строчных латинских букв, цифр, подчёркиваний или дефисов.",
+          "Criterion IDs must start with a lowercase letter and use at most 64 lowercase letters, digits, underscores or hyphens.",
         );
       if (new Set(criteria.map((c) => c.id)).size !== criteria.length)
-        throw new Error("Идентификаторы критериев должны быть уникальными.");
+        throw new Error("Criterion IDs must be unique.");
       const parsed = criteria.map(({ rowKey, scaleText, weightText, ...c }) => {
         const values =
           c.answer_type === "boolean"
@@ -84,12 +85,12 @@ export default function ChecklistEditor({
             : scaleText.split(",").map((v) => {
                 if (!v.trim() || !Number.isFinite(Number(v)))
                   throw new Error(
-                    `Введите конечные числовые значения шкалы для «${c.title}».`,
+                    `Enter finite numeric scale steps for ${c.title}.`,
                   );
                 return Number(v);
               });
         if (!weightText.trim() || !Number.isFinite(Number(weightText)))
-          throw new Error(`Введите корректный вес для «${c.title}».`);
+          throw new Error(`Enter a valid weight for ${c.title}.`);
         return {
           ...c,
           allowed_values: values,
@@ -98,9 +99,7 @@ export default function ChecklistEditor({
         };
       });
       if (!parsed.some((c) => !c.critical && c.weight > 0))
-        throw new Error(
-          "Оставьте хотя бы один критерий с положительным весом.",
-        );
+        throw new Error("Keep at least one positively weighted criterion.");
       const result = await api.saveChecklist({
         name,
         parent_version_id: parent,
@@ -108,7 +107,7 @@ export default function ChecklistEditor({
       });
       await saved();
       setSuccess(
-        `Версия «${result.name}» сохранена: ${result.id}. Выберите её в диалоге для оценки. Предыдущие оценки сохраняют исходный чек-лист.`,
+        `Saved ${result.name} as ${result.id}. Select this version in a conversation to evaluate it. Prior assessments retain their original checklist.`,
       );
     } catch (e) {
       setError(errorText(e));
@@ -116,15 +115,17 @@ export default function ChecklistEditor({
       setBusy(false);
     }
   };
-  if (!checklists.length) return <Empty>Загрузка версий чек-листа…</Empty>;
+  if (!checklists.length)
+    return <Empty>{t("Loading checklist versions…")}</Empty>;
   return (
     <section className="panel checklist-editor">
       <div className="section-head">
         <div>
-          <h2>Версии чек-листа качества</h2>
+          <h2>{t("Versioned quality checklist")}</h2>
           <p>
-            Изменения создают новую неизменяемую версию. Оценка запускается
-            отдельно.
+            {t(
+              "Changes create a new immutable version. Evaluation is a separate action.",
+            )}
           </p>
         </div>
       </div>
@@ -136,7 +137,7 @@ export default function ChecklistEditor({
       >
         <div className="filter-bar">
           <label>
-            Исходная версия
+            {t("Start from version")}
             <select value={parent} onChange={(e) => setParent(e.target.value)}>
               {checklists.map((c) => (
                 <option key={c.id} value={c.id}>
@@ -146,7 +147,7 @@ export default function ChecklistEditor({
             </select>
           </label>
           <label className="grow">
-            Название новой версии
+            {t("New version name")}
             <input
               required
               value={name}
@@ -158,23 +159,22 @@ export default function ChecklistEditor({
           <Icon name="shield" size={26} />
           <div>
             <strong>
-              {criteria.length} критериев ·{" "}
-              {criteria.filter((c) => c.allow_na).length} допускают Н/П
+              {criteria.length} {t(" criteria · ")}{" "}
+              {criteria.filter((c) => c.allow_na).length} {t(" support N/A ")}
             </strong>
             <small>
-              Изменения сохраняются в новой версии. Существующие оценки
-              сохраняют исходный чек-лист.
+              {t(
+                "Changes save as a new version. Existing assessments keep their original checklist.",
+              )}
             </small>
           </div>
         </div>
         <details>
-          <summary>Как устроены оценка и версии</summary>
+          <summary>{t("How scoring and versions work")}</summary>
           <p>
-            Взвешенные критерии нормируются по применимому весу. Критическое
-            нарушение — отдельный логический признак с нулевым весом. Для Н/П
-            нужно явное условие неприменимости. Чтобы заменить критерий, удалите
-            строку черновика и добавьте критерий с новым идентификатором.
-            Предыдущие версии и оценки сохраняются.
+            {t(
+              "Weighted criteria normalize over applicable weight. Critical is a separate boolean with zero weight. N/A requires an explicit applicability condition. To replace a criterion, remove its draft row and add a criterion with a new ID. Prior versions and assessments are preserved.",
+            )}
           </p>
         </details>
         {criteria.map((c, index) => (
@@ -184,16 +184,16 @@ export default function ChecklistEditor({
             open={index === 0 || c.rowKey === addedRowKey}
           >
             <summary>
-              {c.title || "Новый критерий"}{" "}
+              {c.title || t("New criterion")}{" "}
               <span>
-                {c.weightText} вес ·{" "}
-                {c.answer_type === "boolean" ? "Да / Нет" : "Числовая шкала"}
-                {c.allow_na ? " · Н/П допускается" : ""}
+                {c.weightText} {t(" weight · ")}
+                {t(c.answer_type)}
+                {c.allow_na ? t(" · N/A allowed") : ""}
               </span>
             </summary>
             <div className="editor-grid">
               <label>
-                Идентификатор критерия
+                {t("Criterion ID")}
                 <input
                   required
                   maxLength={64}
@@ -203,7 +203,7 @@ export default function ChecklistEditor({
                 />
               </label>
               <label>
-                Название
+                {t("Title")}
                 <input
                   required
                   value={c.title}
@@ -211,7 +211,7 @@ export default function ChecklistEditor({
                 />
               </label>
               <label className="full">
-                Формулировка критерия
+                {t("Criterion wording")}
                 <textarea
                   required
                   value={c.description}
@@ -221,7 +221,7 @@ export default function ChecklistEditor({
                 />
               </label>
               <label>
-                Тип ответа
+                {t("Answer type")}
                 <select
                   disabled={c.critical}
                   value={c.answer_type}
@@ -236,12 +236,12 @@ export default function ChecklistEditor({
                     })
                   }
                 >
-                  <option value="boolean">Да / Нет</option>
-                  <option value="scale">Числовая шкала</option>
+                  <option value="boolean">{t("Boolean")}</option>
+                  <option value="scale">{t("Numeric scale")}</option>
                 </select>
               </label>
               <label>
-                Вес
+                {t("Weight")}
                 <input
                   type="number"
                   min="0"
@@ -255,7 +255,7 @@ export default function ChecklistEditor({
               </label>
               {c.answer_type === "scale" && (
                 <label className="full">
-                  Допустимые значения шкалы через запятую
+                  {t("Allowed raw steps, separated by commas")}
                   <input
                     required
                     value={c.scaleText}
@@ -277,14 +277,12 @@ export default function ChecklistEditor({
                     })
                   }
                 />
-                Разрешить Н/П
+                {t("Allow N/A")}
               </label>
-              <span>
-                {c.critical ? "Критическое нарушение без баллов" : ""}
-              </span>
+              <span>{c.critical ? t("Unscored critical flag") : ""}</span>
               {c.allow_na && (
                 <label className="full">
-                  Условие Н/П
+                  {t("N/A condition")}
                   <textarea
                     required
                     value={c.na_condition || ""}
@@ -295,7 +293,7 @@ export default function ChecklistEditor({
                 </label>
               )}
               <div className="full">
-                <h4>Значения шкалы</h4>
+                <h4>{t("Scale meanings")}</h4>
                 {(c.answer_type === "boolean"
                   ? ["false", "true"]
                   : c.scaleText
@@ -304,12 +302,8 @@ export default function ChecklistEditor({
                       .filter(Boolean)
                 ).map((value) => (
                   <label key={value}>
-                    Значение{" "}
-                    {value === "true"
-                      ? "Да"
-                      : value === "false"
-                        ? "Нет"
-                        : value}
+                    {t("Meaning of ")}
+                    {t(value)}
                     <input
                       value={c.scale_meanings?.[value] || ""}
                       onChange={(e) =>
@@ -336,26 +330,24 @@ export default function ChecklistEditor({
                     setSuccess("");
                   }}
                 >
-                  Удалить критерий
+                  {t("Remove criterion")}
                 </button>
               </div>
             </div>
           </details>
         ))}
-        {error && <ErrorBox>{error}</ErrorBox>}
+        {error && <ErrorBox>{message(error)}</ErrorBox>}
         {success && (
           <div className="notice" role="status">
-            {success}
+            {message(success)}
           </div>
         )}
         <div className="checklist-actions">
           <button type="button" disabled={busy} onClick={add}>
-            Добавить критерий
+            {t("Add criterion")}
           </button>
           <button className="primary" disabled={busy || !name.trim()}>
-            {busy
-              ? "Сохранение новой версии…"
-              : "Сохранить новую версию чек-листа"}
+            {busy ? t("Saving new version…") : t("Save new checklist version")}
           </button>
         </div>
       </form>

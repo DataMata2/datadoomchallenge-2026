@@ -1,3 +1,5 @@
+import { message, t, useLocale } from "./i18n";
+import LanguageSwitcher from "./LanguageSwitcher";
 import { useEffect, useState } from "react";
 import {
   api,
@@ -16,11 +18,11 @@ import { calendarBounds } from "./domain";
 import ConversationDrawer from "./ConversationDrawer";
 import ChecklistEditor from "./ChecklistEditor";
 import ReportWorkspace from "./ReportWorkspace";
-import { Empty, ErrorBox, errorText, metricIds } from "./ui";
+import { Empty, ErrorBox, errorText, metricIds, score } from "./ui";
 import Icon from "./Icon";
 import DatasetImport from "./DatasetImport";
 import Settings from "./Settings";
-import { channelName, languageName, groupNames, label } from "./locale";
+import { languageName } from "./locale";
 const groups = [
   "channel",
   "language",
@@ -30,6 +32,11 @@ const groups = [
   "date",
 ] as const;
 export default function App() {
+  const locale = useLocale();
+  useEffect(() => {
+    document.documentElement.lang = locale;
+    document.title = `Freedom · ${t("Quality intelligence")}`;
+  }, [locale]);
   const [view, setView] = useState<
     "overview" | "reports" | "checklists" | "settings"
   >("overview");
@@ -111,7 +118,7 @@ export default function App() {
     };
   }, [bootstrap]);
   const spec: AnalysisSpec = {
-    title: "Обзор качества диалогов",
+    title: t("Conversation quality overview"),
     filters,
     group_by: "none",
     metric_ids: metricIds,
@@ -163,7 +170,7 @@ export default function App() {
       const r = await api.saveReport({
         ...spec,
         group_by: group,
-        title: `Обзор качества · ${start || "все даты"}`,
+        title: t("Quality review · {arg0}", { arg0: start || t("all dates") }),
       });
       await reloadLists();
       setReportId(r.id);
@@ -175,7 +182,7 @@ export default function App() {
   return (
     <div className="app-shell">
       <a className="skip-link" href="#workspace-content">
-        Перейти к рабочей области
+        {t("Skip to workspace")}
       </a>
       <aside className="sidebar">
         <a
@@ -197,25 +204,26 @@ export default function App() {
             </svg>
           </span>
           <span className="brand-name">
-            FREEDOM<span>АНАЛИТИКА КАЧЕСТВА</span>
+            FREEDOM<span>{t("QUALITY INTELLIGENCE")}</span>
           </span>
         </a>
         <div className="workspace-switch">
           <span className="workspace-symbol">Q</span>
           <span>
-            Контроль качества<small>Аналитика диалогов</small>
+            {t("Quality workspace")}
+            <small>{t("Conversation analytics")}</small>
           </span>
           <Icon name="chevron" size={14} />
         </div>
-        <span className="nav-label">РАБОЧАЯ ОБЛАСТЬ</span>
-        <nav aria-label="Рабочая область">
+        <span className="nav-label">{t("WORKSPACE")}</span>
+        <nav aria-label={t("Workspace")}>
           <button
             className={view === "overview" ? "active" : ""}
             aria-current={view === "overview" ? "page" : undefined}
             onClick={() => setView("overview")}
           >
             <Icon name="overview" />
-            Обзор
+            {t("Overview")}
           </button>
           <button
             className={view === "reports" ? "active" : ""}
@@ -223,7 +231,7 @@ export default function App() {
             onClick={() => setView("reports")}
           >
             <Icon name="sparkle" />
-            Ассистент и отчёты
+            {t("Assistant & reports")}
           </button>
           <button
             className={view === "checklists" ? "active" : ""}
@@ -231,7 +239,7 @@ export default function App() {
             onClick={() => setView("checklists")}
           >
             <Icon name="checklist" />
-            Чек-листы
+            {t("Checklists")}
           </button>
           <button
             className={view === "settings" ? "active" : ""}
@@ -239,42 +247,35 @@ export default function App() {
             onClick={() => setView("settings")}
           >
             <Icon name="filter" />
-            Настройки
+            {t("Settings")}
           </button>
         </nav>
         <div className="sidebar-foot">
           <div className="sidebar-note">
             <Icon name="shield" />
-            <strong>Доказательства для каждого решения.</strong>
-            <p>Прозрачные оценки. Проверяемые решения. Качественный сервис.</p>
+            <strong>{t("Evidence in every decision.")}</strong>
+            <p>
+              {t(
+                "Transparent scores. Traceable reviews. Better conversations.",
+              )}
+            </p>
           </div>
           <span className="local-status">
             <i />
-            Локальная рабочая область <span>Asia/Almaty</span>
+            {t("Local workspace ")}
+            <span>Asia/Almaty</span>
           </span>
           {usage && (
             <details>
               <summary>
-                Расходы на модель: $
-                {usage.spent_usd.toLocaleString("ru-RU", {
-                  minimumFractionDigits: 2,
-                  maximumFractionDigits: 2,
-                })}
+                {t("Model usage: $")}
+                {score(usage.spent_usd)}
               </summary>
               <p>
-                $
-                {usage.reserved_usd.toLocaleString("ru-RU", {
-                  minimumFractionDigits: 2,
-                  maximumFractionDigits: 2,
-                })}{" "}
-                зарезервировано
-                <br />$
-                {usage.working_remaining_usd.toLocaleString("ru-RU", {
-                  minimumFractionDigits: 2,
-                  maximumFractionDigits: 2,
-                })}{" "}
-                осталось в рабочем бюджете
-                <br />${usage.hard_limit_usd} предельный бюджет
+                ${score(usage.reserved_usd)} {t(" reserved")}
+                <br />${score(usage.working_remaining_usd)}{" "}
+                {t(" working allowance left")}
+                <br />${usage.hard_limit_usd} {t(" hard limit")}
               </p>
             </details>
           )}
@@ -283,24 +284,22 @@ export default function App() {
       <main>
         <div className="topbar">
           <div className="breadcrumb">
-            Рабочая область
+            {t("Workspace")}
             <Icon name="chevron" size={13} />
             <strong>
               {view === "overview"
-                ? "Обзор"
+                ? t("Overview")
                 : view === "reports"
-                  ? "Ассистент и отчёты"
+                  ? t("Assistant & reports")
                   : view === "checklists"
-                    ? "Чек-листы"
-                    : "Настройки"}
+                    ? t("Checklists")
+                    : t("Settings")}
             </strong>
           </div>
           <div className="topbar-right">
+            <LanguageSwitcher />
             <span className="timezone">Asia/Almaty · UTC+5</span>
-            <span
-              className="avatar"
-              aria-label="Рабочая область контроля качества"
-            >
+            <span className="avatar" aria-label={t("Quality review workspace")}>
               QA
             </span>
           </div>
@@ -308,24 +307,32 @@ export default function App() {
         <div className="workspace-content" id="workspace-content">
           <header className="page-head">
             <div>
-              <span className="eyebrow">АНАЛИТИКА КАЧЕСТВА ДИАЛОГОВ</span>
+              <span className="eyebrow">
+                {t("CONVERSATION QUALITY ANALYTICS")}
+              </span>
               <h1>
                 {view === "overview"
-                  ? "Качество сервиса в деталях."
+                  ? t("A clearer view of quality.")
                   : view === "reports"
-                    ? "Спрашивайте. Исследуйте. Понимайте."
+                    ? t("Ask. Explore. Understand.")
                     : view === "checklists"
-                      ? "Ваш стандарт для каждого диалога."
-                      : "Язык новых результатов."}
+                      ? t("Your standard. Every conversation.")
+                      : t("The language of new results.")}
               </h1>
               <p>
                 {view === "overview"
-                  ? "Каждый диалог помогает понять, как улучшить сервис."
+                  ? t(
+                      "Every conversation tells a story. Turn yours into better service.",
+                    )
                   : view === "reports"
-                    ? "Анализ, фильтры и исходные диалоги в одном отчёте."
+                    ? t(
+                        "Keep the analysis, its filters and source conversations together.",
+                      )
                     : view === "checklists"
-                      ? "Сохраните новую версию чек-листа и запустите оценку отдельно."
-                      : "Сохранённые результаты сохраняют исходный язык."}
+                      ? t(
+                          "Save a new checklist version and evaluate it explicitly.",
+                        )
+                      : t("Saved results keep their original language.")}
               </p>
             </div>
             <button
@@ -333,18 +340,18 @@ export default function App() {
               onClick={() => setImporting(true)}
             >
               <Icon name="upload" size={17} />
-              Импортировать диалоги
+              {t("Import conversations")}
             </button>
           </header>
           {error && (
             <ErrorBox>
-              {error}{" "}
+              {message(error)}{" "}
               <button
                 onClick={() =>
                   meta ? setRevision((v) => v + 1) : setBootstrap((v) => v + 1)
                 }
               >
-                Повторить загрузку обзора
+                {t("Retry overview")}
               </button>
             </ErrorBox>
           )}
@@ -358,7 +365,7 @@ export default function App() {
                 }}
               >
                 <label>
-                  Набор данных
+                  {t("Dataset")}
                   <select
                     value={filters.dataset_id}
                     onChange={(e) =>
@@ -373,7 +380,7 @@ export default function App() {
                   </select>
                 </label>
                 <label>
-                  С даты
+                  {t("From")}
                   <input
                     type="date"
                     value={start}
@@ -381,7 +388,7 @@ export default function App() {
                   />
                 </label>
                 <label>
-                  По дату
+                  {t("Through")}
                   <input
                     type="date"
                     value={end}
@@ -389,9 +396,9 @@ export default function App() {
                     onChange={(e) => setEnd(e.target.value)}
                   />
                 </label>
-                <button type="submit">Применить даты</button>
+                <button type="submit">{t("Apply dates")}</button>
                 <label>
-                  Канал
+                  {t("Channel")}
                   <select
                     value={filters.channel || ""}
                     onChange={(e) =>
@@ -402,16 +409,16 @@ export default function App() {
                       })
                     }
                   >
-                    <option value="">Все каналы</option>
+                    <option value="">{t("All channels")}</option>
                     {meta?.channels.map((c) => (
                       <option key={c} value={c}>
-                        {channelName(c)}
+                        {t(c)}
                       </option>
                     ))}
                   </select>
                 </label>
                 <label>
-                  Язык диалога
+                  {t("Language")}
                   <select
                     value={filters.language || ""}
                     onChange={(e) =>
@@ -422,7 +429,7 @@ export default function App() {
                       })
                     }
                   >
-                    <option value="">Все языки</option>
+                    <option value="">{t("All languages")}</option>
                     {meta?.languages.map((c) => (
                       <option key={c} value={c}>
                         {languageName(c)}
@@ -431,24 +438,26 @@ export default function App() {
                   </select>
                 </label>
                 <label>
-                  Сравнить по
+                  {t("Compare by")}
                   <select
                     value={group}
                     onChange={(e) => setGroup(e.target.value as typeof group)}
                   >
                     {groups.map((c) => (
                       <option key={c} value={c}>
-                        {groupNames[c] || c}
+                        {t(c.replaceAll("_", " "))}
                       </option>
                     ))}
                   </select>
                 </label>
               </form>
               <details className="advanced-filters">
-                <summary>Дополнительные фильтры по времени и качеству</summary>
+                <summary>
+                  {t("Additional calendar and quality filters")}
+                </summary>
                 <div className="filter-bar">
                   <label>
-                    Местное время
+                    {t("Local hours")}
                     <select
                       value={
                         filters.hours
@@ -465,16 +474,16 @@ export default function App() {
                         });
                       }}
                     >
-                      <option value="">Любое время</option>
-                      <option value="6,18">День: 06:00–18:00</option>
-                      <option value="18,6">Ночь: 18:00–06:00</option>
+                      <option value="">{t("All hours")}</option>
+                      <option value="6,18">{t("Day: 06:00–18:00")}</option>
+                      <option value="18,6">{t("Night: 18:00–06:00")}</option>
                       <option value="12,0">
-                        Вторая половина дня: 12:00–24:00
+                        {t("Afternoon/evening: 12:00–24:00")}
                       </option>
                     </select>
                   </label>
                   <label>
-                    Календарь праздников
+                    {t("Holiday calendar")}
                     <select
                       value={
                         filters.holiday == null ? "" : String(filters.holiday)
@@ -489,17 +498,17 @@ export default function App() {
                         })
                       }
                     >
-                      <option value="">Все даты</option>
+                      <option value="">{t("All dates")}</option>
                       <option value="true">
-                        Праздники Казахстана с переносами
+                        {t("KZ public holidays (observed)")}
                       </option>
                       <option value="false">
-                        Исключить праздники Казахстана
+                        {t("Exclude KZ public holidays")}
                       </option>
                     </select>
                   </label>
                   <label>
-                    Дни недели
+                    {t("Weekdays")}
                     <select
                       value={filters.weekdays?.join(",") || ""}
                       onChange={(e) =>
@@ -511,13 +520,13 @@ export default function App() {
                         })
                       }
                     >
-                      <option value="">Все дни недели</option>
-                      <option value="1,2,3,4,5">Понедельник–пятница</option>
-                      <option value="6,7">Суббота–воскресенье</option>
+                      <option value="">{t("All weekdays")}</option>
+                      <option value="1,2,3,4,5">{t("Monday–Friday")}</option>
+                      <option value="6,7">{t("Saturday–Sunday")}</option>
                     </select>
                   </label>
                   <label>
-                    Минимальная оценка
+                    {t("Minimum score")}
                     <input
                       type="number"
                       min="0"
@@ -535,7 +544,7 @@ export default function App() {
                     />
                   </label>
                   <label>
-                    Максимальная оценка
+                    {t("Maximum score")}
                     <input
                       type="number"
                       min={filters.min_score ?? 0}
@@ -553,7 +562,7 @@ export default function App() {
                     />
                   </label>
                   <label>
-                    Критическое нарушение
+                    {t("Critical flag")}
                     <select
                       value={
                         filters.critical == null ? "" : String(filters.critical)
@@ -568,39 +577,43 @@ export default function App() {
                         })
                       }
                     >
-                      <option value="">Любой статус</option>
-                      <option value="true">С критическим нарушением</option>
-                      <option value="false">Без критического нарушения</option>
+                      <option value="">{t("Any status")}</option>
+                      <option value="true">{t("Critical flagged")}</option>
+                      <option value="false">{t("No critical flag")}</option>
                     </select>
                   </label>
                 </div>
                 <small>
-                  Конечный час не включается. Праздники Казахстана учитывают
-                  переносы; обычные выходные задаются фильтром дней недели.
+                  {t(
+                    "Hours end exclusively. Holidays include observed Kazakhstan public holidays; ordinary weekends use the weekday filter.",
+                  )}
                 </small>
               </details>
               <div className="row provenance">
                 <details>
-                  <summary>О календарных датах</summary>
+                  <summary>{t("About calendar dates")}</summary>
                   <p>
-                    Демонстрационные даты назначаются отдельно от исходных
-                    временных меток и не зависят от оценок.{" "}
+                    {t(
+                      "Assigned demo dates are separate from original timestamps and independent of scores.",
+                    )}{" "}
                     {Array.isArray(meta?.scheduling.algorithms)
                       ? meta.scheduling.algorithms
-                          .map((algorithm) => label(String(algorithm)))
+                          .map((algorithm) => t(String(algorithm)))
                           .join(", ")
-                      : "Алгоритм не задан"}{" "}
-                    · начальное значение{" "}
-                    {String(meta?.scheduling.seed ?? "нет")}.
+                      : t("No scheduling algorithm")}{" "}
+                    {t(" · seed ")}
+                    {String(meta?.scheduling.seed ?? t("none"))}.
                   </p>
                 </details>
                 <button disabled={!output || loading} onClick={savedReport}>
-                  Сохранить выборку как отчёт
+                  {t("Save selection as report")}
                 </button>
               </div>
               {loading ? (
                 <Empty>
-                  Загрузка выбранных диалогов и показателей качества…
+                  {t(
+                    "Loading the selected conversations and quality measures…",
+                  )}
                 </Empty>
               ) : output && !!meta?.datasets.length ? (
                 <Analysis
@@ -618,17 +631,18 @@ export default function App() {
                   <span className="upload-orbit">
                     <Icon name="chat" size={30} />
                   </span>
-                  <h2>Начните исследование с диалога.</h2>
+                  <h2>{t("Your next insight starts with a conversation.")}</h2>
                   <p>
-                    Импортируйте набор данных JSON, чтобы исследовать диалоги,
-                    оценивать качество и проверять доказательства.
+                    {t(
+                      "Import a JSON dataset to explore conversations, evaluate quality and follow the evidence.",
+                    )}
                   </p>
                   <button
                     className="primary"
                     onClick={() => setImporting(true)}
                   >
                     <Icon name="upload" size={17} />
-                    Импортировать первые диалоги
+                    {t("Import your first conversations")}
                   </button>
                 </div>
               )}
@@ -658,9 +672,9 @@ export default function App() {
           {view === "settings" && <Settings />}
           <footer className="page-footer">
             <span>
-              FREEDOM <span>/</span> Аналитика качества
+              FREEDOM <span>/</span> {t(" Quality intelligence")}
             </span>
-            <span>В центре внимания — диалог.</span>
+            <span>{t("Built around the conversation.")}</span>
           </footer>
         </div>
       </main>

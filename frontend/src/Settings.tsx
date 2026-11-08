@@ -1,3 +1,4 @@
+import { t, message, useLocale } from "./i18n";
 import { useEffect, useState } from "react";
 import { api, type WorkspaceSettings } from "./api";
 import { languageNames } from "./locale";
@@ -5,6 +6,7 @@ import { Empty, ErrorBox, errorText } from "./ui";
 
 type Language = NonNullable<WorkspaceSettings["analysis_language"]>;
 export default function Settings() {
+  useLocale();
   const [language, setLanguage] = useState<Language>("RU");
   const [saved, setSaved] = useState<Language>();
   const [loading, setLoading] = useState(true);
@@ -42,12 +44,14 @@ export default function Settings() {
     >
       <div className="section-head">
         <div>
-          <h2 id="settings-heading">Настройки анализа</h2>
-          <p>Выберите язык новых оценок и ответов ассистента.</p>
+          <h2 id="settings-heading">{t("Analysis settings")}</h2>
+          <p>
+            {t("Choose the language of new assessments and assistant replies.")}
+          </p>
         </div>
       </div>
       {loading ? (
-        <Empty>Загрузка настроек…</Empty>
+        <Empty>{t("Loading settings…")}</Empty>
       ) : (
         <form
           onSubmit={async (event) => {
@@ -71,7 +75,7 @@ export default function Settings() {
           }}
         >
           <label>
-            Язык анализа
+            {t("Analysis language")}
             <select
               value={language}
               disabled={saving || !saved}
@@ -88,25 +92,24 @@ export default function Settings() {
             </select>
           </label>
           <p>
-            Настройка сохраняется для всей рабочей области. Она применяется к
-            новым запускам оценки, пользовательским метрикам и ответам
-            ассистента.
+            {t(
+              "This preference is saved for the whole workspace. It applies to new evaluation runs, custom metrics and assistant replies.",
+            )}
           </p>
           <p>
-            Сохранённые результаты и уже запущенные задачи сохраняют исходный
-            язык. Изменение языка не запускает работу модели и не переводит
-            прежние результаты. Язык исходного диалога фильтруется отдельно в
-            обзоре.
+            {t(
+              "Saved results and existing jobs keep their original language. Changing the language does not start model work or translate previous results. The source conversation language is filtered separately in the overview.",
+            )}
           </p>
           <button
             className="primary"
             disabled={saving || !saved || saved === language}
           >
-            {saving ? "Сохранение…" : "Сохранить настройки"}
+            {saving ? t("Saving…") : t("Save settings")}
           </button>
           {success && (
             <p className="notice" role="status">
-              Настройки сохранены. Язык новых результатов:{" "}
+              {t("Settings saved. Language for new results:")}{" "}
               {languageNames[saved || "RU"]}.
             </p>
           )}
@@ -114,10 +117,10 @@ export default function Settings() {
       )}
       {error && (
         <ErrorBox>
-          {error}{" "}
+          {message(error)}{" "}
           {!saved && (
             <button onClick={() => setRevision((v) => v + 1)}>
-              Повторить загрузку настроек
+              {t("Retry loading settings")}
             </button>
           )}
         </ErrorBox>

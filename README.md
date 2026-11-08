@@ -2,7 +2,7 @@
 
 CQA helps a quality lead discover patterns in conversation quality, inspect original source evidence, and record review decisions. The local React/TypeScript frontend includes a filtered overview, a saved assistant/report workspace, versioned checklists, individual evaluation progress, and criterion appeals with reviewer history.
 
-The interface is Russian, with Russian date/number formatting and the Asia/Almaty timezone. Analysis language is a separate durable workspace preference. The frontend uses a Freedom-inspired visual system with responsive navigation, searchable conversations, a dedicated analytics view, paired transcript/assessment review, and JSON import with a preview. The teammate’s evaluation, review, report, and checklist contracts are preserved. Its API adapter is independent of the visual components. See [the frontend handoff](docs/coordination/implementation/task-6-handoff.md), [the API contract](docs/api-contract.md), and [the confirmed product design](docs/coordination/product-discovery/product-design.md).
+The interface defaults to Russian and supports optional English/Kazakh selection, with locale-aware date/number formatting and the Asia/Almaty timezone. Analysis language is a separate durable workspace preference. The frontend uses a Freedom-inspired visual system with responsive navigation, searchable conversations, a dedicated analytics view, paired transcript/assessment review, and JSON import with a preview. The teammate’s evaluation, review, report, and checklist contracts are preserved. Its API adapter is independent of the visual components. See [the frontend handoff](docs/coordination/implementation/task-6-handoff.md), [the API contract](docs/api-contract.md), and [the confirmed product design](docs/coordination/product-discovery/product-design.md).
 
 ## Install and start locally
 
@@ -39,11 +39,17 @@ bash scripts/dev.sh
 
 Reuse an already running pair. Startup performs no import, evaluation, reset, or model request. The frontend uses no external runtime fonts or images.
 
+## Interface languages
+
+Use the language selector in the top bar or an open dialog to switch between **Русский**, **English** and **Қазақша**. Russian is the default. The preference is saved in this browser; the selected language also controls interface date formatting and document language. Switching does not refetch data, evaluate conversations, save forms or clear drafts.
+
+Localization covers navigation, forms, statuses, validation messages, score explanations and baseline criterion descriptions. Original RU/KZ/EN transcript text, source timestamps, IDs, AI rationales, comments and user-authored content are preserved. Built-in cqa-v1 drafts start from localized display copies; user-defined versions retain their own wording. Switching interface language preserves the current draft and never rewrites stored checklists. API enum values and the separate conversation-language filter are unchanged.
+
 ## Import conversations through the interface
 
-Choose **Импортировать диалоги** from any workspace screen. Select or drop a JSON file (up to 20 MB), or choose **Вставить JSON**. The interface accepts the organizer response envelope, an array of source conversations, or one source conversation object. A single object/array uses the entered dataset ID; an organizer response retains its own `dataset_group_id`.
+Choose **Загрузить диалоги** from any workspace screen. Select or drop a JSON file (up to 20 MB), or choose **Вставить JSON**. The interface accepts the organizer response envelope, an array of source conversations, or one source conversation object. A single object/array uses the entered dataset ID; an organizer response retains its own `dataset_group_id`.
 
-Preview the conversation count, channels, languages and source IDs, then import. The frontend calls the existing `POST /api/datasets/import` contract. The backend validates timestamps and the complete dataset atomically, rejects conflicts, and treats identical reimports as idempotent. Import does not evaluate, call the model, or replace existing assessments. After success, **Открыть набор данных** selects the imported dataset and clears previous filters so the new conversations are visible.
+Preview the conversation count, channels, languages and source IDs, then import. The frontend calls the existing `POST /api/datasets/import` contract. The backend validates timestamps and the complete dataset atomically, rejects conflicts, and treats identical reimports as idempotent. Import does not evaluate, call the model, or replace existing assessments. After success, **Открыть набор** selects the imported dataset and clears previous filters so the new conversations are visible.
 
 Original IDs, text, roles and timestamps stay intact. Optional October 2026 demonstration dates are **off by default** and are separate from original timestamps. For source-only data, use all dates rather than filtering by a demonstration calendar.
 
@@ -78,7 +84,7 @@ Open **Настройки** → **Язык анализа**. The server preferen
 
 The saved language applies to new evaluations, custom-metric runs and assistant replies. Saving a preference makes no provider request, launches no assessment and does not change queued work or stored results. Existing model-authored records without language metadata are labeled English. Conversation assessment provenance, run progress and assistant messages show the language recorded for that output. The overview's **Язык диалога** filter selects the source language independently; it does not set the analysis language.
 
-Product labels, known calendar/group metadata, baseline criterion wording and editable baseline drafts are displayed in Russian. Original transcripts, timestamps, user-entered report/criterion/metric text and model output remain verbatim. Built-in wording uses display copies; immutable `cqa-v1` is preserved. Unknown errors/metadata stay inspectable. The interface stays Russian when a different analysis language is saved.
+Product labels, known calendar/group metadata, baseline criterion wording and editable baseline drafts are displayed in Russian. Original transcripts, timestamps, user-entered report/criterion/metric text and model output remain verbatim. Built-in wording uses display copies; immutable `cqa-v1` is preserved. Unknown errors/metadata stay inspectable. Changing the analysis language does not change the separate browser interface-language preference.
 
 ## Review and analysis
 

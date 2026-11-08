@@ -1,3 +1,4 @@
+import { message, t, count } from "./i18n";
 import { useRef, useState } from "react";
 import { api, type DatasetImportResult, type SourceEnvelope } from "./api";
 import { prepareImport } from "./import-data";
@@ -37,7 +38,7 @@ export default function DatasetImport({
     } catch (e) {
       setError(
         e instanceof SyntaxError
-          ? "Некорректный JSON. Проверьте файл или вставленный текст и повторите попытку."
+          ? "This is not valid JSON. Check the file or pasted text and try again."
           : errorText(e),
       );
     }
@@ -48,7 +49,7 @@ export default function DatasetImport({
     setError("");
     setPayload(undefined);
     if (file.size > 20 * 1024 * 1024) {
-      setError("Выберите файл JSON размером до 20 МБ.");
+      setError("Choose a JSON file smaller than 20 MB.");
       return;
     }
     try {
@@ -56,7 +57,7 @@ export default function DatasetImport({
       if (current === selection.current) preview(source, file.name);
     } catch {
       if (current === selection.current)
-        setError("Не удалось прочитать файл. Выберите его повторно.");
+        setError("The file could not be read. Select it again.");
     }
   };
   const records = payload?.data.records || [];
@@ -68,43 +69,52 @@ export default function DatasetImport({
       await imported(result);
     } catch (e) {
       setError(
-        `Импорт выполнен. Не удалось обновить рабочую область: ${errorText(e)}. Попробуйте снова открыть набор данных.`,
+        `Import succeeded. Could not refresh the workspace: ${errorText(e)}. Try opening the dataset again.`,
       );
     } finally {
       setBusy(false);
     }
   };
   return (
-    <Dialog title="Импортировать диалоги" close={close} busy={busy}>
+    <Dialog title={t("Import conversations")} close={close} busy={busy}>
       <div className="import-body">
         {result ? (
           <div className="import-success" role="status">
             <span className="success-orbit">
               <Icon name="check" size={32} />
             </span>
-            <span className="eyebrow">ГОТОВО К ПРОВЕРКЕ</span>
-            <h3>Диалоги импортированы.</h3>
+            <span className="eyebrow">{t("READY FOR REVIEW")}</span>
+            <h3>{t("Your conversations are in.")}</h3>
             <p>
-              {result.total_records} диалогов доступны в наборе{" "}
-              <strong>{result.dataset_id}</strong>. Импорт сохраняет
-              существующие оценки и не запускает оценку моделью.
+              {t("Dataset {dataset} now contains {count}.", {
+                dataset: result.dataset_id,
+                count: count("conversations", result.total_records),
+              })}{" "}
+              {t(
+                "Importing keeps existing assessments and does not start a model evaluation.",
+              )}
             </p>
             <button
               className="primary"
               disabled={busy}
               onClick={() => void openDataset()}
             >
-              {busy ? "Открытие набора…" : "Открыть набор данных"}
+              {busy ? t("Opening dataset…") : t("Open dataset")}
               <Icon name="arrow" size={16} />
             </button>
           </div>
         ) : (
           <>
             <p className="import-intro">
-              Соберите диалоги в одной рабочей области. Проверьте данные перед
-              импортом.
+              {t(
+                "Bring your conversations into one workspace. Preview the data before you import.",
+              )}
             </p>
-            <div className="segmented" role="group" aria-label="Способ импорта">
+            <div
+              className="segmented"
+              role="group"
+              aria-label={t("Import method")}
+            >
               <button
                 className={mode === "file" ? "selected" : ""}
                 aria-pressed={mode === "file"}
@@ -116,7 +126,7 @@ export default function DatasetImport({
                   setError("");
                 }}
               >
-                Загрузить файл
+                {t("Upload file")}
               </button>
               <button
                 className={mode === "paste" ? "selected" : ""}
@@ -129,12 +139,12 @@ export default function DatasetImport({
                   setError("");
                 }}
               >
-                Вставить JSON
+                {t("Paste JSON")}
               </button>
             </div>
             {!payload && (
               <label>
-                Идентификатор набора для одного диалога или массива
+                {t("Dataset ID for a single conversation or array")}
                 <input
                   value={group}
                   maxLength={128}
@@ -142,8 +152,9 @@ export default function DatasetImport({
                   onChange={(e) => setGroup(e.target.value)}
                 />
                 <small>
-                  В ответе организаторов используется идентификатор набора из
-                  файла.
+                  {t(
+                    "Organizer responses use the dataset ID already in the file.",
+                  )}
                 </small>
               </label>
             )}
@@ -160,7 +171,7 @@ export default function DatasetImport({
                   setDragging(false);
                   if (busy) return;
                   if (e.dataTransfer.files.length !== 1) {
-                    setError("Перетаскивайте по одному файлу JSON.");
+                    setError("Drop one JSON file at a time.");
                     return;
                   }
                   void readFile(e.dataTransfer.files[0]);
@@ -170,17 +181,18 @@ export default function DatasetImport({
                   <Icon name="upload" size={25} />
                 </span>
                 <strong>
-                  {payload ? filename : "Перетащите файл JSON сюда"}
+                  {payload ? filename : t("Drop your JSON file here")}
                 </strong>
                 <span>
-                  Ответ организаторов, массив диалогов или один диалог · до 20
-                  МБ
+                  {t(
+                    "Organizer response, conversation array or single conversation · up to 20 MB",
+                  )}
                 </span>
                 <input
                   ref={fileInput}
                   type="file"
                   accept=".json,application/json"
-                  aria-label="Файл JSON с диалогами"
+                  aria-label={t("Conversation JSON file")}
                   disabled={busy}
                   onChange={(e) => {
                     void readFile(e.target.files?.[0]);
@@ -192,13 +204,13 @@ export default function DatasetImport({
                   disabled={busy}
                   onClick={() => fileInput.current?.click()}
                 >
-                  {payload ? "Выбрать другой файл" : "Выбрать файл"}
+                  {payload ? t("Choose another file") : t("Browse files")}
                 </button>
               </div>
             ) : (
               <div className="paste-input">
                 <label>
-                  JSON диалогов
+                  {t("Conversation JSON")}
                   <textarea
                     value={text}
                     disabled={busy}
@@ -213,38 +225,38 @@ export default function DatasetImport({
                 </label>
                 <button
                   disabled={busy || !text.trim()}
-                  onClick={() => preview(text, "Вставленный JSON")}
+                  onClick={() => preview(text, "Pasted JSON")}
                 >
-                  Предпросмотр диалогов
+                  {t("Preview conversations")}
                 </button>
               </div>
             )}
             {payload && (
               <section
                 className="import-preview"
-                aria-label="Предпросмотр импорта"
+                aria-label={t("Import preview")}
               >
                 <div className="row">
                   <Icon name="file" />
                   <strong>{payload.data.dataset_group_id}</strong>
-                  <span className="status ok">Готово к импорту</span>
+                  <span className="status ok">{t("Ready to import")}</span>
                 </div>
                 <div className="import-counts">
                   <div>
                     <strong>{records.length}</strong>
-                    <small>диалогов</small>
+                    <small>{t("conversations")}</small>
                   </div>
                   <div>
                     <strong>
                       {records.filter((r) => r.channel === "agent chat").length}
                     </strong>
-                    <small>чатов</small>
+                    <small>{t("chats")}</small>
                   </div>
                   <div>
                     <strong>
                       {records.filter((r) => r.channel === "voice call").length}
                     </strong>
-                    <small>звонков</small>
+                    <small>{t("calls")}</small>
                   </div>
                   <div>
                     <strong>
@@ -254,7 +266,7 @@ export default function DatasetImport({
                         ),
                       ].join(" · ")}
                     </strong>
-                    <small>языки</small>
+                    <small>{t("languages")}</small>
                   </div>
                 </div>
                 <div className="preview-records">
@@ -262,13 +274,16 @@ export default function DatasetImport({
                     <div key={r.conversation_id}>
                       <span>{r.conversation_id}</span>
                       <small>
-                        {languageName(r.language)} · {r.transcript.length}{" "}
-                        реплик
+                        {languageName(r.language)} ·{" "}
+                        {count("turns", r.transcript.length)}
                       </small>
                     </div>
                   ))}
                   {records.length > 3 && (
-                    <small>и ещё {records.length - 3} диалогов</small>
+                    <small>
+                      {t(" and ")}
+                      {records.length - 3} {t(" more conversations")}
+                    </small>
                   )}
                 </div>
                 <label className="inline-label">
@@ -278,27 +293,27 @@ export default function DatasetImport({
                     disabled={busy}
                     onChange={(e) => setDemoDates(e.target.checked)}
                   />
-                  Назначить демонстрационные даты в октябре 2026 года
+                  {t("Add demonstration dates in October 2026")}
                 </label>
                 <small>
-                  Исходные временные метки сохранены. Демонстрационные даты
-                  используются только для календарных сравнений.
+                  {t(
+                    "Original transcript timestamps are preserved. Demo dates only enable calendar comparisons.",
+                  )}
                 </small>
               </section>
             )}
             <details className="format-help">
-              <summary>Какие форматы JSON поддерживаются?</summary>
+              <summary>{t("Which JSON formats are supported?")}</summary>
               <p>
-                Используйте ответ API организаторов, массив записей или одну
-                запись. Диалог должен содержать conversation_id, channel,
-                language, transcript и audio_url. Реплика должна содержать
-                timestamp, speaker и text. Для чатов укажите audio_url: null.
+                {t(
+                  "Use the organizer API response, an array of records, or one record. Each conversation needs conversation_id, channel, language, transcript and audio_url. Each turn needs timestamp, speaker and text. Use audio_url: null for chats.",
+                )}
               </p>
             </details>
             <div className="import-actions">
               <span>
-                <Icon name="shield" size={15} /> Только импорт · без запроса к
-                модели
+                <Icon name="shield" size={15} />{" "}
+                {t(" Import only · no model request")}
               </span>
               <button
                 className="primary"
@@ -323,14 +338,18 @@ export default function DatasetImport({
                 }}
               >
                 {busy
-                  ? "Импорт…"
-                  : `Импортировать диалоги${payload ? ` (${records.length})` : ""}`}
+                  ? t("Importing…")
+                  : payload
+                    ? t("Import {count}", {
+                        count: count("conversations", records.length),
+                      })
+                    : t("Import conversations")}
                 <Icon name="arrow" size={16} />
               </button>
             </div>
           </>
         )}
-        {error && <ErrorBox>{error}</ErrorBox>}
+        {error && <ErrorBox>{message(error)}</ErrorBox>}
       </div>
     </Dialog>
   );

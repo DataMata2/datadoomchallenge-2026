@@ -1,112 +1,40 @@
 import type { CriterionDefinition } from "./api";
-
+import {
+  t,
+  message,
+  getLocale,
+  formattingLocale,
+  groupLabel as translatedGroup,
+} from "./i18n";
 export const languageNames: Record<string, string> = {
-  RU: "Русский (RU)",
-  KZ: "Казахский (KZ)",
-  EN: "Английский (EN)",
+  get RU() {
+    return t("Russian (RU)");
+  },
+  get KZ() {
+    return t("Kazakh (KZ)");
+  },
+  get EN() {
+    return t("English (EN)");
+  },
 };
 export const languageName = (value?: string) =>
-  value ? languageNames[value] || value : "Неизвестно";
+  value ? languageNames[value] || value : t("Unknown");
 export const analysisLanguage = (value?: string) => languageName(value || "EN");
 export const channelName = (value?: string) =>
-  value === "agent chat"
-    ? "Чат"
-    : value === "voice call"
-      ? "Звонок"
-      : value || "Неизвестно";
-export const groupNames: Record<string, string> = {
-  none: "Без группировки",
-  channel: "Канал",
-  language: "Язык диалога",
-  month_half: "Половина месяца",
-  day_night: "День / ночь",
-  daypart: "Время суток",
-  holiday: "Праздник / обычный день",
-  date: "Дата",
-};
-const labels: Record<string, string> = {
-  queued: "В очереди",
-  running: "Выполняется",
-  completed: "Завершено",
-  failed: "Ошибка",
-  interrupted: "Прервано",
-  cancelled: "Отменено",
-  pending: "Ожидает",
-  not_run: "Не запускалось",
-  ok: "Оценено",
-  error: "Ошибка",
-  unevaluated: "Без оценки",
-  ready: "Готово",
-  draft: "Черновик",
-  open: "Открыта",
-  confirmed: "Подтверждено",
-  changed: "Изменено",
-  resolved: "Рассмотрена",
-  client: "Клиент",
-  operator: "Оператор",
-  bot: "Бот",
-  system: "Система",
-  assigned_demo: "Демонстрационные даты",
-  source_only: "Исходные даты",
-  external_api: "Внешний API",
-  local: "Локальный",
-  hybrid: "Гибридный",
-  mixed: "Смешанный",
-  empty: "Пусто",
-  live: "Онлайн",
-  fake: "Тестовый",
-  "All selected": "Вся выборка",
-  "No assigned demo date": "Демонстрационная дата не назначена",
-  "Day 06:00–18:00": "День 06:00–18:00",
-  "Night 18:00–06:00": "Ночь 18:00–06:00",
-  Night: "Ночь",
-  Morning: "Утро",
-  Afternoon: "День",
-  Evening: "Вечер",
-  "Kazakhstan public or observed holiday": "Праздник Казахстана с переносами",
-  "Non-holiday": "Обычный день",
-  "stratified-october-v1": "Распределение по периодам октября v1",
-};
-/** Only known product metadata is translated. Unknown values remain inspectable. */
-export const label = (value?: string | null) =>
-  value ? labels[value] || value : "Нет";
+  value ? t(value) : t("Unknown");
+export const label = (value?: string | null) => (value ? t(value) : t("none"));
 export function groupLabel(value: string, custom = false): string {
   if (custom) return value;
   if (languageNames[value]) return languageName(value);
-  if (value === "agent chat" || value === "voice call")
-    return channelName(value);
-  const half = /^(\d{4}-\d{2}) days (1–15|16–end)$/.exec(value);
-  if (half)
-    return `${half[1]}: ${half[2] === "1–15" ? "1–15 число" : "16 число — конец месяца"}`;
   if (/^\d{4}-\d{2}-\d{2}$/.test(value))
-    return new Intl.DateTimeFormat("ru-RU", { timeZone: "Asia/Almaty" }).format(
-      new Date(`${value}T00:00:00+05:00`),
-    );
-  return label(value);
+    return new Intl.DateTimeFormat(formattingLocale(), {
+      timeZone: "Asia/Almaty",
+    }).format(new Date(`${value}T00:00:00+05:00`));
+  return translatedGroup(value);
 }
-const metadata: Record<string, string> = {
-  "Calendar predicates use demo_started_at converted to Asia/Almaty; records without assigned demo dates are excluded only when a calendar predicate is supplied.":
-    "Календарные фильтры используют demo_started_at в часовом поясе Asia/Almaty. Записи без демонстрационных дат исключаются только при заданном календарном фильтре.",
-  "Kazakhstan public holidays including observed days; ordinary weekends are controlled by ISO weekday filters.":
-    "Праздники Казахстана учитывают переносы. Обычные выходные задаются фильтром дней недели ISO.",
-  "All supplied predicates are AND; date/time end bounds are exclusive, score bounds inclusive. Hours with equal endpoints cover the full day.":
-    "Все условия объединяются оператором И. Конечная граница даты и времени не включается; границы оценки включаются. Одинаковые начальный и конечный часы означают полные сутки.",
-  "Latest cqa-v1 evaluation including errors; means exclude failed, unevaluated and N/A values.":
-    "Используется последняя оценка cqa-v1, включая ошибки. Средние не включают ошибки, неоценённые диалоги и Н/П.",
-  "Each cohort intersects the global selection; groups may overlap. Root IDs are unique and remain the custom-metric target population.":
-    "Каждая когорта пересекается с общей выборкой; группы могут перекрываться. Исходные идентификаторы уникальны и остаются целевой выборкой пользовательской метрики.",
-  "Calendar filters describe assigned demonstration dates; source timestamps are unchanged.":
-    "Календарные фильтры описывают назначенные демонстрационные даты; исходные временные метки сохранены.",
-  "No demonstration calendar is assigned; original timestamps are retained.":
-    "Демонстрационный календарь не назначен; исходные временные метки сохранены.",
-};
-export function metadataText(value: string): string {
-  if (value.startsWith("Global filters: "))
-    return `Общие фильтры: ${value.slice(16)}`;
-  return metadata[value] || value;
-}
+export const metadataText = (value: string) => message(value);
 export const checklistName = (id: string, name: string) =>
-  id === "cqa-v1" ? "Базовый чек-лист качества диалогов" : name;
+  id === "cqa-v1" ? t("Conversation quality baseline") : name;
 const builtIn: Record<
   string,
   Pick<
@@ -206,16 +134,26 @@ const builtIn: Record<
     na_condition: null,
   },
 };
-/** Localize a copy of the canonical rubric; never mutate stored definitions. */
+/** Localize a copy of the canonical rubric only. User definitions remain verbatim. */
 export function criterionDisplay(
   criterion: CriterionDefinition,
   version: string,
 ): CriterionDefinition {
-  return version === "cqa-v1" && builtIn[criterion.id]
-    ? {
-        ...criterion,
-        ...builtIn[criterion.id],
-        scale_meanings: { ...builtIn[criterion.id].scale_meanings },
-      }
-    : criterion;
+  if (version !== "cqa-v1" || !builtIn[criterion.id]) return criterion;
+  const copy =
+    getLocale() === "ru"
+      ? builtIn[criterion.id]
+      : {
+          title: t(criterion.title),
+          description: t(criterion.description),
+          na_condition: criterion.na_condition
+            ? t(criterion.na_condition)
+            : null,
+          scale_meanings: Object.fromEntries(
+            Object.entries(criterion.scale_meanings || {}).map(
+              ([key, value]) => [key, t(value)],
+            ),
+          ),
+        };
+  return { ...criterion, ...copy, scale_meanings: { ...copy.scale_meanings } };
 }

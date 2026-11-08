@@ -13,7 +13,7 @@ test("cancelled paid work remains observable until the backend records completio
 test("unknown, N/A, false and zero retain separate display meanings", () => {
   assert.deepEqual(
     [raw(undefined), raw(null), raw(false), raw(0), raw(true)],
-    ["Неизвестно", "Н/П", "Нет", "0", "Да"],
+    ["Неизвестно", "N/A", "Нет", "0", "Да"],
   );
 });
 test("inclusive user dates become exclusive backend bounds across month/year boundaries", () => {

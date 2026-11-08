@@ -35,7 +35,7 @@ test("known metadata is localized while unknown data and user cohort labels rema
   );
   assert.equal(
     groupLabel("2026-10 days 16–end"),
-    "2026-10: 16 число — конец месяца",
+    "2026-10, с 16 числа до конца месяца",
   );
   assert.equal(
     metadataText('Global filters: {"language": "RU"}'),
