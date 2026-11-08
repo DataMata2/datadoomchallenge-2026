@@ -1,8 +1,40 @@
 # Private CQA deployment
 
 This runbook is for the deployment owner. It does not authorize additional provider
-requests, public source publication, DNS changes or changes to other applications.
-Build and review source first; the owner performs the server cutover separately.
+requests, DNS changes or changes to other applications. The user separately authorized public GitHub publication; the repository is now public.
+The initial server cutover is complete. Use the current state below for operations; the initial-migration section is a historical checklist and must not be replayed.
+
+## Current server handoff — 2026-11-08
+
+The private demonstration is live at **https://incode.kz:8443** with valid TLS and
+whole-site authentication. The official team name is **404 Dauren Not Found**.
+Credentials are recorded only in the ignored private `runtime/deploy/access.txt`;
+keep their values and password hash out of source and shared logs. The GitHub
+repository is now public at the user's request. The deployed website still requires
+a login; public data/API access is pending the approval-review escalation. `freedom.incode.kz` DNS is currently unresolved; use the fallback.
+
+The sole canonical database is
+`89.126.193.108:/home/ubuntu/cqa/runtime/cqa.sqlite3`, owned by the single
+`cqa-api` container. The local API/Vite owner is stopped and the former local
+ledger is a mode-0440 archive. **Do not restart the old local owner, restore that
+archive, or create a second live ledger.** Server release `9ded72e` is deployed,
+including the final Freedom design changes; later documentation-only commits do
+not imply another runtime release.
+
+The verified cutover snapshot contains 78 conversations (DEV 65, FBroker 10,
+Swap 3), 144 evaluations, 5 custom assessments, 5 reports, 6 runs and the unchanged
+single `cqa-v1` checklist. DEV is 65/65 valid Russian baseline results in
+`results/dev/results.json`; the primary FBroker control is 10/10 valid Russian
+baseline results in `results/prod/results.json`. Swap is stored **ungraded**.
+Recorded usage is **157 attempts / USD 2.409826 / zero reserved**. These are recorded
+usage calculations, not invoice reconciliation. The full database logical hash
+remained unchanged after startup:
+`0c63e746fdc86b0fc753bba1ca4294cbfd7964890a037eb22cd56c47573246cf`.
+
+Both private HTTP80 and fallback TLS443 routes were checked: missing/invalid
+authentication returned 401 and valid authentication returned 200. Static assets,
+deep SPA routes and migrated data integrity were checked. Browser visual and
+interaction QA remains unavailable; HTTP/build checks do not establish it.
 
 ## Topology and prerequisites
 
@@ -49,14 +81,14 @@ Use a persistent layout outside all immutable source releases:
 
 ```
 /home/ubuntu/cqa/releases/<reviewed-commit>/
-/home/ubuntu/cqa/data/cqa.sqlite3
-/home/ubuntu/cqa/data/model-jobs.lock
+/home/ubuntu/cqa/runtime/cqa.sqlite3
+/home/ubuntu/cqa/runtime/model-jobs.lock
 /home/ubuntu/cqa/secrets/backend.env
-/home/ubuntu/cqa/deploy.env
+/home/ubuntu/cqa/deployment.env
 /home/ubuntu/cqa/backups/
 ```
 
-Create `data` owned by 10001:10001 with mode 0700. The backend credential file must
+The existing `runtime` directory is owned by 10001:10001 with mode 0700. The backend credential file must
 be owned by 10001:10001 and mode 0400, inside a private host directory; its read-only
 container path is `/run/secrets/backend.env`. Provision exactly one standard
 `ANTHROPIC_API_KEY=...` assignment through a private channel or private editor.
@@ -64,19 +96,19 @@ Never source or print this file, put the key in shell arguments/history, include
 it in logs, send it as a build argument or put it in a `VITE_*` variable. Startup
 and read-only API checks do not require a provider request.
 
-The root-owned 0600 `deploy.env` must define every variable below. There are no
+The root-owned 0600 `deployment.env` must define every variable below. There are no
 password defaults or fallback credentials:
 
 | Variable | Required value |
 | --- | --- |
 | `CQA_RELEASE` | Full reviewed Git commit SHA, also used for immutable image tags |
-| `CQA_DATA_DIR` | Absolute existing path `/home/ubuntu/cqa/data` |
+| `CQA_DATA_DIR` | Absolute existing path `/home/ubuntu/cqa/runtime` |
 | `CQA_BACKEND_ENV_FILE` | Absolute existing path `/home/ubuntu/cqa/secrets/backend.env` |
 | `CQA_BASIC_USER` | Chosen private-site username |
 | `CQA_BASIC_PASSWORD_HASH` | Caddy bcrypt hash of the privately delivered site password |
 
 Generate the hash with Caddy 2.11.4 `hash-password` interactively in a private
-terminal. Store the hash **single-quoted** in `deploy.env` so its dollar signs are
+terminal. Store the hash **single-quoted** in `deployment.env` so its dollar signs are
 literal. Give the plaintext site password only to the intended reviewers. Keep
 this environment file private: it contains an authentication verifier. Do not run
 plain `docker compose config`, `docker inspect` environment dumps or shell tracing.
@@ -102,17 +134,17 @@ a copied database on another host from creating a second ledger.
    `.dockerignore` allows only required build inputs and excludes credentials,
    runtime databases, evidence, Git, dependencies, cached builds and artifacts.
 2. Record existing container names, status/health, published ports and normal
-   AgileAI/Microdrama HTTP outcomes before making changes. Confirm port 8443 is
-   still free, `agileai_default` exists and the exact certificate directory and
+   AgileAI/Microdrama HTTP outcomes before making changes. For an initial install, confirm port 8443 is
+   free; after cutover it belongs to the existing CQA web container. Confirm `agileai_default` exists and the exact certificate directory and
    private files exist. Do not run a global Compose shutdown or prune operation.
 3. As the deployment owner, check the private deployment environment and bind
    ownership/permissions without printing contents. Use the same absolute
-   `deploy.env` and release file for all following commands:
+   `deployment.env` and release file for all following commands:
 
    ```bash
    cd /home/ubuntu/cqa/releases/<reviewed-commit>
-   docker compose --env-file /home/ubuntu/cqa/deploy.env -f deploy/compose.yaml config --quiet
-   docker compose --env-file /home/ubuntu/cqa/deploy.env -f deploy/compose.yaml build
+   docker compose --env-file /home/ubuntu/cqa/deployment.env -f deploy/compose.yaml config --quiet
+   docker compose --env-file /home/ubuntu/cqa/deployment.env -f deploy/compose.yaml build
    ```
 
    The build must resolve the actual Python/uv/Node/Caddy tags and run frozen
@@ -121,7 +153,10 @@ a copied database on another host from creating a second ledger.
    resulting image IDs with the reviewed release SHA; do not reuse its tag for
    changed source. API startup and health checks must send no model request.
 
-## Quiescent SQLite migration and single-ledger cutover
+## Initial SQLite migration — completed history, do not replay
+
+The following checklist records the completed ownership transfer. The old local
+ledger is no longer canonical; do not execute these steps again against it.
 
 1. Stop new model actions and wait for all running/queued jobs and reservations to
    settle. Record canonical read-only usage counts, spend/reservations, source
@@ -144,16 +179,16 @@ a copied database on another host from creating a second ledger.
    Do not copy only a live database while ignoring its WAL. Check `PRAGMA
    integrity_check`, record the backup digest, and preserve this pre-cutover copy.
 4. Transfer the backup privately to a temporary server path, verify its digest and
-   integrity, and place it as `data/cqa.sqlite3` with owner 10001:10001 and mode
+   integrity, and place it as `runtime/cqa.sqlite3` with owner 10001:10001 and mode
    0600. Do not transfer a held lock descriptor. The server creates its own lock
    files. Designate this server database as the **only** canonical ledger before
    starting the remote owner; never run the old local copy at the same time.
 5. Start only the CQA project from its immutable release:
 
    ```bash
-   docker compose --env-file /home/ubuntu/cqa/deploy.env -f deploy/compose.yaml up -d
-   docker compose --env-file /home/ubuntu/cqa/deploy.env -f deploy/compose.yaml ps
-   docker compose --env-file /home/ubuntu/cqa/deploy.env -f deploy/compose.yaml exec -T cqa-web caddy validate --config /etc/caddy/Caddyfile --adapter caddyfile
+   docker compose --env-file /home/ubuntu/cqa/deployment.env -f deploy/compose.yaml up -d
+   docker compose --env-file /home/ubuntu/cqa/deployment.env -f deploy/compose.yaml ps
+   docker compose --env-file /home/ubuntu/cqa/deployment.env -f deploy/compose.yaml exec -T cqa-web caddy validate --config /etc/caddy/Caddyfile --adapter caddyfile
    ```
 
    Observe API health/ownership and web startup without dumping credentials or
@@ -161,7 +196,7 @@ a copied database on another host from creating a second ledger.
    usage with the pre-cutover snapshot before allowing new model actions. Do not
    create a fresh empty database or restore an earlier billing snapshot.
 
-## Acceptance and normal-domain proxy
+## Acceptance evidence and pending normal-domain proxy
 
 Check both `/` and `/api/health` without credentials return **401** on the fallback
 HTTPS URL; test an invalid password too. With privately supplied credentials,
@@ -177,7 +212,7 @@ published by `cqa-web`; inspect only the ports field, not container environment.
 Record the same other-service checks as preflight and compare them after cutover.
 The temporary HTTPS URL is the deliverable until normal-domain DNS/TLS succeeds.
 
-After the user changes DNS, add only the site in
+DNS for `freedom.incode.kz` is currently unresolved. After the user changes DNS, add only the site in
 `deploy/Caddyfile.freedom.example` to the existing shared
 `/home/ubuntu/agileai/Caddyfile`. The main proxy **must preserve Authorization**:
 `cqa-web` authenticates it. Do not strip the header at the main proxy or put
@@ -196,7 +231,7 @@ at `https://freedom.incode.kz`.
 To refresh the fallback certificate after main-Caddy renewal:
 
 ```bash
-docker compose --env-file /home/ubuntu/cqa/deploy.env -f deploy/compose.yaml exec -T cqa-web caddy reload --force --config /etc/caddy/Caddyfile --adapter caddyfile
+docker compose --env-file /home/ubuntu/cqa/deployment.env -f deploy/compose.yaml exec -T cqa-web caddy reload --force --config /etc/caddy/Caddyfile --adapter caddyfile
 ```
 
 ## Rollback without losing usage

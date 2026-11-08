@@ -1,12 +1,46 @@
 # CQA conversation quality review
 
-CQA helps a quality lead discover patterns in conversation quality, inspect original source evidence, and record review decisions. The local React/TypeScript frontend includes a filtered overview, a saved assistant/report workspace, versioned checklists, individual evaluation progress, and criterion appeals with reviewer history.
+CQA helps a quality lead discover patterns in conversation quality, inspect original source evidence, and record review decisions. The React/TypeScript frontend includes a filtered overview, a saved assistant/report workspace, versioned checklists, individual evaluation progress, and criterion appeals with reviewer history.
 
 The interface defaults to Russian and supports optional English/Kazakh selection, with locale-aware date/number formatting and the Asia/Almaty timezone. Analysis language is a separate durable workspace preference. The frontend uses a Freedom-inspired visual system with responsive navigation, searchable conversations, a dedicated analytics view, paired transcript/assessment review, and JSON import with a preview. The teammate’s evaluation, review, report, and checklist contracts are preserved. Its API adapter is independent of the visual components. See [the frontend handoff](docs/coordination/implementation/task-6-handoff.md), [the API contract](docs/api-contract.md), and [the confirmed product design](docs/coordination/product-discovery/product-design.md).
 
-## Install and start locally
+## Current server handoff — 2026-11-08
 
-Verified with Python 3.12, Node 25.8 and npm 11.11. Use Node 22.18 or newer for the frontend and its TypeScript test loader. The API is local and has no authentication. Keep it bound to loopback.
+The private demonstration is live at **https://incode.kz:8443** with valid TLS and
+whole-site authentication. The official team name is **404 Dauren Not Found**.
+Credentials are recorded only in the ignored private `runtime/deploy/access.txt`;
+keep their values and password hash out of source and shared logs. The GitHub
+repository is now public at the user's request. The deployed website still requires
+a login; public data/API access is pending the approval-review escalation. `freedom.incode.kz` DNS is currently unresolved; use the fallback.
+
+The sole canonical database is
+`89.126.193.108:/home/ubuntu/cqa/runtime/cqa.sqlite3`, owned by the single
+`cqa-api` container. The local API/Vite owner is stopped and the former local
+ledger is a mode-0440 archive. **Do not restart the old local owner, restore that
+archive, or create a second live ledger.** Server release `9ded72e` is deployed,
+including the final Freedom design changes; later documentation-only commits do
+not imply another runtime release.
+
+The verified cutover snapshot contains 78 conversations (DEV 65, FBroker 10,
+Swap 3), 144 evaluations, 5 custom assessments, 5 reports, 6 runs and the unchanged
+single `cqa-v1` checklist. DEV is 65/65 valid Russian baseline results in
+`results/dev/results.json`; the primary FBroker control is 10/10 valid Russian
+baseline results in `results/prod/results.json`. Swap is stored **ungraded**.
+Recorded usage is **157 attempts / USD 2.409826 / zero reserved**. These are recorded
+usage calculations, not invoice reconciliation. The full database logical hash
+remained unchanged after startup:
+`0c63e746fdc86b0fc753bba1ca4294cbfd7964890a037eb22cd56c47573246cf`.
+
+Both private HTTP80 and fallback TLS443 routes were checked: missing/invalid
+authentication returned 401 and valid authentication returned 200. Static assets,
+deep SPA routes and migrated data integrity were checked. Browser visual and
+interaction QA remains unavailable; HTTP/build checks do not establish it.
+
+See [the current demo](docs/demo.md) and [deployment operations](docs/deployment.md) before operating the server.
+
+## Isolated local development only
+
+These commands create an isolated development workspace; they are not restart instructions for the deployed demonstration. Never point them at the archived pre-cutover ledger. Verified with Python 3.12, Node 25.8 and npm 11.11. Use Node 22.18 or newer for the frontend and its TypeScript test loader. The API is local and has no authentication. Keep it bound to loopback.
 
 ```bash
 uv sync --project backend --locked
@@ -18,26 +52,14 @@ Use absolute paths for the database, model-job lock and optional backend secret 
 ```bash
 cqa_project="$PWD"
 CQA_ENV_FILE="$cqa_project/.env" \
-CQA_DATABASE_PATH="$cqa_project/runtime/cqa.sqlite3" \
-CQA_MODEL_LOCK="$cqa_project/runtime/model-jobs.lock" \
+CQA_DATABASE_PATH="$cqa_project/runtime/dev-sandbox.sqlite3" \
+CQA_MODEL_LOCK="$cqa_project/runtime/dev-sandbox-model-jobs.lock" \
 bash scripts/dev.sh
 ```
 
 Open <http://127.0.0.1:5173>. The Vite proxy sends `/api` to the single API at <http://127.0.0.1:8000>; interactive API documentation is at <http://127.0.0.1:8000/docs>. The startup script works with the default macOS Bash 3.2 and on Linux. A Python standard-library supervisor manages the owner lock, readiness, signals and both child processes; no `flock` command or Bash `wait -n` is required. The startup script prints owner/backend/frontend PIDs. Stop that owner with Ctrl+C; it stops both children. It refuses occupied ports or a second script owner for the same database. Do not start another API process, use Uvicorn reload, or launch multiple workers against the live database. Startup recovers unfinished work without resending requests, so wait for in-flight work before replacing the owner.
 
-For the current prepared demonstration, preserve the existing canonical runtime and original backend secret file even if launching from another source checkout:
-
-```bash
-cqa_active=/home/datamata/.codex/worktrees/cb66/datadoomchallenge-2026
-cqa_original=/home/datamata/Projects/hackathons/datadoomchallenge-2026
-cd "$cqa_active"
-CQA_ENV_FILE="$cqa_original/.env" \
-CQA_DATABASE_PATH="$cqa_active/runtime/cqa.sqlite3" \
-CQA_MODEL_LOCK="$cqa_active/runtime/model-jobs.lock" \
-bash scripts/dev.sh
-```
-
-Reuse an already running pair. Startup performs no import, evaluation, reset, or model request. The frontend uses no external runtime fonts or images.
+The prepared demonstration now runs only on the server. Local startup performs no import, evaluation, reset or model request, but an empty isolated workspace does not contain the deployed results. The frontend uses no external runtime fonts or images.
 
 ## Interface languages
 
@@ -59,12 +81,13 @@ For a Mac without `uv`, a Python 3.12 installation can also prepare the backend:
 python3.12 -m venv backend/.venv
 backend/.venv/bin/python -m pip install -e ./backend
 npm --prefix frontend ci
-bash scripts/dev.sh
+CQA_DATABASE_PATH="$PWD/runtime/dev-sandbox.sqlite3" \
+CQA_MODEL_LOCK="$PWD/runtime/dev-sandbox-model-jobs.lock" bash scripts/dev.sh
 ```
 
-## Import local DEV data
+## Import into an isolated development workspace
 
-Run the API first. Import a user-supplied local organizer envelope, keeping raw material in an ignored directory:
+The delivered DEV and FBroker datasets are already imported and assessed. Do not replay an import or evaluation against the server or old local archive. The following helper examples apply only to a deliberately isolated development workspace. Run its API first. Import a user-supplied local organizer envelope, keeping raw material in an ignored directory:
 
 ```bash
 python3 scripts/import_dev.py --source docs/coordination/implementation/evidence/dev.json --group DEV
@@ -96,27 +119,30 @@ A conversation shows every original turn with one-based evidence links, original
 
 The paid baseline model is **`claude-sonnet-5-5`**. One complete assessment uses one request containing the full original numbered transcript and the complete selected checklist; the backend calculates the scores. The original 65-record DEV bulk run recorded 65 successful requests costing **USD 0.988380**, a mean of about **USD 0.0152 per complete assessment** (0.988380 ÷ 65). This historical token-usage estimate excludes extra smoke, assistant, custom-metric and retry work. The historical [recorded usage](docs/coordination/implementation/ledger.md) snapshot before Russian preparation totals USD 1.061508 across 73 attempts with zero reserved, including extra checks and retained rejections. Read the latest ledger and `/api/usage` for subsequent authorized work. These are recorded usage calculations, not invoice reconciliation or a future pricing guarantee.
 
-## Export evaluated results
+## Delivered results and demonstration
 
-Exports are read-only and always use the prescribed `cqa-v1` checklist. The backend rejects missing evaluations or invalid source evidence rather than fabricating a result. Supply the official team name explicitly:
+The committed primary artifacts are [DEV 65/65 Russian results](results/dev/results.json)
+and [FBroker 10/10 Russian control results](results/prod/results.json), using team
+`404 Dauren Not Found`, actual model `claude-sonnet-5-5` and immutable `cqa-v1`.
+Swap has no assessment/export claim. Do not regenerate these artifacts as an
+incidental demonstration step. Export is read-only, while evaluation and assistant
+requests can incur new usage and require the existing coordination workflow.
 
-```bash
-python3 scripts/export_results.py --dataset DEV \
-  --team-name '404 Dauren Not Found' --output results/dev/results.json
-```
+See [the current server demonstration](docs/demo.md) for a read-only walkthrough,
+followed by clearly labeled historical English provenance. The real FBroker
+control source has been processed; earlier statements that control was unavailable
+are historical. GitHub publication is now explicitly authorized and the repository is public. Website authentication remains enabled pending resolution of the public-data access approval.
 
-For the real ten-record control dataset, use its actual dataset ID and `results/prod/results.json`. A synthetic control fixture is not a submission. Export does not evaluate or refresh anything; only write an official result after the source dataset is available and assessed. Publication and public repository visibility remain separate user decisions.
-
-## Demonstration and control handoff
-
-See [the reproducible demo and control workflow](docs/demo.md) for prepared source/evaluation/report IDs, ready model prompts, read-only HTTP/export checks and the exact import → evaluate/resume → validate/export sequence for the real ten-record control source when released. [The presentation comparison](docs/presentation-model-comparison.md) records the initial import failure, verified packaging correction, five local outcomes and their limits; it does not claim gold-label accuracy or a controlled speed advantage.
-
-Verification limits: Russian UI/settings checks use synthetic components, type checking and a production build; they do not establish visual browser acceptance. The earlier Freedom UI browser check used historical DEV results in a disposable database. The overseer records the separately authorized Russian DEV preparation and live acceptance in the coordination ledger; do not infer new-run scores or usage from the historical examples. Two wholly fictional assistant actions and one fictional custom judgment passed native-provider acceptance after a compact transport fix; the earlier two rejected attempts remain in billing history. Retained DEV read/analysis/export works. These fictional checks do not establish a complete live DEV model workflow.
+The [presentation comparison](docs/presentation-model-comparison.md) records the
+separate local-model experiment and its limits. It does not claim gold-label
+accuracy or a controlled speed advantage. Browser visual/interaction QA remains
+unavailable; valid TLS, authentication, static/deep-route HTTP checks and data
+integrity have been verified for the deployed server.
 
 ## Troubleshooting
 
-- Occupied port/duplicate-owner refusal: reuse the known owner or stop it gracefully and wait for its children. Do not kill an unidentified process or start a second database owner.
-- Missing prepared data: check `CQA_DATABASE_PATH` is the absolute canonical active runtime, rather than creating another relative runtime.
+- Occupied port/duplicate-owner refusal: contact the deployment owner. The sole live owner is server container `cqa-api`; do not restart the archived local workspace or launch a second database owner.
+- Missing prepared data: confirm the server canonical path `/home/ubuntu/cqa/runtime/cqa.sqlite3`; do not create a new empty runtime or restore the old local archive.
 - Polling interrupted: `scripts/evaluate_results.py --resume` uses its saved run ID. Inspect an unknown dispatch outcome before choosing another state file; the helper does not automatically resend.
 - Failed model action: inspect canonical `/api/usage` and run/item errors before any explicit retry. Preserve unknown-outcome reservations and all paid attempts. A provider HTTP 400 requires contract investigation.
 - Export validation failure: use the exact dataset/count/official team name, complete its unchanged cqa-v1 baseline, then explicitly export again. Independent custom metrics and other checklist versions are excluded from baseline export.
