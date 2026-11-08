@@ -69,6 +69,9 @@ export default function Analysis({
     comparison?.spec.metric_ids?.find((id) => id === chartMetric) ||
     comparison?.spec.metric_ids?.[0] ||
     "final_score";
+  const criticalCount = output.observations.filter(
+    (o) => o.final?.critical_flag,
+  ).length;
   return (
     <>
       <div className="stat-strip">
@@ -83,7 +86,7 @@ export default function Analysis({
         <div className="stat-card featured">
           <span className="stat-label">
             {t("Average quality score")}
-            <Icon name="sparkle" size={18} />
+            <Icon name="chart" size={18} />
           </span>
           <strong
             className={
@@ -104,14 +107,12 @@ export default function Analysis({
               : ""}
           </span>
         </div>
-        <div className="stat-card">
+        <div className={`stat-card${criticalCount ? " has-critical" : ""}`}>
           <span className="stat-label">
             {t("Critical violations")}
-            <Icon name="shield" size={18} />
+            <Icon name="warning" size={18} />
           </span>
-          <strong>
-            {output.observations.filter((o) => o.final?.critical_flag).length}
-          </strong>
+          <strong>{criticalCount}</strong>
           <span>{t("Flagged separately from the score")}</span>
         </div>
         <div className="stat-card">
@@ -170,7 +171,7 @@ export default function Analysis({
           }}
           onClick={() => setTab("analytics")}
         >
-          <Icon name="overview" size={17} />
+          <Icon name="chart" size={17} />
           {t("Quality analytics")}
         </button>
       </div>
@@ -196,9 +197,6 @@ export default function Analysis({
                 )}
               </p>
             </div>
-            <span className="panel-icon">
-              <Icon name="chat" />
-            </span>
           </div>
           <ConversationTable
             output={output}
