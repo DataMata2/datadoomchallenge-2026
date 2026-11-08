@@ -211,7 +211,6 @@ export default function App() {
             {t("Quality workspace")}
             <small>{t("Conversation analytics")}</small>
           </span>
-          <Icon name="chevron" size={14} />
         </div>
         <span className="nav-label">{t("WORKSPACE")}</span>
         <nav aria-label={t("Workspace")}>
@@ -228,7 +227,7 @@ export default function App() {
             aria-current={view === "reports" ? "page" : undefined}
             onClick={() => setView("reports")}
           >
-            <Icon name="sparkle" />
+            <Icon name="report" />
             {t("Assistant & reports")}
           </button>
           <button
@@ -435,161 +434,165 @@ export default function App() {
                   </select>
                 </label>
               </form>
-              <details className="advanced-filters">
-                <summary>
-                  {t("Additional calendar and quality filters")}
-                </summary>
-                <div className="filter-bar">
-                  <label>
-                    {t("Local hours")}
-                    <select
-                      value={
-                        filters.hours
-                          ? `${filters.hours.start},${filters.hours.end}`
-                          : ""
-                      }
-                      onChange={(e) => {
-                        const values = e.target.value.split(",").map(Number);
-                        setFilters({
-                          ...filters,
-                          hours: e.target.value
-                            ? { start: values[0], end: values[1] }
-                            : null,
-                        });
-                      }}
-                    >
-                      <option value="">{t("All hours")}</option>
-                      <option value="6,18">{t("Day: 06:00–18:00")}</option>
-                      <option value="18,6">{t("Night: 18:00–06:00")}</option>
-                      <option value="12,0">
-                        {t("Afternoon/evening: 12:00–24:00")}
-                      </option>
-                    </select>
-                  </label>
-                  <label>
-                    {t("Holiday calendar")}
-                    <select
-                      value={
-                        filters.holiday == null ? "" : String(filters.holiday)
-                      }
-                      onChange={(e) =>
-                        setFilters({
-                          ...filters,
-                          holiday:
-                            e.target.value === ""
-                              ? null
-                              : e.target.value === "true",
-                        })
-                      }
-                    >
-                      <option value="">{t("All dates")}</option>
-                      <option value="true">
-                        {t("KZ public holidays (observed)")}
-                      </option>
-                      <option value="false">
-                        {t("Exclude KZ public holidays")}
-                      </option>
-                    </select>
-                  </label>
-                  <label>
-                    {t("Weekdays")}
-                    <select
-                      value={filters.weekdays?.join(",") || ""}
-                      onChange={(e) =>
-                        setFilters({
-                          ...filters,
-                          weekdays: e.target.value
-                            ? e.target.value.split(",").map(Number)
-                            : null,
-                        })
-                      }
-                    >
-                      <option value="">{t("All weekdays")}</option>
-                      <option value="1,2,3,4,5">{t("Monday–Friday")}</option>
-                      <option value="6,7">{t("Saturday–Sunday")}</option>
-                    </select>
-                  </label>
-                  <label>
-                    {t("Minimum score")}
-                    <input
-                      type="number"
-                      min="0"
-                      max={filters.max_score ?? 100}
-                      value={filters.min_score ?? ""}
-                      onChange={(e) =>
-                        setFilters({
-                          ...filters,
-                          min_score:
-                            e.target.value === ""
-                              ? null
-                              : Number(e.target.value),
-                        })
-                      }
-                    />
-                  </label>
-                  <label>
-                    {t("Maximum score")}
-                    <input
-                      type="number"
-                      min={filters.min_score ?? 0}
-                      max="100"
-                      value={filters.max_score ?? ""}
-                      onChange={(e) =>
-                        setFilters({
-                          ...filters,
-                          max_score:
-                            e.target.value === ""
-                              ? null
-                              : Number(e.target.value),
-                        })
-                      }
-                    />
-                  </label>
-                  <label>
-                    {t("Critical flag")}
-                    <select
-                      value={
-                        filters.critical == null ? "" : String(filters.critical)
-                      }
-                      onChange={(e) =>
-                        setFilters({
-                          ...filters,
-                          critical:
-                            e.target.value === ""
-                              ? null
-                              : e.target.value === "true",
-                        })
-                      }
-                    >
-                      <option value="">{t("Any status")}</option>
-                      <option value="true">{t("Critical flagged")}</option>
-                      <option value="false">{t("No critical flag")}</option>
-                    </select>
-                  </label>
-                </div>
-                <small>
-                  {t(
-                    "Hours end exclusively. Holidays include observed Kazakhstan public holidays; ordinary weekends use the weekday filter.",
-                  )}
-                </small>
-              </details>
-              <div className="row provenance">
-                <details>
-                  <summary>{t("About calendar dates")}</summary>
-                  <p>
+              <div className="overview-tools">
+                <details className="advanced-filters">
+                  <summary>
+                    {t("Additional calendar and quality filters")}
+                  </summary>
+                  <div className="filter-bar">
+                    <label>
+                      {t("Local hours")}
+                      <select
+                        value={
+                          filters.hours
+                            ? `${filters.hours.start},${filters.hours.end}`
+                            : ""
+                        }
+                        onChange={(e) => {
+                          const values = e.target.value.split(",").map(Number);
+                          setFilters({
+                            ...filters,
+                            hours: e.target.value
+                              ? { start: values[0], end: values[1] }
+                              : null,
+                          });
+                        }}
+                      >
+                        <option value="">{t("All hours")}</option>
+                        <option value="6,18">{t("Day: 06:00–18:00")}</option>
+                        <option value="18,6">{t("Night: 18:00–06:00")}</option>
+                        <option value="12,0">
+                          {t("Afternoon/evening: 12:00–24:00")}
+                        </option>
+                      </select>
+                    </label>
+                    <label>
+                      {t("Holiday calendar")}
+                      <select
+                        value={
+                          filters.holiday == null ? "" : String(filters.holiday)
+                        }
+                        onChange={(e) =>
+                          setFilters({
+                            ...filters,
+                            holiday:
+                              e.target.value === ""
+                                ? null
+                                : e.target.value === "true",
+                          })
+                        }
+                      >
+                        <option value="">{t("All dates")}</option>
+                        <option value="true">
+                          {t("KZ public holidays (observed)")}
+                        </option>
+                        <option value="false">
+                          {t("Exclude KZ public holidays")}
+                        </option>
+                      </select>
+                    </label>
+                    <label>
+                      {t("Weekdays")}
+                      <select
+                        value={filters.weekdays?.join(",") || ""}
+                        onChange={(e) =>
+                          setFilters({
+                            ...filters,
+                            weekdays: e.target.value
+                              ? e.target.value.split(",").map(Number)
+                              : null,
+                          })
+                        }
+                      >
+                        <option value="">{t("All weekdays")}</option>
+                        <option value="1,2,3,4,5">{t("Monday–Friday")}</option>
+                        <option value="6,7">{t("Saturday–Sunday")}</option>
+                      </select>
+                    </label>
+                    <label>
+                      {t("Minimum score")}
+                      <input
+                        type="number"
+                        min="0"
+                        max={filters.max_score ?? 100}
+                        value={filters.min_score ?? ""}
+                        onChange={(e) =>
+                          setFilters({
+                            ...filters,
+                            min_score:
+                              e.target.value === ""
+                                ? null
+                                : Number(e.target.value),
+                          })
+                        }
+                      />
+                    </label>
+                    <label>
+                      {t("Maximum score")}
+                      <input
+                        type="number"
+                        min={filters.min_score ?? 0}
+                        max="100"
+                        value={filters.max_score ?? ""}
+                        onChange={(e) =>
+                          setFilters({
+                            ...filters,
+                            max_score:
+                              e.target.value === ""
+                                ? null
+                                : Number(e.target.value),
+                          })
+                        }
+                      />
+                    </label>
+                    <label>
+                      {t("Critical flag")}
+                      <select
+                        value={
+                          filters.critical == null
+                            ? ""
+                            : String(filters.critical)
+                        }
+                        onChange={(e) =>
+                          setFilters({
+                            ...filters,
+                            critical:
+                              e.target.value === ""
+                                ? null
+                                : e.target.value === "true",
+                          })
+                        }
+                      >
+                        <option value="">{t("Any status")}</option>
+                        <option value="true">{t("Critical flagged")}</option>
+                        <option value="false">{t("No critical flag")}</option>
+                      </select>
+                    </label>
+                  </div>
+                  <small>
                     {t(
-                      "Assigned demo dates are separate from original timestamps and independent of scores.",
-                    )}{" "}
-                    {Array.isArray(meta?.scheduling.algorithms)
-                      ? meta.scheduling.algorithms.join(", ")
-                      : t("No scheduling algorithm")}{" "}
-                    {t(" · seed ")}
-                    {String(meta?.scheduling.seed ?? t("none"))}.
-                  </p>
+                      "Hours end exclusively. Holidays include observed Kazakhstan public holidays; ordinary weekends use the weekday filter.",
+                    )}
+                  </small>
                 </details>
-                <button disabled={!output || loading} onClick={savedReport}>
-                  {t("Save selection as report")}
-                </button>
+                <div className="row provenance">
+                  <details>
+                    <summary>{t("About calendar dates")}</summary>
+                    <p>
+                      {t(
+                        "Assigned demo dates are separate from original timestamps and independent of scores.",
+                      )}{" "}
+                      {Array.isArray(meta?.scheduling.algorithms)
+                        ? meta.scheduling.algorithms.join(", ")
+                        : t("No scheduling algorithm")}{" "}
+                      {t(" · seed ")}
+                      {String(meta?.scheduling.seed ?? t("none"))}.
+                    </p>
+                  </details>
+                  <button disabled={!output || loading} onClick={savedReport}>
+                    {t("Save selection as report")}
+                  </button>
+                </div>
               </div>
               {loading ? (
                 <Empty>

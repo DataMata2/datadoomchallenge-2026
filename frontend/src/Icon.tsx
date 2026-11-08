@@ -2,7 +2,9 @@ import type { CSSProperties } from "react";
 const paths = {
   overview: "M3 3h7v7H3zM14 3h7v7h-7zM3 14h7v7H3zM14 14h7v7h-7z",
   chat: "M21 11.5a8.5 8.5 0 0 1-8.5 8.5H4l-2 2v-9.5A8.5 8.5 0 1 1 21 11.5ZM7 9h9M7 13h6",
-  sparkle: "m12 3 2.4 6.6L21 12l-6.6 2.4L12 21l-2.4-6.6L3 12l6.6-2.4L12 3Z",
+  report:
+    "M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9l-6-6Zm0 0v6h6M8 13h8M8 17h5",
+  chart: "M4 4v16h16M8 15v-4M12 15V7M16 15V9",
   checklist: "M9 5h12M9 12h12M9 19h12M2 5l1 1 2-3M2 12l1 1 2-3M2 19l1 1 2-3",
   upload: "M12 16V3m-5 5 5-5 5 5M4 16v5h16v-5",
   arrow: "M5 12h14m-5-5 5 5-5 5",
