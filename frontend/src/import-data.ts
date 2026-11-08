@@ -23,7 +23,7 @@ export function prepareImport(value: unknown, group: string): SourceEnvelope {
     !object(envelope.data)
   )
     throw new Error(
-      "Use a successful organizer JSON response, an array of conversations, or one conversation object.",
+      "Используйте успешный ответ организаторов в JSON, массив диалогов или один объект диалога.",
     );
   const data = envelope.data;
   if (
@@ -31,26 +31,26 @@ export function prepareImport(value: unknown, group: string): SourceEnvelope {
     !data.dataset_group_id.trim()
   )
     throw new Error(
-      "Enter a dataset ID before previewing these conversations.",
+      "Введите идентификатор набора данных перед предпросмотром диалогов.",
     );
   if (!Array.isArray(data.records) || !data.records.length)
-    throw new Error("The file contains no conversations.");
+    throw new Error("В файле нет диалогов.");
   if (data.total_records !== data.records.length)
     throw new Error(
-      "The declared record count does not match the conversations in the file.",
+      "Заявленное число записей не совпадает с числом диалогов в файле.",
     );
   const ids = new Set<string>();
   for (const [index, row] of data.records.entries()) {
-    const location = `Conversation ${index + 1}`;
+    const location = `Диалог ${index + 1}`;
     if (
       !object(row) ||
       typeof row.conversation_id !== "string" ||
       !row.conversation_id.trim()
     )
-      throw new Error(`${location} needs a nonempty conversation_id.`);
+      throw new Error(`${location} должен содержать непустой conversation_id.`);
     if (ids.has(row.conversation_id))
       throw new Error(
-        "Duplicate conversation IDs were found. Each ID must be unique within the dataset.",
+        "Найдены повторяющиеся идентификаторы диалогов. Каждый идентификатор должен быть уникальным в наборе.",
       );
     ids.add(row.conversation_id);
     if (
@@ -58,14 +58,16 @@ export function prepareImport(value: unknown, group: string): SourceEnvelope {
       !["agent chat", "voice call"].includes(String(row.channel))
     )
       throw new Error(
-        `${location} needs a supported channel (agent chat / voice call) and language (RU / KZ / EN).`,
+        `${location} должен содержать допустимый channel (agent chat / voice call) и language (RU / KZ / EN).`,
       );
     if (row.audio_url !== null && typeof row.audio_url !== "string")
       throw new Error(
-        `${location} needs audio_url: null for a chat, or a recording URL.`,
+        `${location} должен содержать audio_url: null для чата или ссылку на запись.`,
       );
     if (!Array.isArray(row.transcript) || !row.transcript.length)
-      throw new Error(`${location} needs at least one transcript turn.`);
+      throw new Error(
+        `${location} должен содержать хотя бы одну реплику в transcript.`,
+      );
     for (const turn of row.transcript) {
       if (
         !object(turn) ||
@@ -77,7 +79,7 @@ export function prepareImport(value: unknown, group: string): SourceEnvelope {
         !turn.timestamp.trim()
       )
         throw new Error(
-          `${location}: each turn needs timestamp, speaker and text. Speakers: client, operator, bot, system.`,
+          `${location}: каждая реплика должна содержать timestamp, speaker и text. Допустимые участники: client, operator, bot, system.`,
         );
     }
   }

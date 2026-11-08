@@ -1,5 +1,6 @@
 import { useId, useState } from "react";
 import Icon from "./Icon";
+import { groupLabel, label, criterionDisplay } from "./locale";
 import type {
   AnalysisOutput,
   AnalysisGroup,
@@ -71,15 +72,15 @@ export default function Analysis({
       <div className="stat-strip">
         <div className="stat-card">
           <span className="stat-label">
-            Selected conversations
+            Выбрано диалогов
             <Icon name="chat" size={18} />
           </span>
           <strong>{output.counts.selected}</strong>
-          <span>Across the current selection</span>
+          <span>В текущей выборке</span>
         </div>
         <div className="stat-card featured">
           <span className="stat-label">
-            Average quality score
+            Средняя оценка качества
             <Icon name="sparkle" size={18} />
           </span>
           <strong>
@@ -87,26 +88,26 @@ export default function Analysis({
             <small>/100</small>
           </strong>
           <span>
-            {aggregate?.metrics.final_score?.sample_count || 0} eligible
-            conversations
+            {aggregate?.metrics.final_score?.sample_count || 0} учтённых
+            диалогов
             {output.groups.length > 1 && aggregate
-              ? ` · ${aggregate.label}`
+              ? ` · ${groupLabel(aggregate.label, !!output.spec.cohorts)}`
               : ""}
           </span>
         </div>
         <div className="stat-card">
           <span className="stat-label">
-            Critical violations
+            Критические нарушения
             <Icon name="shield" size={18} />
           </span>
           <strong>
             {output.observations.filter((o) => o.final?.critical_flag).length}
           </strong>
-          <span>Flagged separately from the score</span>
+          <span>Учитываются отдельно от оценки</span>
         </div>
         <div className="stat-card">
           <span className="stat-label">
-            Evaluation coverage
+            Охват оценкой
             <Icon name="checklist" size={18} />
           </span>
           <strong>
@@ -114,14 +115,15 @@ export default function Analysis({
             <small>/{output.counts.selected}</small>
           </strong>
           <span>
-            {output.counts.unevaluated} awaiting · {output.counts.failed} failed
+            {output.counts.unevaluated} ожидают · {output.counts.failed} с
+            ошибкой
           </span>
         </div>
       </div>
       <div
         className="analysis-tabs"
         role="tablist"
-        aria-label="Overview content"
+        aria-label="Содержимое обзора"
       >
         <button
           role="tab"
@@ -139,7 +141,7 @@ export default function Analysis({
           onClick={() => setTab("conversations")}
         >
           <Icon name="chat" size={17} />
-          Conversations<span>{output.counts.selected}</span>
+          Диалоги<span>{output.counts.selected}</span>
         </button>
         <button
           role="tab"
@@ -157,7 +159,7 @@ export default function Analysis({
           onClick={() => setTab("analytics")}
         >
           <Icon name="overview" size={17} />
-          Quality analytics
+          Аналитика качества
         </button>
       </div>
       <div className="analysis-selection">
@@ -172,11 +174,10 @@ export default function Analysis({
         <section className="panel conversations-panel">
           <div className="section-head">
             <div>
-              <span className="eyebrow">THE CONVERSATION, IN CONTEXT</span>
-              <h2>Conversations behind the numbers</h2>
+              <span className="eyebrow">ДИАЛОГ В КОНТЕКСТЕ</span>
+              <h2>Диалоги за показателями</h2>
               <p>
-                Open a conversation to explore its assessment and original
-                evidence.
+                Откройте диалог, чтобы изучить оценку и исходные доказательства.
               </p>
             </div>
             <span className="panel-icon">
@@ -192,7 +193,7 @@ export default function Analysis({
           <div className="table-footer">
             <Icon name="shield" size={14} />
             <span>
-              Original transcripts · Traceable assessments · Human review
+              Исходные расшифровки · Проверяемые оценки · Проверка человеком
             </span>
           </div>
         </section>
@@ -208,30 +209,32 @@ export default function Analysis({
             <div className="section-head">
               <div>
                 <h2>
-                  Quality at a glance
-                  {output.groups.length > 1 ? ` · ${aggregate.label}` : ""}
+                  Ключевые показатели качества
+                  {output.groups.length > 1
+                    ? ` · ${groupLabel(aggregate.label, !!output.spec.cohorts)}`
+                    : ""}
                 </h2>
                 <p>
-                  Inspect any measure to see its denominator and source
-                  conversations.
+                  Откройте показатель, чтобы увидеть его знаменатель и исходные
+                  диалоги.
                 </p>
               </div>
               {output.groups.length > 1 ? (
                 <label>
-                  Measure group
+                  Группа показателей
                   <select
                     value={aggregate.key}
                     onChange={(e) => setGroupKey(e.target.value)}
                   >
                     {output.groups.map((g) => (
                       <option key={g.key} value={g.key}>
-                        {g.label}
+                        {groupLabel(g.label, !!output.spec.cohorts)}
                       </option>
                     ))}
                   </select>
                 </label>
               ) : (
-                <small>Baseline checklist cqa-v1</small>
+                <small>Базовый чек-лист cqa-v1</small>
               )}
             </div>
             <div className="metric-grid">
@@ -247,7 +250,7 @@ export default function Analysis({
                     {value.value != null && <small>%</small>}
                   </strong>
                   <span>
-                    {value.sample_count} eligible · {value.na_count} N/A
+                    {value.sample_count} учтено · {value.na_count} Н/П
                   </span>
                   <span
                     className={`metric-meter ${metric === "critical" ? "critical-meter" : ""}`}
@@ -264,14 +267,14 @@ export default function Analysis({
           <section className="panel">
             <div className="section-head">
               <div>
-                <h2>Compare the selection</h2>
+                <h2>Сравнение выборки</h2>
                 <p>
-                  Each bar uses its own eligible denominator. Select a bar to
-                  inspect.
+                  Каждый столбец использует свой знаменатель. Выберите столбец
+                  для проверки.
                 </p>
               </div>
               <label>
-                Compare measure
+                Показатель для сравнения
                 <select
                   value={chartId}
                   onChange={(e) => setChartMetric(e.target.value)}
@@ -295,8 +298,8 @@ export default function Analysis({
                       onClick={() => setInspect({ metric: chartId, group })}
                     >
                       <span>
-                        {group.label}
-                        <small>{group.counts.selected} selected</small>
+                        {groupLabel(group.label, !!comparison.spec.cohorts)}
+                        <small>{group.counts.selected} выбрано</small>
                       </span>
                       <span className="bar-track">
                         <span style={{ width: `${metric?.value || 0}%` }} />
@@ -310,14 +313,14 @@ export default function Analysis({
                 })}
               </div>
             ) : (
-              <Empty>No groups in this selection.</Empty>
+              <Empty>В этой выборке нет групп.</Empty>
             )}
           </section>
         )}
       </div>
       {inspect && (
         <Dialog
-          title={`${metricNames[inspect.metric]} · ${inspect.group.label}`}
+          title={`${metricNames[inspect.metric]} · ${groupLabel(inspect.group.label, !!output.spec.cohorts)}`}
           close={() => setInspect(null)}
           wide
         >
@@ -339,42 +342,46 @@ function MetricDetails({
   checklist,
   open,
 }: Props & { metric: string; group: AnalysisGroup }) {
-  const criterion = checklist?.criteria.find((c) => c.id === metric);
+  const sourceCriterion = checklist?.criteria.find((c) => c.id === metric);
+  const criterion =
+    sourceCriterion && checklist
+      ? criterionDisplay(sourceCriterion, checklist.id)
+      : undefined;
   const aggregate = group.metrics[metric as keyof typeof group.metrics];
   return (
     <div className="dialog-body">
       <p>
         {criterion?.description ||
           (metric === "final_score"
-            ? "Mean final quality score across successfully evaluated conversations with a known final score."
-            : "Percentage of successfully evaluated conversations with a critical violation. This separate flag does not zero the quality score.")}
+            ? "Средняя итоговая оценка качества по успешно оценённым диалогам с известным итоговым баллом."
+            : "Доля успешно оценённых диалогов с критическим нарушением. Этот отдельный признак не обнуляет оценку качества.")}
       </p>
       {criterion && (
         <p>
-          Raw values: {criterion.allowed_values.map(raw).join(", ")}. Weight:{" "}
-          {criterion.weight}.{" "}
+          Исходные значения: {criterion.allowed_values.map(raw).join(", ")}.
+          Вес: {criterion.weight}.{" "}
           {criterion.allow_na
-            ? `N/A when ${criterion.na_condition}. N/A is excluded from the eligible denominator.`
-            : "N/A is not permitted."}
+            ? `Н/П, если: ${criterion.na_condition}. Н/П исключается из знаменателя.`
+            : "Н/П не допускается."}
         </p>
       )}
       <div className="notice">
-        {score(aggregate?.value)}% across {aggregate?.sample_count || 0}{" "}
-        eligible conversations; {aggregate?.na_count || 0} N/A. Selected:{" "}
-        {group.counts.selected}; failed: {group.counts.failed}; unevaluated:{" "}
+        {score(aggregate?.value)}% по {aggregate?.sample_count || 0} учтённым
+        диалогам; {aggregate?.na_count || 0} Н/П. Выбрано:{" "}
+        {group.counts.selected}; с ошибкой: {group.counts.failed}; без оценки:{" "}
         {group.counts.unevaluated}.{" "}
         {metric !== "critical" &&
           metric !== "final_score" &&
-          "Criterion percentages normalize the raw score by its maximum before averaging; they are not weighted contributions."}
+          "Проценты критериев рассчитываются относительно максимума исходной шкалы перед усреднением и не являются взвешенным вкладом."}
       </div>
       <div className="table-wrap">
         <table>
           <thead>
             <tr>
-              <th>Source conversation</th>
-              <th>Raw value</th>
-              <th>Eligible</th>
-              <th>Evidence</th>
+              <th>Исходный диалог</th>
+              <th>Исходное значение</th>
+              <th>Учтён</th>
+              <th>Доказательства</th>
             </tr>
           </thead>
           <tbody>
@@ -403,20 +410,20 @@ function MetricDetails({
                     <td>
                       {row.evaluation_status === "ok"
                         ? raw(value)
-                        : row.evaluation_status}
+                        : label(row.evaluation_status)}
                     </td>
                     <td>
                       {metric === "final_score"
                         ? value != null
-                          ? "Yes"
-                          : "No"
+                          ? "Да"
+                          : "Нет"
                         : metric === "critical"
                           ? row.final
-                            ? "Yes"
-                            : "No"
+                            ? "Да"
+                            : "Нет"
                           : judgment?.applicable
-                            ? "Yes"
-                            : "No"}
+                            ? "Да"
+                            : "Нет"}
                     </td>
                     <td>
                       {judgment?.evidence_turns.map((turn) => (
@@ -429,7 +436,7 @@ function MetricDetails({
                         >
                           #{turn}
                         </button>
-                      )) || "Open score explanation"}
+                      )) || "Открыть расчёт оценки"}
                     </td>
                   </tr>
                 );
@@ -438,7 +445,7 @@ function MetricDetails({
         </table>
       </div>
       <details>
-        <summary>Source selection</summary>
+        <summary>Исходная выборка</summary>
         <ConversationTable
           output={output}
           sources={sources}

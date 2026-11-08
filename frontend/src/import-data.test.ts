@@ -27,7 +27,10 @@ test("import preserves original source data for envelope, array and single-recor
   assert.equal(prepareImport(record, "UPLOAD").data.dataset_group_id, "UPLOAD");
 });
 test("invalid counts, duplicate IDs and malformed turns never pass the import preview", () => {
-  assert.throws(() => prepareImport([record, record], "UPLOAD"), /Duplicate/);
+  assert.throws(
+    () => prepareImport([record, record], "UPLOAD"),
+    /повторяющиеся/,
+  );
   assert.throws(
     () =>
       prepareImport(
@@ -42,7 +45,7 @@ test("invalid counts, duplicate IDs and malformed turns never pass the import pr
         },
         "DEV",
       ),
-    /count/,
+    /число записей/,
   );
   assert.throws(
     () =>
@@ -53,12 +56,12 @@ test("invalid counts, duplicate IDs and malformed turns never pass the import pr
         },
         "UPLOAD",
       ),
-    /each turn/,
+    /каждая реплика/,
   );
   assert.throws(
     () =>
       prepareImport({ error: "failure", isSuccess: false, data: {} }, "DEV"),
-    /successful/,
+    /успешный/,
   );
-  assert.throws(() => prepareImport([], "DEV"), /no conversations/);
+  assert.throws(() => prepareImport([], "DEV"), /нет диалогов/);
 });

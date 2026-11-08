@@ -19,6 +19,8 @@ import ReportWorkspace from "./ReportWorkspace";
 import { Empty, ErrorBox, errorText, metricIds } from "./ui";
 import Icon from "./Icon";
 import DatasetImport from "./DatasetImport";
+import Settings from "./Settings";
+import { channelName, languageName, groupNames, label } from "./locale";
 const groups = [
   "channel",
   "language",
@@ -28,9 +30,9 @@ const groups = [
   "date",
 ] as const;
 export default function App() {
-  const [view, setView] = useState<"overview" | "reports" | "checklists">(
-    "overview",
-  );
+  const [view, setView] = useState<
+    "overview" | "reports" | "checklists" | "settings"
+  >("overview");
   const [importing, setImporting] = useState(false);
   useEffect(() => {
     document.documentElement.scrollTop = 0;
@@ -109,7 +111,7 @@ export default function App() {
     };
   }, [bootstrap]);
   const spec: AnalysisSpec = {
-    title: "Conversation quality overview",
+    title: "Обзор качества диалогов",
     filters,
     group_by: "none",
     metric_ids: metricIds,
@@ -161,7 +163,7 @@ export default function App() {
       const r = await api.saveReport({
         ...spec,
         group_by: group,
-        title: `Quality review · ${start || "all dates"}`,
+        title: `Обзор качества · ${start || "все даты"}`,
       });
       await reloadLists();
       setReportId(r.id);
@@ -173,7 +175,7 @@ export default function App() {
   return (
     <div className="app-shell">
       <a className="skip-link" href="#workspace-content">
-        Skip to workspace
+        Перейти к рабочей области
       </a>
       <aside className="sidebar">
         <a
@@ -195,25 +197,25 @@ export default function App() {
             </svg>
           </span>
           <span className="brand-name">
-            FREEDOM<span>QUALITY INTELLIGENCE</span>
+            FREEDOM<span>АНАЛИТИКА КАЧЕСТВА</span>
           </span>
         </a>
         <div className="workspace-switch">
           <span className="workspace-symbol">Q</span>
           <span>
-            Quality workspace<small>Conversation analytics</small>
+            Контроль качества<small>Аналитика диалогов</small>
           </span>
           <Icon name="chevron" size={14} />
         </div>
-        <span className="nav-label">WORKSPACE</span>
-        <nav aria-label="Workspace">
+        <span className="nav-label">РАБОЧАЯ ОБЛАСТЬ</span>
+        <nav aria-label="Рабочая область">
           <button
             className={view === "overview" ? "active" : ""}
             aria-current={view === "overview" ? "page" : undefined}
             onClick={() => setView("overview")}
           >
             <Icon name="overview" />
-            Overview
+            Обзор
           </button>
           <button
             className={view === "reports" ? "active" : ""}
@@ -221,7 +223,7 @@ export default function App() {
             onClick={() => setView("reports")}
           >
             <Icon name="sparkle" />
-            Assistant & reports
+            Ассистент и отчёты
           </button>
           <button
             className={view === "checklists" ? "active" : ""}
@@ -229,27 +231,50 @@ export default function App() {
             onClick={() => setView("checklists")}
           >
             <Icon name="checklist" />
-            Checklists
+            Чек-листы
+          </button>
+          <button
+            className={view === "settings" ? "active" : ""}
+            aria-current={view === "settings" ? "page" : undefined}
+            onClick={() => setView("settings")}
+          >
+            <Icon name="filter" />
+            Настройки
           </button>
         </nav>
         <div className="sidebar-foot">
           <div className="sidebar-note">
             <Icon name="shield" />
-            <strong>Evidence in every decision.</strong>
-            <p>Transparent scores. Traceable reviews. Better conversations.</p>
+            <strong>Доказательства для каждого решения.</strong>
+            <p>Прозрачные оценки. Проверяемые решения. Качественный сервис.</p>
           </div>
           <span className="local-status">
             <i />
-            Local workspace <span>Asia/Almaty</span>
+            Локальная рабочая область <span>Asia/Almaty</span>
           </span>
           {usage && (
             <details>
-              <summary>Model usage: ${usage.spent_usd.toFixed(2)}</summary>
+              <summary>
+                Расходы на модель: $
+                {usage.spent_usd.toLocaleString("ru-RU", {
+                  minimumFractionDigits: 2,
+                  maximumFractionDigits: 2,
+                })}
+              </summary>
               <p>
-                ${usage.reserved_usd.toFixed(2)} reserved
-                <br />${usage.working_remaining_usd.toFixed(2)} working
-                allowance left
-                <br />${usage.hard_limit_usd} hard limit
+                $
+                {usage.reserved_usd.toLocaleString("ru-RU", {
+                  minimumFractionDigits: 2,
+                  maximumFractionDigits: 2,
+                })}{" "}
+                зарезервировано
+                <br />$
+                {usage.working_remaining_usd.toLocaleString("ru-RU", {
+                  minimumFractionDigits: 2,
+                  maximumFractionDigits: 2,
+                })}{" "}
+                осталось в рабочем бюджете
+                <br />${usage.hard_limit_usd} предельный бюджет
               </p>
             </details>
           )}
@@ -258,19 +283,24 @@ export default function App() {
       <main>
         <div className="topbar">
           <div className="breadcrumb">
-            Workspace
+            Рабочая область
             <Icon name="chevron" size={13} />
             <strong>
               {view === "overview"
-                ? "Overview"
+                ? "Обзор"
                 : view === "reports"
-                  ? "Assistant & reports"
-                  : "Checklists"}
+                  ? "Ассистент и отчёты"
+                  : view === "checklists"
+                    ? "Чек-листы"
+                    : "Настройки"}
             </strong>
           </div>
           <div className="topbar-right">
             <span className="timezone">Asia/Almaty · UTC+5</span>
-            <span className="avatar" aria-label="Quality review workspace">
+            <span
+              className="avatar"
+              aria-label="Рабочая область контроля качества"
+            >
               QA
             </span>
           </div>
@@ -278,20 +308,24 @@ export default function App() {
         <div className="workspace-content" id="workspace-content">
           <header className="page-head">
             <div>
-              <span className="eyebrow">CONVERSATION QUALITY ANALYTICS</span>
+              <span className="eyebrow">АНАЛИТИКА КАЧЕСТВА ДИАЛОГОВ</span>
               <h1>
                 {view === "overview"
-                  ? "A clearer view of quality."
+                  ? "Качество сервиса в деталях."
                   : view === "reports"
-                    ? "Ask. Explore. Understand."
-                    : "Your standard. Every conversation."}
+                    ? "Спрашивайте. Исследуйте. Понимайте."
+                    : view === "checklists"
+                      ? "Ваш стандарт для каждого диалога."
+                      : "Язык новых результатов."}
               </h1>
               <p>
                 {view === "overview"
-                  ? "Every conversation tells a story. Turn yours into better service."
+                  ? "Каждый диалог помогает понять, как улучшить сервис."
                   : view === "reports"
-                    ? "Keep the analysis, its filters and source conversations together."
-                    : "Save a new checklist version and evaluate it explicitly."}
+                    ? "Анализ, фильтры и исходные диалоги в одном отчёте."
+                    : view === "checklists"
+                      ? "Сохраните новую версию чек-листа и запустите оценку отдельно."
+                      : "Сохранённые результаты сохраняют исходный язык."}
               </p>
             </div>
             <button
@@ -299,7 +333,7 @@ export default function App() {
               onClick={() => setImporting(true)}
             >
               <Icon name="upload" size={17} />
-              Import conversations
+              Импортировать диалоги
             </button>
           </header>
           {error && (
@@ -310,7 +344,7 @@ export default function App() {
                   meta ? setRevision((v) => v + 1) : setBootstrap((v) => v + 1)
                 }
               >
-                Retry overview
+                Повторить загрузку обзора
               </button>
             </ErrorBox>
           )}
@@ -324,7 +358,7 @@ export default function App() {
                 }}
               >
                 <label>
-                  Dataset
+                  Набор данных
                   <select
                     value={filters.dataset_id}
                     onChange={(e) =>
@@ -339,7 +373,7 @@ export default function App() {
                   </select>
                 </label>
                 <label>
-                  From
+                  С даты
                   <input
                     type="date"
                     value={start}
@@ -347,7 +381,7 @@ export default function App() {
                   />
                 </label>
                 <label>
-                  Through
+                  По дату
                   <input
                     type="date"
                     value={end}
@@ -355,9 +389,9 @@ export default function App() {
                     onChange={(e) => setEnd(e.target.value)}
                   />
                 </label>
-                <button type="submit">Apply dates</button>
+                <button type="submit">Применить даты</button>
                 <label>
-                  Channel
+                  Канал
                   <select
                     value={filters.channel || ""}
                     onChange={(e) =>
@@ -368,14 +402,16 @@ export default function App() {
                       })
                     }
                   >
-                    <option value="">All channels</option>
+                    <option value="">Все каналы</option>
                     {meta?.channels.map((c) => (
-                      <option key={c}>{c}</option>
+                      <option key={c} value={c}>
+                        {channelName(c)}
+                      </option>
                     ))}
                   </select>
                 </label>
                 <label>
-                  Language
+                  Язык диалога
                   <select
                     value={filters.language || ""}
                     onChange={(e) =>
@@ -386,31 +422,33 @@ export default function App() {
                       })
                     }
                   >
-                    <option value="">All languages</option>
+                    <option value="">Все языки</option>
                     {meta?.languages.map((c) => (
-                      <option key={c}>{c}</option>
+                      <option key={c} value={c}>
+                        {languageName(c)}
+                      </option>
                     ))}
                   </select>
                 </label>
                 <label>
-                  Compare by
+                  Сравнить по
                   <select
                     value={group}
                     onChange={(e) => setGroup(e.target.value as typeof group)}
                   >
                     {groups.map((c) => (
                       <option key={c} value={c}>
-                        {c.replaceAll("_", " ")}
+                        {groupNames[c] || c}
                       </option>
                     ))}
                   </select>
                 </label>
               </form>
               <details className="advanced-filters">
-                <summary>Additional calendar and quality filters</summary>
+                <summary>Дополнительные фильтры по времени и качеству</summary>
                 <div className="filter-bar">
                   <label>
-                    Local hours
+                    Местное время
                     <select
                       value={
                         filters.hours
@@ -427,16 +465,16 @@ export default function App() {
                         });
                       }}
                     >
-                      <option value="">All hours</option>
-                      <option value="6,18">Day: 06:00–18:00</option>
-                      <option value="18,6">Night: 18:00–06:00</option>
+                      <option value="">Любое время</option>
+                      <option value="6,18">День: 06:00–18:00</option>
+                      <option value="18,6">Ночь: 18:00–06:00</option>
                       <option value="12,0">
-                        Afternoon/evening: 12:00–24:00
+                        Вторая половина дня: 12:00–24:00
                       </option>
                     </select>
                   </label>
                   <label>
-                    Holiday calendar
+                    Календарь праздников
                     <select
                       value={
                         filters.holiday == null ? "" : String(filters.holiday)
@@ -451,15 +489,17 @@ export default function App() {
                         })
                       }
                     >
-                      <option value="">All dates</option>
+                      <option value="">Все даты</option>
                       <option value="true">
-                        KZ public holidays (observed)
+                        Праздники Казахстана с переносами
                       </option>
-                      <option value="false">Exclude KZ public holidays</option>
+                      <option value="false">
+                        Исключить праздники Казахстана
+                      </option>
                     </select>
                   </label>
                   <label>
-                    Weekdays
+                    Дни недели
                     <select
                       value={filters.weekdays?.join(",") || ""}
                       onChange={(e) =>
@@ -471,13 +511,13 @@ export default function App() {
                         })
                       }
                     >
-                      <option value="">All weekdays</option>
-                      <option value="1,2,3,4,5">Monday–Friday</option>
-                      <option value="6,7">Saturday–Sunday</option>
+                      <option value="">Все дни недели</option>
+                      <option value="1,2,3,4,5">Понедельник–пятница</option>
+                      <option value="6,7">Суббота–воскресенье</option>
                     </select>
                   </label>
                   <label>
-                    Minimum score
+                    Минимальная оценка
                     <input
                       type="number"
                       min="0"
@@ -495,7 +535,7 @@ export default function App() {
                     />
                   </label>
                   <label>
-                    Maximum score
+                    Максимальная оценка
                     <input
                       type="number"
                       min={filters.min_score ?? 0}
@@ -513,7 +553,7 @@ export default function App() {
                     />
                   </label>
                   <label>
-                    Critical flag
+                    Критическое нарушение
                     <select
                       value={
                         filters.critical == null ? "" : String(filters.critical)
@@ -528,36 +568,39 @@ export default function App() {
                         })
                       }
                     >
-                      <option value="">Any status</option>
-                      <option value="true">Critical flagged</option>
-                      <option value="false">No critical flag</option>
+                      <option value="">Любой статус</option>
+                      <option value="true">С критическим нарушением</option>
+                      <option value="false">Без критического нарушения</option>
                     </select>
                   </label>
                 </div>
                 <small>
-                  Hours end exclusively. Holidays include observed Kazakhstan
-                  public holidays; ordinary weekends use the weekday filter.
+                  Конечный час не включается. Праздники Казахстана учитывают
+                  переносы; обычные выходные задаются фильтром дней недели.
                 </small>
               </details>
               <div className="row provenance">
                 <details>
-                  <summary>About calendar dates</summary>
+                  <summary>О календарных датах</summary>
                   <p>
-                    Assigned demo dates are separate from original timestamps
-                    and independent of scores.{" "}
+                    Демонстрационные даты назначаются отдельно от исходных
+                    временных меток и не зависят от оценок.{" "}
                     {Array.isArray(meta?.scheduling.algorithms)
-                      ? meta.scheduling.algorithms.join(", ")
-                      : "No scheduling algorithm"}{" "}
-                    · seed {String(meta?.scheduling.seed ?? "none")}.
+                      ? meta.scheduling.algorithms
+                          .map((algorithm) => label(String(algorithm)))
+                          .join(", ")
+                      : "Алгоритм не задан"}{" "}
+                    · начальное значение{" "}
+                    {String(meta?.scheduling.seed ?? "нет")}.
                   </p>
                 </details>
                 <button disabled={!output || loading} onClick={savedReport}>
-                  Save selection as report
+                  Сохранить выборку как отчёт
                 </button>
               </div>
               {loading ? (
                 <Empty>
-                  Loading the selected conversations and quality measures…
+                  Загрузка выбранных диалогов и показателей качества…
                 </Empty>
               ) : output && !!meta?.datasets.length ? (
                 <Analysis
@@ -575,17 +618,17 @@ export default function App() {
                   <span className="upload-orbit">
                     <Icon name="chat" size={30} />
                   </span>
-                  <h2>Your next insight starts with a conversation.</h2>
+                  <h2>Начните исследование с диалога.</h2>
                   <p>
-                    Import a JSON dataset to explore conversations, evaluate
-                    quality and follow the evidence.
+                    Импортируйте набор данных JSON, чтобы исследовать диалоги,
+                    оценивать качество и проверять доказательства.
                   </p>
                   <button
                     className="primary"
                     onClick={() => setImporting(true)}
                   >
                     <Icon name="upload" size={17} />
-                    Import your first conversations
+                    Импортировать первые диалоги
                   </button>
                 </div>
               )}
@@ -612,11 +655,12 @@ export default function App() {
               }}
             />
           )}
+          {view === "settings" && <Settings />}
           <footer className="page-footer">
             <span>
-              FREEDOM <span>/</span> Quality intelligence
+              FREEDOM <span>/</span> Аналитика качества
             </span>
-            <span>Built around the conversation.</span>
+            <span>В центре внимания — диалог.</span>
           </footer>
         </div>
       </main>

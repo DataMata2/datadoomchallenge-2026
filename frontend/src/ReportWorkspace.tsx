@@ -11,6 +11,7 @@ import {
 } from "./api";
 import Analysis from "./Analysis";
 import Icon from "./Icon";
+import { label, groupLabel, analysisLanguage } from "./locale";
 import {
   activeRun,
   Dialog,
@@ -152,12 +153,12 @@ export default function ReportWorkspace({
     <>
       <div className="report-toolbar">
         <label className="grow">
-          Saved report
+          Сохранённый отчёт
           <select value={selectedId} onChange={(e) => select(e.target.value)}>
-            <option value="">New assistant conversation</option>
+            <option value="">Новый диалог с ассистентом</option>
             {reports.map((r) => (
               <option key={r.id} value={r.id}>
-                {r.title} ({r.status})
+                {r.title} ({label(r.status)})
               </option>
             ))}
           </select>
@@ -168,7 +169,7 @@ export default function ReportWorkspace({
             setError("");
           }}
         >
-          New conversation
+          Новый диалог
         </button>
         {report?.status === "ready" && (
           <button
@@ -186,7 +187,7 @@ export default function ReportWorkspace({
               }
             }}
           >
-            {refreshing ? "Refreshing…" : "Refresh saved analysis"}
+            {refreshing ? "Обновление…" : "Обновить сохранённый анализ"}
           </button>
         )}
       </div>
@@ -194,7 +195,7 @@ export default function ReportWorkspace({
         <ErrorBox>
           {error}{" "}
           <button onClick={() => setRevision((v) => v + 1)}>
-            Retry report
+            Повторить загрузку отчёта
           </button>
         </ErrorBox>
       )}
@@ -205,10 +206,10 @@ export default function ReportWorkspace({
               <span className="assistant-orbit">
                 <Icon name="sparkle" size={25} />
               </span>
-              <h2>Analysis assistant</h2>
+              <h2>Ассистент аналитика</h2>
               <p>
-                Ask a question, refine the selection or define an independent
-                metric.
+                Задайте вопрос, уточните выборку или определите независимую
+                метрику.
               </p>
             </div>
           </div>
@@ -216,20 +217,25 @@ export default function ReportWorkspace({
             {report?.messages.length ? (
               report.messages.map((m) => (
                 <article key={m.id} className={`message ${m.role}`}>
-                  <strong>{m.role === "user" ? "You" : "CQA assistant"}</strong>
+                  <strong>{m.role === "user" ? "Вы" : "Ассистент CQA"}</strong>
                   <p>{m.content}</p>
                   <time>{time(m.created_at)}</time>
+                  {m.role === "assistant" && (
+                    <small>
+                      Язык анализа: {analysisLanguage(m.analysis_language)}
+                    </small>
+                  )}
                 </article>
               ))
             ) : (
               <Empty>
-                Start with a concrete period and question. For example: “Compare
-                day and night quality for agent chats in October 2026.”
+                Укажите период и вопрос. Например: «Сравни качество чатов днём и
+                ночью в октябре 2026 года».
               </Empty>
             )}
             {sending && (
               <div className="message assistant" role="status">
-                Interpreting your question and preparing the analysis…
+                Уточнение вопроса и подготовка анализа…
               </div>
             )}
           </div>
@@ -240,29 +246,29 @@ export default function ReportWorkspace({
               void send();
             }}
           >
-            <label htmlFor="assistant-message">Your question</label>
+            <label htmlFor="assistant-message">Ваш вопрос</label>
             <div className="prompt-suggestions">
               <button
                 type="button"
                 disabled={sending}
                 onClick={() =>
                   setContent(
-                    "For DEV agent chats in October 2026, compare quality by language.",
+                    "Сравни качество чатов DEV по языкам за октябрь 2026 года.",
                   )
                 }
               >
-                Compare languages
+                Сравнить языки
               </button>
               <button
                 type="button"
                 disabled={sending}
                 onClick={() =>
                   setContent(
-                    "For DEV in October 2026, show conversations with critical violations.",
+                    "Покажи диалоги DEV с критическими нарушениями за октябрь 2026 года.",
                   )
                 }
               >
-                Explore critical flags
+                Найти критические нарушения
               </button>
             </div>
             <textarea
@@ -271,26 +277,26 @@ export default function ReportWorkspace({
               maxLength={8000}
               value={content}
               onChange={(e) => setContent(e.target.value)}
-              placeholder="Compare October 2026 agent chats by day and night…"
+              placeholder="Сравни качество чатов днём и ночью за октябрь 2026 года…"
             />
             <button className="primary" disabled={sending || !content.trim()}>
-              {sending ? "Preparing response…" : "Send question"}
+              {sending ? "Подготовка ответа…" : "Отправить вопрос"}
             </button>
             <small>
-              The assistant can request clarification. Custom assessment
-              requests start model work; filters alone do not reevaluate
-              conversations.
+              Ассистент может задать уточняющий вопрос. Запрос пользовательской
+              оценки запускает работу модели; изменение фильтров не
+              переоценивает диалоги.
             </small>
           </form>
         </aside>
         <div className="report-canvas">
           {loading ? (
-            <Empty>Opening the saved report…</Empty>
+            <Empty>Загрузка сохранённого отчёта…</Empty>
           ) : !report ? (
             <Empty>
-              Your report will appear here with its interpreted filters,
-              denominators and sources. You can also save the current overview
-              selection as a report.
+              Здесь появится отчёт с расшифровкой фильтров, знаменателями и
+              источниками. Текущую выборку обзора также можно сохранить как
+              отчёт.
             </Empty>
           ) : (
             <>
@@ -298,20 +304,20 @@ export default function ReportWorkspace({
                 <div>
                   <h2>{report.title}</h2>
                   <p>
-                    Saved {time(report.updated_at)} · {report.status}
+                    Сохранено {time(report.updated_at)} · {label(report.status)}
                   </p>
                 </div>
                 {report.status === "ready" && (
                   <button onClick={() => setMetricForm(true)}>
-                    Define custom metric
+                    Задать пользовательскую метрику
                   </button>
                 )}
               </div>
               {report.stale && (
                 <div className="notice">
-                  Source assessments have changed since this report was saved.
-                  Refresh the saved analysis to update its numbers; custom
-                  results remain in history.
+                  Исходные оценки изменились после сохранения отчёта. Обновите
+                  сохранённый анализ для пересчёта показателей; пользовательские
+                  результаты остаются в истории.
                 </div>
               )}
               {report.output ? (
@@ -338,8 +344,8 @@ export default function ReportWorkspace({
                 />
               ) : (
                 <Empty>
-                  This report is a draft. Answer the assistant’s clarification
-                  to produce an analysis.
+                  Это черновик отчёта. Ответьте на уточняющий вопрос ассистента,
+                  чтобы сформировать анализ.
                 </Empty>
               )}
               {run && (
@@ -358,10 +364,10 @@ export default function ReportWorkspace({
               <section className="panel">
                 <div className="section-head">
                   <div>
-                    <h2>Independent custom metrics</h2>
+                    <h2>Независимые пользовательские метрики</h2>
                     <p>
-                      Custom metrics have their own evidence and coverage. They
-                      never change the regular quality score.
+                      Пользовательские метрики имеют собственные доказательства
+                      и охват. Они не изменяют основную оценку качества.
                     </p>
                   </div>
                 </div>
@@ -376,10 +382,10 @@ export default function ReportWorkspace({
                         <span>
                           <strong>{m.definition.title}</strong>
                           <small>
-                            {m.status} ·{" "}
+                            {label(m.status)} ·{" "}
                             {m.definition.answer_type === "boolean"
-                              ? "Yes percentage"
-                              : "Raw-scale mean"}
+                              ? "Доля ответов «Да»"
+                              : "Среднее по исходной шкале"}
                           </small>
                         </span>
                         <strong>
@@ -390,18 +396,18 @@ export default function ReportWorkspace({
                             : ""}
                         </strong>
                         <small>
-                          {m.aggregate.sample_count} applicable /{" "}
-                          {m.aggregate.selected_count} selected ·{" "}
-                          {m.aggregate.pending_count} pending ·{" "}
-                          {m.aggregate.uncovered_count} uncovered
+                          {m.aggregate.sample_count} применимо /{" "}
+                          {m.aggregate.selected_count} выбрано ·{" "}
+                          {m.aggregate.pending_count} ожидают ·{" "}
+                          {m.aggregate.uncovered_count} без оценки
                         </small>
                       </button>
                     ))}
                   </div>
                 ) : (
                   <Empty>
-                    No custom metric has been assessed for this report. Define a
-                    metric or ask the assistant for one.
+                    В этом отчёте ещё нет оценённых пользовательских метрик.
+                    Задайте метрику или попросите ассистента.
                   </Empty>
                 )}
               </section>
@@ -423,6 +429,7 @@ export default function ReportWorkspace({
       {currentMetric && report && (
         <MetricDialog
           metric={currentMetric}
+          customGroups={!!report.spec?.cohorts}
           dataset={report.spec?.filters?.dataset_id || "DEV"}
           close={() => setMetricDetail(undefined)}
           open={open}
@@ -460,7 +467,7 @@ function MetricForm({
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
   return (
-    <Dialog title="Define an independent metric" close={close}>
+    <Dialog title="Задать независимую метрику" close={close}>
       <form
         className="dialog-body"
         onSubmit={async (e) => {
@@ -474,7 +481,7 @@ function MetricForm({
                 : values.split(",").map((v) => {
                     if (!v.trim() || !Number.isFinite(Number(v)))
                       throw new Error(
-                        "Enter finite numeric raw steps separated by commas.",
+                        "Введите конечные числовые значения шкалы через запятую.",
                       );
                     return Number(v);
                   });
@@ -495,21 +502,21 @@ function MetricForm({
         }}
       >
         <p>
-          Describe one observable property of a conversation. This starts a
-          separate assessment of the report’s current selection.
+          Опишите одно наблюдаемое свойство диалога. Будет запущена отдельная
+          оценка текущей выборки отчёта.
         </p>
         <label>
-          Metric ID
+          Идентификатор метрики
           <input
             required
             pattern="[a-z][a-z0-9_-]{0,63}"
             value={id}
             onChange={(e) => setId(e.target.value)}
-            placeholder="client_led_contact"
+            placeholder="metric_1"
           />
         </label>
         <label>
-          Title
+          Название
           <input
             required
             value={title}
@@ -517,7 +524,7 @@ function MetricForm({
           />
         </label>
         <label>
-          Definition and judgment instructions
+          Определение и инструкции по оценке
           <textarea
             required
             value={description}
@@ -525,18 +532,18 @@ function MetricForm({
           />
         </label>
         <label>
-          Answer type
+          Тип ответа
           <select
             value={kind}
             onChange={(e) => setKind(e.target.value as typeof kind)}
           >
-            <option value="boolean">Boolean (No / Yes)</option>
-            <option value="scale">Numeric scale</option>
+            <option value="boolean">Логический (Нет / Да)</option>
+            <option value="scale">Числовая шкала</option>
           </select>
         </label>
         {kind === "scale" && (
           <label>
-            Allowed raw steps
+            Допустимые значения шкалы
             <input
               required
               value={values}
@@ -550,11 +557,11 @@ function MetricForm({
             checked={allowNa}
             onChange={(e) => setAllowNa(e.target.checked)}
           />
-          Allow N/A
+          Разрешить Н/П
         </label>
         {allowNa && (
           <label>
-            N/A condition
+            Условие Н/П
             <textarea
               required
               value={na}
@@ -563,13 +570,13 @@ function MetricForm({
           </label>
         )}
         <p className="notice">
-          Boolean results show the percentage of applicable conversations marked
-          Yes. A No answer is not automatically a negative quality grade. N/A is
-          excluded from the denominator.
+          Для логического ответа показана доля применимых диалогов с ответом
+          «Да». Ответ «Нет» сам по себе не означает плохое качество. Н/П
+          исключается из знаменателя.
         </p>
         {error && <ErrorBox>{error}</ErrorBox>}
         <button className="primary" disabled={busy}>
-          {busy ? "Starting assessment…" : "Create metric and assess selection"}
+          {busy ? "Запуск оценки…" : "Создать метрику и оценить выборку"}
         </button>
       </form>
     </Dialog>
@@ -582,6 +589,7 @@ function MetricDialog({
   rerun,
   cancel,
   dataset,
+  customGroups,
 }: {
   metric: ReportMetric;
   close: () => void;
@@ -589,6 +597,7 @@ function MetricDialog({
   rerun: () => Promise<void>;
   cancel: (id: string) => Promise<void>;
   dataset: string;
+  customGroups: boolean;
 }) {
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
@@ -599,48 +608,49 @@ function MetricDialog({
       <div className="dialog-body">
         <p>{metric.definition.description}</p>
         <p>
-          Raw domain: {metric.definition.allowed_values.map(raw).join(", ")}.{" "}
+          Исходная шкала: {metric.definition.allowed_values.map(raw).join(", ")}
+          .{" "}
           {metric.definition.allow_na
-            ? `N/A condition: ${metric.definition.na_condition}. N/A is excluded from the applicable denominator.`
-            : "N/A is not allowed."}
+            ? `Условие Н/П: ${metric.definition.na_condition}. Н/П исключается из знаменателя применимых диалогов.`
+            : "Н/П не допускается."}
         </p>
         <div className="coverage">
           <strong>
             {score(a.value)}
-            {a.unit === "percent_true" ? "%" : " raw mean"}
+            {a.unit === "percent_true" ? "%" : " среднее по шкале"}
           </strong>
-          <span>{a.sample_count} applicable</span>
-          <span>{a.assessed_count} assessed</span>
-          <span>{a.selected_count} selected</span>
-          <span>{a.na_count} N/A</span>
-          <span>{a.failed_count} failed</span>
-          <span>{a.pending_count} pending</span>
-          <span>{a.cancelled_count} cancelled</span>
-          <span>{a.interrupted_count} interrupted</span>
-          <span>{a.uncovered_count} uncovered</span>
-          <span>{metric.out_of_scope_count} outside current selection</span>
+          <span>{a.sample_count} применимо</span>
+          <span>{a.assessed_count} оценено</span>
+          <span>{a.selected_count} выбрано</span>
+          <span>{a.na_count} Н/П</span>
+          <span>{a.failed_count} с ошибкой</span>
+          <span>{a.pending_count} ожидают</span>
+          <span>{a.cancelled_count} отменено</span>
+          <span>{a.interrupted_count} прервано</span>
+          <span>{a.uncovered_count} без оценки</span>
+          <span>{metric.out_of_scope_count} вне текущей выборки</span>
         </div>
         {a.uncovered_count > 0 && (
           <p className="notice">
-            Some selected conversations have no assessment for this metric.
-            Changing report filters does not automatically assess new sources.
+            Для части выбранных диалогов эта метрика ещё не оценена. Изменение
+            фильтров отчёта не запускает оценку новых источников автоматически.
           </p>
         )}
         {metric.groups.length > 0 && (
           <div className="bar-chart">
             {metric.groups.map((g) => (
               <div className="row" key={g.key}>
-                <strong>{g.label}</strong>
+                <strong>{groupLabel(g.label, customGroups)}</strong>
                 <span>
                   {score(g.aggregate.value)}
                   {a.unit === "percent_true" ? "%" : ""} · n=
-                  {g.aggregate.sample_count} · {g.aggregate.na_count} N/A
+                  {g.aggregate.sample_count} · {g.aggregate.na_count} Н/П
                 </span>
               </div>
             ))}
           </div>
         )}
-        <h3>Source judgments</h3>
+        <h3>Оценки исходных диалогов</h3>
         {metric.results.length ? (
           metric.results.map((result) => (
             <article className="custom-result" key={result.id}>
@@ -656,7 +666,7 @@ function MetricDialog({
                 <strong>
                   {result.status === "ok"
                     ? raw(result.judgment?.value)
-                    : "Failed"}
+                    : "Ошибка"}
                 </strong>
               </div>
               {result.judgment ? (
@@ -676,25 +686,26 @@ function MetricDialog({
                           )
                         }
                       >
-                        Source turn #{turn}
+                        Исходная реплика №{turn}
                       </button>
                     ))}
                   </div>
                 </>
               ) : (
                 <ErrorBox>
-                  {result.error || "No valid judgment is available."}
+                  {result.error || "Корректная оценка недоступна."}
                 </ErrorBox>
               )}
               <small>
-                {result.model.name} · {time(result.created_at)}
+                {result.model.name} · {time(result.created_at)} · Язык анализа:{" "}
+                {analysisLanguage(result.analysis_language)}
               </small>
             </article>
           ))
         ) : (
-          <Empty>No source judgments are available yet.</Empty>
+          <Empty>Оценок исходных диалогов пока нет.</Empty>
         )}
-        <h3>Assessment history</h3>
+        <h3>История оценок</h3>
         {metric.runs.map((run) => (
           <RunProgress
             key={run.id}
@@ -718,10 +729,11 @@ function MetricDialog({
             }
           }}
         >
-          {busy ? "Starting…" : "Reassess current report selection"}
+          {busy ? "Запуск…" : "Повторно оценить текущую выборку отчёта"}
         </button>
         <small>
-          Dataset {dataset}. Prior results and runs remain in history.
+          Набор данных {dataset}. Предыдущие результаты и запуски сохраняются в
+          истории.
         </small>
         {error && <ErrorBox>{error}</ErrorBox>}
       </div>

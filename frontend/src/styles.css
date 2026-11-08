@@ -2550,3 +2550,22 @@ progress {
   color: #7d8b81;
   background: #f1f4f2;
 }
+
+.settings-panel {
+  max-width: 780px;
+}
+.settings-panel form {
+  display: grid;
+  gap: 18px;
+}
+.settings-panel form > label {
+  max-width: 340px;
+}
+.settings-panel form > button {
+  justify-self: start;
+}
+.message > small {
+  display: block;
+  margin-top: 6px;
+  color: var(--muted);
+}

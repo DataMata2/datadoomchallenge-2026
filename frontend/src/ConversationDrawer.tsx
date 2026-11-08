@@ -22,6 +22,15 @@ import {
   score,
   time,
 } from "./ui";
+import {
+  channelName,
+  languageName,
+  label,
+  metadataText,
+  analysisLanguage,
+  checklistName,
+  criterionDisplay,
+} from "./locale";
 type Props = {
   id: string;
   dataset: string;
@@ -148,12 +157,22 @@ export default function ConversationDrawer({
       JSON.stringify(saved.observation.final) !==
         JSON.stringify(evaluation?.final ?? null));
   const current = original ? evaluation?.original : evaluation?.final;
+  const criterionTitle = (id: string) =>
+    evaluation?.checklist_version_id === "cqa-v1"
+      ? metricNames[id] || id
+      : evaluation?.checklist_snapshot.criteria.find(
+          (criterion) => criterion.id === id,
+        )?.title || id;
   const selected = current?.criteria.find(
     (c) => c.criterion_id === criterionId,
   );
-  const definition = evaluation?.checklist_snapshot.criteria.find(
+  const storedDefinition = evaluation?.checklist_snapshot.criteria.find(
     (c) => c.id === criterionId,
   );
+  const definition =
+    storedDefinition && evaluation
+      ? criterionDisplay(storedDefinition, evaluation.checklist_version_id)
+      : undefined;
   const jump = (turns: number[], reveal = true) => {
     if (reveal) setMobilePane("transcript");
     setHighlight(turns);
@@ -191,45 +210,45 @@ export default function ConversationDrawer({
     }
   };
   return (
-    <Dialog title={`Conversation ${id}`} close={close} wide>
+    <Dialog title={`Диалог ${id}`} close={close} wide>
       <div className="conversation-meta">
         <span>{dataset}</span>
-        <span>{conversation?.channel}</span>
-        <span>{conversation?.language}</span>
+        <span>{channelName(conversation?.channel)}</span>
+        <span>{languageName(conversation?.language)}</span>
         <span>{time(conversation?.demo_started_at)}</span>
       </div>
       {error && <ErrorBox>{error}</ErrorBox>}
       {loading ? (
-        <Empty>Loading the source and assessment…</Empty>
+        <Empty>Загрузка исходного диалога и оценки…</Empty>
       ) : (
         conversation && (
           <>
             <div
               className="mobile-review-tabs"
               role="group"
-              aria-label="Conversation panel"
+              aria-label="Панель диалога"
             >
               <button
                 aria-pressed={mobilePane === "transcript"}
                 onClick={() => setMobilePane("transcript")}
               >
-                Transcript
+                Расшифровка
               </button>
               <button
                 aria-pressed={mobilePane === "assessment"}
                 onClick={() => setMobilePane("assessment")}
               >
-                Assessment
+                Оценка
               </button>
             </div>
             <div className="conversation-layout" data-mobile-pane={mobilePane}>
               <section className="transcript">
                 <div className="section-head">
                   <div>
-                    <h3>Original transcript</h3>
+                    <h3>Исходная расшифровка</h3>
                     <p>
-                      One-based turn numbers include every speaker. Original
-                      timestamps are preserved.
+                      Реплики всех участников нумеруются с единицы. Исходные
+                      временные метки сохранены.
                     </p>
                   </div>
                 </div>
@@ -241,14 +260,14 @@ export default function ConversationDrawer({
                         target="_blank"
                         rel="noreferrer"
                       >
-                        Open source recording
+                        Открыть исходную запись
                       </a>
                       <audio
                         controls
                         preload="none"
                         src={conversation.audio_url}
                       >
-                        Use the recording link to listen.
+                        Воспользуйтесь ссылкой на запись для прослушивания.
                       </audio>
                     </div>
                   )}
@@ -266,7 +285,7 @@ export default function ConversationDrawer({
                         <button onClick={() => setHighlight([index + 1])}>
                           #{index + 1}
                         </button>
-                        <strong>{turn.speaker}</strong>
+                        <strong>{label(turn.speaker)}</strong>
                         <time title={turn.timestamp}>{turn.timestamp}</time>
                       </div>
                       <p>{turn.text}</p>
@@ -274,20 +293,20 @@ export default function ConversationDrawer({
                   ))}
                 </ol>
                 <details>
-                  <summary>Timestamp and scheduling provenance</summary>
+                  <summary>Происхождение временных меток и дат</summary>
                   <p>
-                    Observed source span:{" "}
-                    {conversation.observed_span.started_at} to{" "}
+                    Исходный временной интервал:{" "}
+                    {conversation.observed_span.started_at} до{" "}
                     {conversation.observed_span.ended_at} (
-                    {conversation.observed_span.duration_seconds} seconds). This
-                    derives from the first and last transcript turns.
+                    {conversation.observed_span.duration_seconds} секунд).
+                    Рассчитан по первой и последней реплике расшифровки.
                   </p>
                   <p>
-                    {conversation.scheduling.interpretation} Mode:{" "}
-                    {conversation.scheduling.mode}; seed:{" "}
-                    {conversation.scheduling.seed ?? "none"}; algorithm:{" "}
-                    {conversation.scheduling.algorithm ?? "none"}. Scheduling is
-                    independent of quality scores.
+                    {metadataText(conversation.scheduling.interpretation)}{" "}
+                    Режим: {label(conversation.scheduling.mode)}; начальное
+                    значение: {conversation.scheduling.seed ?? "нет"}; алгоритм:{" "}
+                    {label(conversation.scheduling.algorithm)}. Назначение дат
+                    не зависит от оценок качества.
                   </p>
                 </details>
               </section>
@@ -295,32 +314,35 @@ export default function ConversationDrawer({
                 {saved && (
                   <section
                     className="notice saved-observation"
-                    aria-label="Saved report observation"
+                    aria-label="Сохранённая оценка отчёта"
                   >
-                    <h3>Saved report observation</h3>
+                    <h3>Сохранённая оценка отчёта</h3>
                     <p>
-                      Generated: {saved.generatedAt}. Checklist:{" "}
-                      {saved.checklistVersionId}.
+                      Сформировано:{" "}
+                      <time title={saved.generatedAt}>
+                        {time(saved.generatedAt)}
+                      </time>
+                      . Чек-лист: {saved.checklistVersionId}.
                     </p>
                     <p>
-                      Evaluation: {saved.observation.evaluation_id || "none"}.
-                      Revision: {saved.observation.revision || "none"}. Status:{" "}
-                      {saved.observation.evaluation_status}.
+                      Оценка: {saved.observation.evaluation_id || "нет"}.
+                      Ревизия: {saved.observation.revision || "нет"}. Статус:{" "}
+                      {label(saved.observation.evaluation_status)}.
                     </p>
                     <p>
-                      Copied quality score:{" "}
-                      {score(saved.observation.final?.final_score)}. Critical
-                      flag: {raw(saved.observation.final?.critical_flag)}.
+                      Сохранённая оценка качества:{" "}
+                      {score(saved.observation.final?.final_score)}. Критическое
+                      нарушение: {raw(saved.observation.final?.critical_flag)}.
                     </p>
                     {savedCriterion && (
                       <>
                         <p>
-                          {metricNames[criterionId]} copied raw value:{" "}
-                          {raw(savedCriterion.value)}.{" "}
+                          {metricNames[criterionId]} сохранённое исходное
+                          значение: {raw(savedCriterion.value)}.{" "}
                           {savedCriterion.rationale}
                         </p>
                         <p>
-                          Saved evidence:{" "}
+                          Сохранённые доказательства:{" "}
                           {savedCriterion.evidence_turns.map((turn) => (
                             <button
                               className="turn-link"
@@ -334,21 +356,20 @@ export default function ConversationDrawer({
                       </>
                     )}
                     <p>
-                      The saved report remains unchanged until explicitly
-                      refreshed.
+                      Сохранённый отчёт меняется только после явного обновления.
                     </p>
                   </section>
                 )}
                 {saved && (
                   <h3>
                     {differs
-                      ? "Current values differ from saved report values"
-                      : "Current values match saved report values"}
+                      ? "Текущие значения отличаются от сохранённых в отчёте"
+                      : "Текущие значения совпадают с сохранёнными в отчёте"}
                   </h3>
                 )}
                 <div className="evaluation-controls">
                   <label>
-                    Checklist version
+                    Версия чек-листа
                     <select
                       value={version}
                       onChange={(e) => {
@@ -358,7 +379,7 @@ export default function ConversationDrawer({
                     >
                       {checklists.map((c) => (
                         <option key={c.id} value={c.id}>
-                          {c.name} ({c.id})
+                          {checklistName(c.id, c.name)} ({c.id})
                         </option>
                       ))}
                     </select>
@@ -368,11 +389,11 @@ export default function ConversationDrawer({
                     disabled={busy || !!(run && activeRun(run))}
                     onClick={evaluate}
                   >
-                    {busy ? "Starting…" : "Evaluate this conversation"}
+                    {busy ? "Запуск…" : "Оценить этот диалог"}
                   </button>
                   <small>
-                    Starts a model assessment using the selected checklist.
-                    Existing results remain in history.
+                    Запускает оценку моделью по выбранному чек-листу.
+                    Существующие результаты сохраняются в истории.
                   </small>
                 </div>
                 {run && (
@@ -391,19 +412,19 @@ export default function ConversationDrawer({
                   <ErrorBox>
                     {runError}{" "}
                     <button onClick={() => setRunError("")}>
-                      Retry progress
+                      Повторить загрузку хода оценки
                     </button>
                   </ErrorBox>
                 )}
                 {!evaluation ? (
                   <Empty>
-                    No evaluation exists for this checklist version. Start an
-                    evaluation to assess it.
+                    Для этой версии чек-листа ещё нет оценки. Запустите оценку
+                    диалога.
                   </Empty>
                 ) : evaluation.status === "error" ? (
                   <ErrorBox>
-                    Evaluation failed: {evaluation.error}. No quality score is
-                    available.
+                    Ошибка оценки: {evaluation.error}. Оценка качества
+                    недоступна.
                   </ErrorBox>
                 ) : (
                   <>
@@ -415,12 +436,12 @@ export default function ConversationDrawer({
                       <div>
                         <span>
                           {current?.critical_flag
-                            ? "Critical violation flagged"
-                            : "No critical violation flagged"}
+                            ? "Обнаружено критическое нарушение"
+                            : "Критическое нарушение не обнаружено"}
                         </span>
                         <p>
-                          Critical is unscored and does not automatically zero
-                          the total.
+                          Критическое нарушение учитывается без баллов и не
+                          обнуляет итог автоматически.
                         </p>
                       </div>
                     </div>
@@ -430,12 +451,12 @@ export default function ConversationDrawer({
                         checked={original}
                         onChange={(e) => setOriginal(e.target.checked)}
                       />
-                      Show original assessment before review
+                      Показать исходную оценку до проверки
                     </label>
                     <div
                       className="criterion-tabs"
                       role="group"
-                      aria-label="Inspect criterion"
+                      aria-label="Проверить критерий"
                     >
                       <button
                         className={
@@ -443,7 +464,7 @@ export default function ConversationDrawer({
                         }
                         onClick={() => setCriterionId("final_score")}
                       >
-                        Score calculation
+                        Расчёт оценки
                       </button>
                       {current?.criteria.map((c) => (
                         <button
@@ -456,33 +477,31 @@ export default function ConversationDrawer({
                           }}
                           key={c.criterion_id}
                         >
-                          {metricNames[c.criterion_id] || c.criterion_id}
+                          {criterionTitle(c.criterion_id)}
                           <span>{raw(c.value)}</span>
                         </button>
                       ))}
                     </div>
                     {criterionId === "final_score" ? (
                       <div className="criterion-detail">
-                        <h3>How this score is calculated</h3>
+                        <h3>Как рассчитывается оценка</h3>
                         <p>
-                          Earned points {score(current?.earned_points)} ÷
-                          applicable weight {score(current?.applicable_weight)}{" "}
-                          × 100 = <strong>{score(current?.final_score)}</strong>
-                          .
+                          Набрано баллов {score(current?.earned_points)} ÷
+                          применимый вес {score(current?.applicable_weight)} ×
+                          100 = <strong>{score(current?.final_score)}</strong>.
                         </p>
                         <p>
-                          N/A criteria contribute no points and are excluded
-                          from applicable weight. The backend normalizes over
-                          applicable weight and rounds the total to two decimal
-                          places.
+                          Неприменимые критерии не дают баллов и исключаются из
+                          применимого веса. Итог нормируется по применимому весу
+                          и округляется до двух знаков.
                         </p>
                         <table>
                           <thead>
                             <tr>
-                              <th>Criterion</th>
-                              <th>Raw</th>
-                              <th>Points</th>
-                              <th>Contribution /100</th>
+                              <th>Критерий</th>
+                              <th>Исходное</th>
+                              <th>Баллы</th>
+                              <th>Вклад /100</th>
                             </tr>
                           </thead>
                           <tbody>
@@ -496,17 +515,16 @@ export default function ConversationDrawer({
                                       jump(c.evidence_turns, false);
                                     }}
                                   >
-                                    {metricNames[c.criterion_id] ||
-                                      c.criterion_id}
+                                    {criterionTitle(c.criterion_id)}
                                   </button>
                                 </td>
                                 <td>{raw(c.value)}</td>
                                 <td>
-                                  {c.points == null ? "N/A" : score(c.points)}
+                                  {c.points == null ? "Н/П" : score(c.points)}
                                 </td>
                                 <td>
                                   {c.weighted_score == null
-                                    ? "Unscored"
+                                    ? "Без баллов"
                                     : score(c.weighted_score)}
                                 </td>
                               </tr>
@@ -528,17 +546,21 @@ export default function ConversationDrawer({
                       )
                     )}
                     <details className="assessment-identity">
-                      <summary>Assessment provenance</summary>
+                      <summary>Происхождение оценки</summary>
                       <p>
-                        Checklist: {evaluation.checklist_version_id}
+                        Чек-лист: {evaluation.checklist_version_id}
                         <br />
-                        Model: {evaluation.model.name} ({evaluation.model.mode})
+                        Модель: {evaluation.model.name} (
+                        {label(evaluation.model.mode)})
                         <br />
-                        Prompt version: {evaluation.prompt_version}
+                        Язык анализа:{" "}
+                        {analysisLanguage(evaluation.analysis_language)}
                         <br />
-                        Created: {time(evaluation.created_at)}
+                        Версия запроса модели: {evaluation.prompt_version}
                         <br />
-                        Assessment: {evaluation.id}
+                        Создано: {time(evaluation.created_at)}
+                        <br />
+                        Оценка: {evaluation.id}
                       </p>
                     </details>
                   </>
@@ -582,14 +604,14 @@ function CriterionDetail({
       <p>{definition.description}</p>
       <dl className="score-facts">
         <div>
-          <dt>Raw value</dt>
+          <dt>Исходное значение</dt>
           <dd>{raw(criterion.value)}</dd>
         </div>
         <div>
-          <dt>Maximum</dt>
+          <dt>Максимум</dt>
           <dd>
             {definition.answer_type === "boolean"
-              ? "Yes"
+              ? "Да"
               : Math.max(
                   ...(definition.allowed_values.filter(
                     (v) => typeof v === "number",
@@ -598,34 +620,41 @@ function CriterionDetail({
           </dd>
         </div>
         <div>
-          <dt>Weight</dt>
+          <dt>Вес</dt>
           <dd>{definition.weight}</dd>
         </div>
         <div>
-          <dt>Weighted contribution</dt>
+          <dt>Взвешенный вклад</dt>
           <dd>
             {criterion.weighted_score == null
-              ? "Unscored / N/A"
+              ? "Без баллов / Н/П"
               : `${score(criterion.weighted_score)} /100`}
           </dd>
         </div>
       </dl>
       <p>
         {criterion.applicable
-          ? "Applicable to this conversation."
-          : "Not applicable; excluded from the score denominator."}{" "}
+          ? "Применимо к этому диалогу."
+          : "Неприменимо; исключено из знаменателя оценки."}{" "}
         {definition.allow_na
-          ? `N/A condition: ${definition.na_condition}`
-          : "N/A is not permitted."}
+          ? `Условие Н/П: ${definition.na_condition}`
+          : "Н/П не допускается."}
       </p>
       {Object.keys(definition.scale_meanings || {}).length > 0 && (
         <details>
-          <summary>Scoring scale</summary>
+          <summary>Шкала оценки</summary>
           <ul>
             {Object.entries(definition.scale_meanings || {}).map(
               ([value, meaning]) => (
                 <li key={value}>
-                  <strong>{value}</strong>: {meaning}
+                  <strong>
+                    {value === "true"
+                      ? "Да"
+                      : value === "false"
+                        ? "Нет"
+                        : value}
+                  </strong>
+                  : {meaning}
                 </li>
               ),
             )}
@@ -634,20 +663,20 @@ function CriterionDetail({
       )}
       <blockquote>{criterion.rationale}</blockquote>
       <div className="row">
-        <strong>Source evidence</strong>
+        <strong>Исходные доказательства</strong>
         {criterion.evidence_turns.map((turn) => (
           <button className="turn-link" key={turn} onClick={() => jump([turn])}>
-            Turn #{turn}
+            Реплика №{turn}
           </button>
         ))}
         <button
           className="text-button"
           onClick={() => jump(criterion.evidence_turns)}
         >
-          Highlight all evidence
+          Выделить все доказательства
         </button>
       </div>
-      <h4>Appeal and review history</h4>
+      <h4>История апелляций и проверок</h4>
       {appeals.length ? (
         appeals.map((a) => (
           <AppealCard
@@ -658,12 +687,12 @@ function CriterionDetail({
           />
         ))
       ) : (
-        <p className="muted">No appeals for this criterion.</p>
+        <p className="muted">Для этого критерия нет апелляций.</p>
       )}
       {original && (
         <p className="notice">
-          You are viewing the original assessment. A new appeal addresses the
-          current final value.
+          Вы просматриваете исходную оценку. Новая апелляция относится к
+          текущему итоговому значению.
         </p>
       )}
       <form
@@ -687,16 +716,16 @@ function CriterionDetail({
         }}
       >
         <label>
-          Reason for appeal
+          Причина апелляции
           <textarea
             required
             value={comment}
             onChange={(e) => setComment(e.target.value)}
-            placeholder="Explain the disputed judgment and refer to source turns."
+            placeholder="Объясните, почему вы оспариваете оценку, и укажите исходные реплики."
           />
         </label>
         <button disabled={busy || !comment.trim()}>
-          {busy ? "Saving…" : "Submit appeal"}
+          {busy ? "Сохранение…" : "Подать апелляцию"}
         </button>
       </form>
       {error && <ErrorBox>{error}</ErrorBox>}
@@ -722,7 +751,7 @@ function AppealCard({
   return (
     <article className="appeal">
       <div className="row">
-        <strong>{appeal.status}</strong>
+        <strong>{label(appeal.status)}</strong>
         <time>{time(appeal.created_at)}</time>
       </div>
       <p>{appeal.comment}</p>
@@ -730,8 +759,8 @@ function AppealCard({
         <div className="decision">
           <strong>
             {appeal.decision.action === "change"
-              ? `Changed to ${raw(appeal.decision.value)}`
-              : `Confirmed ${raw(appeal.decision.value)}`}
+              ? `Изменено на ${raw(appeal.decision.value)}`
+              : `Подтверждено: ${raw(appeal.decision.value)}`}
           </strong>
           <p>{appeal.decision.reason}</p>
           <small>{time(appeal.decision.created_at)}</small>
@@ -762,30 +791,30 @@ function AppealCard({
           }}
         >
           <label>
-            Reviewer decision
+            Решение проверяющего
             <select
               value={action}
               onChange={(e) => setAction(e.target.value as typeof action)}
             >
-              <option value="confirm">Confirm current value</option>
-              <option value="change">Change value</option>
+              <option value="confirm">Подтвердить текущее значение</option>
+              <option value="change">Изменить значение</option>
             </select>
           </label>
           {action === "change" && (
             <label>
-              Reviewed value
+              Проверенное значение
               <select value={value} onChange={(e) => setValue(e.target.value)}>
                 {definition.allowed_values.map((v) => (
                   <option key={JSON.stringify(v)} value={JSON.stringify(v)}>
                     {raw(v)}
                   </option>
                 ))}
-                {definition.allow_na && <option value="null">N/A</option>}
+                {definition.allow_na && <option value="null">Н/П</option>}
               </select>
             </label>
           )}
           <label>
-            Decision reason
+            Обоснование решения
             <textarea
               required
               value={reason}
@@ -793,7 +822,7 @@ function AppealCard({
             />
           </label>
           <button disabled={busy || !reason.trim()}>
-            {busy ? "Recording…" : "Record reviewer decision"}
+            {busy ? "Запись…" : "Записать решение проверяющего"}
           </button>
         </form>
       )}

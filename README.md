@@ -2,7 +2,7 @@
 
 CQA helps a quality lead discover patterns in conversation quality, inspect original source evidence, and record review decisions. The local React/TypeScript frontend includes a filtered overview, a saved assistant/report workspace, versioned checklists, individual evaluation progress, and criterion appeals with reviewer history.
 
-The frontend uses a Freedom-inspired visual system with responsive navigation, searchable conversations, a dedicated analytics view, paired transcript/assessment review, and JSON import with a preview. The teammate’s evaluation, review, report, and checklist contracts are preserved. Its API adapter is independent of the visual components. See [the frontend handoff](docs/coordination/implementation/task-6-handoff.md), [the API contract](docs/api-contract.md), and [the confirmed product design](docs/coordination/product-discovery/product-design.md).
+The interface is Russian, with Russian date/number formatting and the Asia/Almaty timezone. Analysis language is a separate durable workspace preference. The frontend uses a Freedom-inspired visual system with responsive navigation, searchable conversations, a dedicated analytics view, paired transcript/assessment review, and JSON import with a preview. The teammate’s evaluation, review, report, and checklist contracts are preserved. Its API adapter is independent of the visual components. See [the frontend handoff](docs/coordination/implementation/task-6-handoff.md), [the API contract](docs/api-contract.md), and [the confirmed product design](docs/coordination/product-discovery/product-design.md).
 
 ## Install and start locally
 
@@ -41,9 +41,9 @@ Reuse an already running pair. Startup performs no import, evaluation, reset, or
 
 ## Import conversations through the interface
 
-Choose **Import conversations** from any workspace screen. Select or drop a JSON file (up to 20 MB), or choose **Paste JSON**. The interface accepts the organizer response envelope, an array of source conversations, or one source conversation object. A single object/array uses the entered dataset ID; an organizer response retains its own `dataset_group_id`.
+Choose **Импортировать диалоги** from any workspace screen. Select or drop a JSON file (up to 20 MB), or choose **Вставить JSON**. The interface accepts the organizer response envelope, an array of source conversations, or one source conversation object. A single object/array uses the entered dataset ID; an organizer response retains its own `dataset_group_id`.
 
-Preview the conversation count, channels, languages and source IDs, then import. The frontend calls the existing `POST /api/datasets/import` contract. The backend validates timestamps and the complete dataset atomically, rejects conflicts, and treats identical reimports as idempotent. Import does not evaluate, call the model, or replace existing assessments. After success, **Open dataset** selects the imported dataset and clears previous filters so the new conversations are visible.
+Preview the conversation count, channels, languages and source IDs, then import. The frontend calls the existing `POST /api/datasets/import` contract. The backend validates timestamps and the complete dataset atomically, rejects conflicts, and treats identical reimports as idempotent. Import does not evaluate, call the model, or replace existing assessments. After success, **Открыть набор данных** selects the imported dataset and clears previous filters so the new conversations are visible.
 
 Original IDs, text, roles and timestamps stay intact. Optional October 2026 demonstration dates are **off by default** and are separate from original timestamps. For source-only data, use all dates rather than filtering by a demonstration calendar.
 
@@ -72,6 +72,14 @@ python3 scripts/import_dev.py --env-file /absolute/path/to/ignored/.env --group 
 
 The helper reads only the named URL assignment and never prints it. The backend validates the complete envelope atomically. Identical reimports are idempotent; conflicting source records reject. Import does not start model evaluation. Use `--source-dates-only` only when assigned demo dates are intentionally unwanted. Never commit raw payloads, recordings, signed URLs, credentials, or runtime databases.
 
+## Analysis language and Russian interface
+
+Open **Настройки** → **Язык анализа**. The server preference defaults to **Русский (RU)**; **Казахский (KZ)** and **Английский (EN)** are also supported. Select a language and choose **Сохранить настройки**. The screen reads `GET /api/settings` and saves exactly `POST /api/settings` with `{"analysis_language":"RU"}` (or `KZ`/`EN`). Loading, saving, saved confirmation and API failures are visible. Reopening the screen loads the server value; this preference is not browser-only storage.
+
+The saved language applies to new evaluations, custom-metric runs and assistant replies. Saving a preference makes no provider request, launches no assessment and does not change queued work or stored results. Existing model-authored records without language metadata are labeled English. Conversation assessment provenance, run progress and assistant messages show the language recorded for that output. The overview's **Язык диалога** filter selects the source language independently; it does not set the analysis language.
+
+Product labels, known calendar/group metadata, baseline criterion wording and editable baseline drafts are displayed in Russian. Original transcripts, timestamps, user-entered report/criterion/metric text and model output remain verbatim. Built-in wording uses display copies; immutable `cqa-v1` is preserved. Unknown errors/metadata stay inspectable. The interface stays Russian when a different analysis language is saved.
+
 ## Review and analysis
 
 The overview defaults to an available assigned period, explicitly showing Asia/Almaty. Calendar predicates use assigned demo timestamps, separate from immutable original transcript timestamps and independent of quality scores. Filters cover channel, language, dates, local day/night hours, observed Kazakhstan public holidays, weekdays, quality score and critical flags. Each aggregate exposes its eligible denominator and N/A treatment; select a measure or comparison bar to inspect actual source conversations.
@@ -80,7 +88,7 @@ Save an overview selection as a report, or use the assistant to request a report
 
 A conversation shows every original turn with one-based evidence links, original/final scores, applicable weight and raw/weighted criterion calculations. Checklist edits save a new version; select that version in a conversation before explicitly evaluating it. Appeal and reviewer forms preserve original assessments, comments, reasons and recalculated final results. A critical flag remains separate from the arithmetic total.
 
-The paid baseline model is **`claude-sonnet-5-5`**. One complete assessment uses one request containing the full original numbered transcript and the complete selected checklist; the backend calculates the scores. The original 65-record DEV bulk run recorded 65 successful requests costing **USD 0.988380**, a mean of about **USD 0.0152 per complete assessment** (0.988380 ÷ 65). This historical token-usage estimate excludes extra smoke, assistant, custom-metric and retry work. The [recorded usage](docs/coordination/implementation/ledger.md) totals USD 1.061508 across 73 attempts with zero reserved at final verification, including extra checks and retained rejections. These are recorded usage calculations, not invoice reconciliation or a future pricing guarantee.
+The paid baseline model is **`claude-sonnet-5-5`**. One complete assessment uses one request containing the full original numbered transcript and the complete selected checklist; the backend calculates the scores. The original 65-record DEV bulk run recorded 65 successful requests costing **USD 0.988380**, a mean of about **USD 0.0152 per complete assessment** (0.988380 ÷ 65). This historical token-usage estimate excludes extra smoke, assistant, custom-metric and retry work. The historical [recorded usage](docs/coordination/implementation/ledger.md) snapshot before Russian preparation totals USD 1.061508 across 73 attempts with zero reserved, including extra checks and retained rejections. Read the latest ledger and `/api/usage` for subsequent authorized work. These are recorded usage calculations, not invoice reconciliation or a future pricing guarantee.
 
 ## Export evaluated results
 
@@ -97,7 +105,7 @@ For the real ten-record control dataset, use its actual dataset ID and `results/
 
 See [the reproducible demo and control workflow](docs/demo.md) for prepared source/evaluation/report IDs, ready model prompts, read-only HTTP/export checks and the exact import → evaluate/resume → validate/export sequence for the real ten-record control source when released. [The presentation comparison](docs/presentation-model-comparison.md) records the initial import failure, verified packaging correction, five local outcomes and their limits; it does not claim gold-label accuracy or a controlled speed advantage.
 
-Current verification limits: additional private DEV model calls remain unverified. The Freedom UI has been checked locally in a browser with historical DEV results in a disposable database; this does not verify the original teammate runtime or a fresh paid workflow. Two wholly fictional assistant actions and one fictional custom judgment passed native-provider acceptance after a compact transport fix; the earlier two rejected attempts remain in billing history. Retained DEV read/analysis/export works. These fictional checks do not establish a complete live DEV model workflow.
+Verification limits: Russian UI/settings checks use synthetic components, type checking and a production build; they do not establish visual browser acceptance. The earlier Freedom UI browser check used historical DEV results in a disposable database. The overseer records the separately authorized Russian DEV preparation and live acceptance in the coordination ledger; do not infer new-run scores or usage from the historical examples. Two wholly fictional assistant actions and one fictional custom judgment passed native-provider acceptance after a compact transport fix; the earlier two rejected attempts remain in billing history. Retained DEV read/analysis/export works. These fictional checks do not establish a complete live DEV model workflow.
 
 ## Troubleshooting
 

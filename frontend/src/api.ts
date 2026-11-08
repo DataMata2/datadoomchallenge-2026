@@ -23,6 +23,7 @@ import type {
   Observation,
   DatasetImportRequest,
   DatasetImportResult,
+  WorkspaceSettings,
 } from "./api-types";
 export * from "./api-types";
 export type SavedObservation = {
@@ -62,13 +63,16 @@ async function request<T>(path: string, body?: unknown): Promise<T> {
                   `${e.loc.join(".")}: ${e.msg}`,
               )
               .join("; ")
-          : `Request failed (${response.status}). Check that the API is running.`;
+          : `Ошибка запроса (${response.status}). Проверьте доступность API.`;
     throw new ApiError(response.status, message);
   }
   return result as T;
 }
 const id = encodeURIComponent;
 export const api = {
+  settings: () => request<WorkspaceSettings>("/settings"),
+  saveSettings: (settings: WorkspaceSettings) =>
+    request<WorkspaceSettings>("/settings", settings),
   importDataset: (body: DatasetImportRequest) =>
     request<DatasetImportResult>("/datasets/import", body),
   meta: () => request<MetaResponse>("/meta"),

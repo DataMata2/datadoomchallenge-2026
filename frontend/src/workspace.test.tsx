@@ -11,6 +11,9 @@ import Analysis from "./Analysis";
 import ConversationDrawer from "./ConversationDrawer";
 import ReportWorkspace from "./ReportWorkspace";
 import DatasetImport from "./DatasetImport";
+import Settings from "./Settings";
+import { criterionDisplay } from "./locale";
+import { score } from "./ui";
 import type {
   AnalysisOutput,
   Checklist,
@@ -57,6 +60,7 @@ beforeEach(async () => {
   root = createRoot(container);
   calls = [];
   route = (path, body) => {
+    if (path === "/api/settings") return { analysis_language: "RU" };
     if (path === "/api/meta") return fixtures.meta;
     if (path === "/api/checklists")
       return { items: [fixtures.checklist], total: 1 };
@@ -77,7 +81,9 @@ beforeEach(async () => {
     const path = String(input);
     const body = init?.body ? JSON.parse(String(init.body)) : undefined;
     calls.push({ path, body });
-    return new Response(JSON.stringify(route(path, body)), {
+    const result = await route(path, body);
+    if (result instanceof Response) return result;
+    return new Response(JSON.stringify(result), {
       status: 200,
       headers: { "Content-Type": "application/json" },
     });
@@ -114,8 +120,8 @@ test("overview filter changes send actual backend selections and show interprete
   assert.equal(first.filters?.start_at, "2026-10-01T00:00:00+05:00");
   assert.equal(first.filters?.end_at, "2026-11-01T00:00:00+05:00");
   await act(async () => {
-    select("Language").value = "RU";
-    select("Language").dispatchEvent(
+    select("Язык диалога").value = "RU";
+    select("Язык диалога").dispatchEvent(
       new dom.window.Event("change", { bubbles: true }),
     );
   });
@@ -163,8 +169,8 @@ test("aggregate inspection preserves denominator, N/A semantics and exact one-ba
   await act(async () => tile.click());
   const dialog = container.querySelector("dialog");
   assert.ok(dialog?.open);
-  assert.match(dialog.textContent || "", /eligible conversations/);
-  assert.match(dialog.textContent || "", /N\/A/);
+  assert.match(dialog.textContent || "", /учтённым диалогам/);
+  assert.match(dialog.textContent || "", /Н\/П/);
   const evidence = dialog.querySelector(".turn-link") as HTMLButtonElement;
   assert.ok(evidence);
   await act(async () => evidence.click());
@@ -190,9 +196,9 @@ test("conversation criterion highlights the full original turn indices and prese
     fixtures.conversation.transcript.length,
   );
   assert.equal(container.querySelectorAll(".turns li.highlight").length, 2);
-  assert.match(container.textContent || "", /Raw value/);
-  assert.match(container.textContent || "", /Weighted contribution/);
-  assert.match(container.textContent || "", /Original transcript/);
+  assert.match(container.textContent || "", /Исходное значение/);
+  assert.match(container.textContent || "", /Взвешенный вклад/);
+  assert.match(container.textContent || "", /Исходная расшифровка/);
   assert.equal(
     calls.some((c) => c.path === "/api/runs"),
     false,
@@ -224,10 +230,10 @@ test("draft reports ask for clarification; ready reports expose custom coverage 
   };
   await act(async () => root.render(<ReportWorkspace {...props} />));
   await settle();
-  assert.match(container.textContent || "", /This report is a draft/);
+  assert.match(container.textContent || "", /Это черновик отчёта/);
   assert.equal(
     Array.from(container.querySelectorAll("button")).some(
-      (b) => b.textContent === "Define custom metric",
+      (b) => b.textContent === "Задать пользовательскую метрику",
     ),
     false,
   );
@@ -267,16 +273,16 @@ test("draft reports ask for clarification; ready reports expose custom coverage 
     ),
   );
   await settle();
-  assert.match(container.textContent || "", /1 applicable \/ 2 selected/);
+  assert.match(container.textContent || "", /1 применимо \/ 2 выбрано/);
   const metric = container.querySelector(".custom-metric") as HTMLButtonElement;
   await act(async () => metric.click());
   assert.match(
     container.querySelector("dialog")?.textContent || "",
-    /1 uncovered/,
+    /1 без оценки/,
   );
   assert.match(
     container.querySelector("dialog")?.textContent || "",
-    new RegExp(`Source turn #${result.judgment.evidence_turns[0]}`),
+    new RegExp(`Исходная реплика №${result.judgment.evidence_turns[0]}`),
   );
   assert.equal(
     calls.some((c) => c.path.endsWith("/metrics")),
@@ -294,7 +300,7 @@ test("draft reports ask for clarification; ready reports expose custom coverage 
     ),
   );
   await settle();
-  assert.match(container.textContent || "", /Source assessments have changed/);
+  assert.match(container.textContent || "", /Исходные оценки изменились/);
 });
 
 async function saveOverviewSelection() {
@@ -323,16 +329,16 @@ async function saveOverviewSelection() {
   await act(async () => root.render(<App />));
   await settle();
   await act(async () => {
-    select("Compare by").value = "month_half";
-    select("Compare by").dispatchEvent(
+    select("Сравнить по").value = "month_half";
+    select("Сравнить по").dispatchEvent(
       new dom.window.Event("change", { bubbles: true }),
     );
   });
   await settle();
-  await act(async () => button("Save selection as report").click());
+  await act(async () => button("Сохранить выборку как отчёт").click());
   await settle();
   assert.ok(saved, "The overview selection was saved");
-  assert.equal(select("Saved report").value, "new-saved-report");
+  assert.equal(select("Сохранённый отчёт").value, "new-saved-report");
   return saved;
 }
 
@@ -345,20 +351,20 @@ test("saving and reopening an overview retains its displayed non-default compari
     "The saved report retains its comparison chart",
   );
   await act(async () => {
-    select("Saved report").value = fixtures.report.id;
-    select("Saved report").dispatchEvent(
+    select("Сохранённый отчёт").value = fixtures.report.id;
+    select("Сохранённый отчёт").dispatchEvent(
       new dom.window.Event("change", { bubbles: true }),
     );
   });
   await settle();
   await act(async () => {
-    select("Saved report").value = saved.id;
-    select("Saved report").dispatchEvent(
+    select("Сохранённый отчёт").value = saved.id;
+    select("Сохранённый отчёт").dispatchEvent(
       new dom.window.Event("change", { bubbles: true }),
     );
   });
   await settle();
-  assert.equal(select("Saved report").value, saved.id);
+  assert.equal(select("Сохранённый отчёт").value, saved.id);
   assert.equal(saved.output?.spec.group_by, "month_half");
   assert.equal(
     container.querySelectorAll(".bar-chart").length,
@@ -374,9 +380,9 @@ test("saving an overview persists the new report selection through a complete Ap
   root = createRoot(container);
   await act(async () => root.render(<App />));
   await settle();
-  await act(async () => button("Assistant & reports").click());
+  await act(async () => button("Ассистент и отчёты").click());
   await settle();
-  assert.equal(select("Saved report").value, "new-saved-report");
+  assert.equal(select("Сохранённый отчёт").value, "new-saved-report");
 });
 
 test("saved report drilldown preserves copied judgment when the same evaluation is reviewed", async () => {
@@ -404,10 +410,10 @@ test("saved report drilldown preserves copied judgment when the same evaluation 
   localStorage.setItem("cqa-report", saved.id);
   await act(async () => root.render(<App />));
   await settle();
-  await act(async () => button("Assistant & reports").click());
+  await act(async () => button("Ассистент и отчёты").click());
   await settle();
   const tile = Array.from(container.querySelectorAll(".metric-tile")).find(
-    (b) => b.textContent?.includes("Dialogue"),
+    (b) => b.textContent?.includes("Ведение диалога"),
   ) as HTMLButtonElement;
   assert.ok(tile);
   await act(async () => tile.click());
@@ -418,7 +424,7 @@ test("saved report drilldown preserves copied judgment when the same evaluation 
   await act(async () => evidence.click());
   await settle();
   const snapshot = container.querySelector(
-    "[aria-label='Saved report observation']",
+    "[aria-label='Сохранённая оценка отчёта']",
   );
   assert.ok(snapshot);
   assert.match(
@@ -426,11 +432,14 @@ test("saved report drilldown preserves copied judgment when the same evaluation 
     /Copied report rationale before review/,
   );
   assert.match(snapshot.textContent || "", /saved-revision-before-review/);
-  assert.ok(snapshot.textContent?.includes(saved.output.generated_at));
+  assert.equal(
+    snapshot.querySelector("time")?.title,
+    saved.output.generated_at,
+  );
   assert.match(snapshot.textContent || "", new RegExp(fixtures.evaluation.id));
   assert.match(
     container.textContent || "",
-    /Current values differ from saved report values/,
+    /Текущие значения отличаются от сохранённых в отчёте/,
   );
   assert.match(container.textContent || "", /Current reviewer rationale/);
   assert.equal(
@@ -509,14 +518,24 @@ test("checklist criteria set can replace definitions and apply the returned immu
   };
   await act(async () => root.render(<App />));
   await settle();
-  await act(async () => button("Checklists").click());
+  await act(async () => button("Чек-листы").click());
   await settle();
   const originalRows = container.querySelectorAll(".criterion-editor").length;
-  await act(async () => button("Add criterion").click());
+  Array.from(container.querySelectorAll(".criterion-editor")).forEach(
+    (row, index) => {
+      assert.equal(
+        field(row, "Тип ответа").value,
+        baseline.criteria[index].answer_type,
+        "Display translation preserves canonical select values",
+      );
+    },
+  );
+  await act(async () => button("Добавить критерий").click());
   const rows = container.querySelectorAll(".criterion-editor");
   assert.equal(rows.length, originalRows + 1);
   const added = rows[rows.length - 1];
-  const identity = field(added, "Criterion ID") as HTMLInputElement;
+  assert.equal(field(added, "Тип ответа").value, "boolean");
+  const identity = field(added, "Идентификатор критерия") as HTMLInputElement;
   assert.equal(identity.disabled, false);
   assert.equal(
     new RegExp(identity.pattern, "v").test("replacement-metric"),
@@ -525,7 +544,7 @@ test("checklist criteria set can replace definitions and apply the returned immu
   identity.focus();
   await typeValue(identity, "replacement_a");
   assert.equal(
-    field(added, "Criterion ID"),
+    field(added, "Идентификатор критерия"),
     identity,
     "Editing identity preserves the row input",
   );
@@ -538,7 +557,7 @@ test("checklist criteria set can replace definitions and apply the returned immu
   assert.equal(document.activeElement, identity);
   const replacedId = baseline.criteria[0].id;
   const remove = Array.from(rows[0].querySelectorAll("button")).find(
-    (b) => b.textContent?.trim() === "Remove criterion",
+    (b) => b.textContent?.trim() === "Удалить критерий",
   );
   assert.ok(remove);
   await act(async () => remove.click());
@@ -546,20 +565,21 @@ test("checklist criteria set can replace definitions and apply the returned immu
     container.querySelectorAll(".criterion-editor").length,
     originalRows,
   );
-  assert.equal(field(added, "Criterion ID"), identity);
-  await typeValue(field(added, "Title"), "Synthetic replacement");
+  assert.equal(field(added, "Идентификатор критерия"), identity);
+  await typeValue(field(added, "Название"), "Synthetic replacement");
   await typeValue(
-    field(added, "Criterion wording"),
+    field(added, "Формулировка критерия"),
     "Assess the stated fictional property.",
   );
-  await typeValue(field(added, "Answer type"), "scale");
-  await typeValue(field(added, "Weight"), "7");
-  await typeValue(field(added, "Allowed raw steps"), "0, 5, 10");
+  await typeValue(field(added, "Тип ответа"), "scale");
+  assert.equal(field(added, "Тип ответа").value, "scale");
+  await typeValue(field(added, "Вес"), "7");
+  await typeValue(field(added, "Допустимые значения шкалы"), "0, 5, 10");
   await act(async () =>
-    (field(added, "Allow N/A") as HTMLInputElement).click(),
+    (field(added, "Разрешить Н/П") as HTMLInputElement).click(),
   );
   await typeValue(
-    field(added, "N/A condition"),
+    field(added, "Условие Н/П"),
     "The fictional property is not observable.",
   );
   for (const [value, meaning] of [
@@ -567,7 +587,7 @@ test("checklist criteria set can replace definitions and apply the returned immu
     ["5", "Partial"],
     ["10", "Present"],
   ])
-    await typeValue(field(added, `Meaning of ${value}`), meaning);
+    await typeValue(field(added, `Значение ${value}`), meaning);
   await typeValue(identity, "Invalid ID");
   await act(async () =>
     added
@@ -578,7 +598,7 @@ test("checklist criteria set can replace definitions and apply the returned immu
   );
   assert.match(
     container.textContent || "",
-    /Criterion IDs must start with a lowercase letter/,
+    /Идентификатор критерия должен начинаться со строчной латинской буквы/,
   );
   assert.equal(
     calls.some((c) => c.path === "/api/checklists" && c.body),
@@ -592,24 +612,30 @@ test("checklist criteria set can replace definitions and apply the returned immu
         new dom.window.Event("submit", { bubbles: true, cancelable: true }),
       ),
   );
-  assert.match(container.textContent || "", /Criterion IDs must be unique/);
+  assert.match(
+    container.textContent || "",
+    /Идентификаторы критериев должны быть уникальными/,
+  );
   assert.equal(
     calls.some((c) => c.path === "/api/checklists" && c.body),
     false,
   );
   await typeValue(identity, "replacement_metric");
-  await act(async () => button("Add criterion").click());
+  await act(async () => button("Добавить критерий").click());
   const additional = Array.from(
     container.querySelectorAll(".criterion-editor"),
   ).at(-1)!;
-  await typeValue(field(additional, "Criterion ID"), "additional_metric");
-  await typeValue(field(additional, "Title"), "Additional fictional check");
   await typeValue(
-    field(additional, "Criterion wording"),
+    field(additional, "Идентификатор критерия"),
+    "additional_metric",
+  );
+  await typeValue(field(additional, "Название"), "Additional fictional check");
+  await typeValue(
+    field(additional, "Формулировка критерия"),
     "Assess another stated fictional property.",
   );
-  await typeValue(field(additional, "Weight"), "3");
-  await act(async () => button("Save new checklist version").click());
+  await typeValue(field(additional, "Вес"), "3");
+  await act(async () => button("Сохранить новую версию чек-листа").click());
   await settle();
   assert.ok(created);
   const request = calls.find((c) => c.path === "/api/checklists" && c.body)!
@@ -641,20 +667,23 @@ test("checklist criteria set can replace definitions and apply the returned immu
   );
   assert.deepEqual(
     request.criteria.find((c: any) => c.critical),
-    baseline.criteria.find((c: any) => c.critical),
+    criterionDisplay(
+      baseline.criteria.find((c: any) => c.critical),
+      baseline.id,
+    ),
   );
   assert.equal(JSON.stringify(baseline), before);
   assert.equal(
     calls.some((c) => c.path === "/api/runs"),
     false,
   );
-  await act(async () => button("Overview").click());
+  await act(async () => button("Обзор").click());
   await settle();
   await act(async () => button(fixtures.conversation.conversation_id).click());
   await settle();
-  await typeValue(select("Checklist version"), created.id);
+  await typeValue(select("Версия чек-листа"), created.id);
   await settle();
-  await act(async () => button("Evaluate this conversation").click());
+  await act(async () => button("Оценить этот диалог").click());
   assert.deepEqual(calls.find((c) => c.path === "/api/runs")!.body, {
     dataset_id: fixtures.conversation.dataset_id,
     conversation_ids: [fixtures.conversation.conversation_id],
@@ -708,20 +737,26 @@ test("saved source metadata survives score and critical drift without refreshing
   localStorage.setItem("cqa-report", saved.id);
   await act(async () => root.render(<App />));
   await settle();
-  await act(async () => button("Assistant & reports").click());
+  await act(async () => button("Ассистент и отчёты").click());
   await settle();
   const source = Array.from(
     container.querySelectorAll(".report-canvas .text-button"),
   ).find((b) => b.textContent === observed.conversation_id);
   assert.ok(source);
   const row = source.closest("tr")!;
-  assert.match(row.querySelector(".source-tags")?.textContent || "", /ChatEN/);
+  assert.match(
+    row.querySelector(".source-tags")?.textContent || "",
+    /ЧатАнглийский \(EN\)/,
+  );
   assert.match(row.textContent || "", /2026/);
-  assert.ok(row.textContent?.includes(observed.final.final_score.toFixed(2)));
-  assert.match(row.textContent || "", /Critical flag/);
-  assert.doesNotMatch(row.textContent || "", /Source loading|No assigned date/);
+  assert.ok(row.textContent?.includes(score(observed.final.final_score)));
+  assert.match(row.textContent || "", /Критическое нарушение/);
+  assert.doesNotMatch(
+    row.textContent || "",
+    /Загрузка источника|Дата не назначена/,
+  );
   const tile = Array.from(container.querySelectorAll(".metric-tile")).find(
-    (b) => b.textContent?.includes("Dialogue"),
+    (b) => b.textContent?.includes("Ведение диалога"),
   ) as HTMLButtonElement;
   await act(async () => tile.click());
   const evidence = container.querySelector(
@@ -730,7 +765,7 @@ test("saved source metadata survives score and critical drift without refreshing
   await act(async () => evidence.click());
   await settle();
   assert.match(
-    container.querySelector("[aria-label='Saved report observation']")
+    container.querySelector("[aria-label='Сохранённая оценка отчёта']")
       ?.textContent || "",
     /Copied judgment retained after review/,
   );
@@ -776,16 +811,17 @@ test("JSON import previews and submits the existing atomic API without starting 
       />,
     ),
   );
-  await act(async () => button("Paste JSON").click());
+  await act(async () => button("Вставить JSON").click());
   const textarea = container.querySelector("textarea")!;
   await typeValue(textarea, JSON.stringify([record]));
-  await act(async () => button("Preview conversations").click());
+  await act(async () => button("Предпросмотр диалогов").click());
   assert.match(
-    container.querySelector("[aria-label='Import preview']")?.textContent || "",
+    container.querySelector("[aria-label='Предпросмотр импорта']")
+      ?.textContent || "",
     /upload-001/,
   );
   assert.equal(calls.length, 0);
-  await act(async () => button("Import 1 conversations").click());
+  await act(async () => button("Импортировать диалоги (1)").click());
   await settle();
   assert.deepEqual(calls, [
     {
@@ -805,8 +841,8 @@ test("JSON import previews and submits the existing atomic API without starting 
       },
     },
   ]);
-  assert.match(container.textContent || "", /Your conversations are in/);
-  await act(async () => button("Open dataset").click());
+  assert.match(container.textContent || "", /Диалоги импортированы/);
+  await act(async () => button("Открыть набор данных").click());
   assert.equal(opened, true);
 });
 
@@ -814,14 +850,14 @@ test("invalid pasted JSON stays actionable and sends no API requests", async () 
   await act(async () =>
     root.render(<DatasetImport close={() => {}} imported={async () => {}} />),
   );
-  await act(async () => button("Paste JSON").click());
+  await act(async () => button("Вставить JSON").click());
   await typeValue(container.querySelector("textarea")!, "{bad-json");
-  await act(async () => button("Preview conversations").click());
+  await act(async () => button("Предпросмотр диалогов").click());
   assert.match(
     container.querySelector("[role='alert']")?.textContent || "",
-    /not valid JSON/,
+    /Некорректный JSON/,
   );
-  assert.equal(button("Import conversations").disabled, true);
+  assert.equal(button("Импортировать диалоги").disabled, true);
   assert.equal(calls.length, 0);
 });
 
@@ -860,21 +896,236 @@ test("refresh failure after import keeps the saved result and never repeats the 
       />,
     ),
   );
-  await act(async () => button("Paste JSON").click());
+  await act(async () => button("Вставить JSON").click());
   await typeValue(container.querySelector("textarea")!, JSON.stringify(record));
-  await act(async () => button("Preview conversations").click());
-  await act(async () => button("Import 1 conversations").click());
+  await act(async () => button("Предпросмотр диалогов").click());
+  await act(async () => button("Импортировать диалоги (1)").click());
   await settle();
-  await act(async () => button("Open dataset").click());
+  await act(async () => button("Открыть набор данных").click());
   assert.match(
     container.querySelector("[role='alert']")?.textContent || "",
-    /Import succeeded/,
+    /Импорт выполнен/,
   );
-  assert.match(container.textContent || "", /Your conversations are in/);
-  await act(async () => button("Open dataset").click());
+  assert.match(container.textContent || "", /Диалоги импортированы/);
+  await act(async () => button("Открыть набор данных").click());
   assert.equal(refreshes, 2);
   assert.equal(
     calls.filter((c) => c.path === "/api/datasets/import").length,
     1,
+  );
+});
+
+test("settings load server RU, save exact EN preference and reload EN without model work", async () => {
+  let serverLanguage = "RU";
+  let finishSave!: () => void;
+  const saving = new Promise<void>((resolve) => {
+    finishSave = resolve;
+  });
+  const methods: string[] = [];
+  const originalFetch = fetch;
+  globalThis.fetch = async (input, init) => {
+    methods.push(init?.method || "GET");
+    return originalFetch(input, init);
+  };
+  route = async (path, body) => {
+    assert.equal(path, "/api/settings");
+    if (body) {
+      await saving;
+      serverLanguage = body.analysis_language;
+    }
+    return { analysis_language: serverLanguage };
+  };
+  await act(async () => root.render(<Settings />));
+  await settle();
+  assert.equal(select("Язык анализа").value, "RU");
+  assert.match(container.textContent || "", /Русский \(RU\)/);
+  assert.match(container.textContent || "", /не запускает работу модели/);
+  await typeValue(select("Язык анализа"), "EN");
+  assert.equal(
+    calls.length,
+    1,
+    "Changing the draft preference sends no request",
+  );
+  await act(async () => button("Сохранить настройки").click());
+  assert.equal(button("Сохранение…").disabled, true);
+  assert.equal(select("Язык анализа").disabled, true);
+  assert.equal(container.querySelector("[role='status']"), null);
+  await act(async () => finishSave());
+  await settle();
+  assert.match(
+    container.querySelector("[role='status']")?.textContent || "",
+    /Настройки сохранены.*Английский \(EN\)/,
+  );
+  await act(async () => root.unmount());
+  root = createRoot(container);
+  await act(async () => root.render(<Settings />));
+  await settle();
+  assert.equal(select("Язык анализа").value, "EN");
+  assert.deepEqual(calls, [
+    { path: "/api/settings", body: undefined },
+    { path: "/api/settings", body: { analysis_language: "EN" } },
+    { path: "/api/settings", body: undefined },
+  ]);
+  assert.deepEqual(methods, ["GET", "POST", "GET"]);
+});
+
+test("analysis preference remains independent from source-language filters", async () => {
+  let serverLanguage = "EN";
+  const originalRoute = route;
+  route = (path, body) => {
+    if (path === "/api/settings") {
+      if (body) serverLanguage = body.analysis_language;
+      return { analysis_language: serverLanguage };
+    }
+    return originalRoute(path, body);
+  };
+  await act(async () => root.render(<App />));
+  await settle();
+  await typeValue(select("Язык диалога"), "RU");
+  await settle();
+  await act(async () => button("Настройки").click());
+  await settle();
+  assert.equal(select("Язык анализа").value, "EN");
+  const before = calls.length;
+  await typeValue(select("Язык анализа"), "KZ");
+  await act(async () => button("Сохранить настройки").click());
+  await settle();
+  assert.deepEqual(calls.slice(before), [
+    { path: "/api/settings", body: { analysis_language: "KZ" } },
+  ]);
+  await act(async () => button("Обзор").click());
+  await settle();
+  assert.equal(select("Язык диалога").value, "RU");
+  assert.match(
+    container.querySelector(".chips")?.textContent || "",
+    /Русский \(RU\)/,
+  );
+  assert.equal(
+    calls.some(
+      (call) => call.path === "/api/runs" || call.path === "/api/assistant",
+    ),
+    false,
+  );
+});
+
+test("settings save failure remains visible and never claims saved success", async () => {
+  route = (path, body) => {
+    assert.equal(path, "/api/settings");
+    return body
+      ? new Response(
+          JSON.stringify({ detail: "Synthetic storage unavailable" }),
+          { status: 503 },
+        )
+      : { analysis_language: "RU" };
+  };
+  await act(async () => root.render(<Settings />));
+  await settle();
+  await typeValue(select("Язык анализа"), "EN");
+  await act(async () => button("Сохранить настройки").click());
+  await settle();
+  assert.match(
+    container.querySelector("[role='alert']")?.textContent || "",
+    /Synthetic storage unavailable/,
+  );
+  assert.equal(container.querySelector("[role='status']"), null);
+  assert.equal(
+    select("Язык анализа").value,
+    "EN",
+    "The unsaved choice remains editable",
+  );
+  assert.equal(button("Сохранить настройки").disabled, false);
+  await act(async () => root.unmount());
+  root = createRoot(container);
+  await act(async () => root.render(<Settings />));
+  await settle();
+  assert.equal(
+    select("Язык анализа").value,
+    "RU",
+    "Failed save does not change server preference",
+  );
+  assert.equal(
+    calls.some((call) => call.path !== "/api/settings"),
+    false,
+  );
+});
+
+test("settings show loading and actionable read failure before a successful retry", async () => {
+  let finishRead!: () => void;
+  const loading = new Promise<void>((resolve) => {
+    finishRead = resolve;
+  });
+  let attempts = 0;
+  route = async (path) => {
+    assert.equal(path, "/api/settings");
+    if (attempts++ === 0) {
+      await loading;
+      return new Response(
+        JSON.stringify({ detail: "Synthetic read failure" }),
+        { status: 500 },
+      );
+    }
+    return { analysis_language: "RU" };
+  };
+  await act(async () => root.render(<Settings />));
+  assert.match(container.textContent || "", /Загрузка настроек/);
+  await act(async () => finishRead());
+  await settle();
+  assert.match(
+    container.querySelector("[role='alert']")?.textContent || "",
+    /Synthetic read failure/,
+  );
+  assert.equal(button("Сохранить настройки").disabled, true);
+  assert.equal(container.querySelector("[role='status']"), null);
+  await act(async () => button("Повторить загрузку настроек").click());
+  await settle();
+  assert.equal(select("Язык анализа").value, "RU");
+  assert.equal(container.querySelector("[role='alert']"), null);
+  assert.equal(calls.length, 2);
+});
+
+test("legacy EN and new RU analysis provenance is honest while source turns stay unchanged", async () => {
+  const originalRoute = route;
+  let language: "EN" | "RU" | undefined;
+  route = (path, body) =>
+    path.startsWith("/api/evaluations/")
+      ? { ...fixtures.evaluation, analysis_language: language }
+      : originalRoute(path, body);
+  const draw = () => (
+    <ConversationDrawer
+      id="fictional-001"
+      dataset="FICTIONAL"
+      metric="dialogue"
+      checklists={[fixtures.checklist]}
+      close={() => {}}
+      changed={() => {}}
+    />
+  );
+  await act(async () => root.render(draw()));
+  await settle();
+  assert.match(
+    container.querySelector(".assessment-identity")?.textContent || "",
+    /Язык анализа: Английский \(EN\)/,
+  );
+  assert.deepEqual(
+    Array.from(
+      container.querySelectorAll(".turns li p"),
+      (node) => node.textContent,
+    ),
+    fixtures.conversation.transcript.map((turn: { text: string }) => turn.text),
+  );
+  await act(async () => root.unmount());
+  root = createRoot(container);
+  language = "RU";
+  await act(async () => root.render(draw()));
+  await settle();
+  assert.match(
+    container.querySelector(".assessment-identity")?.textContent || "",
+    /Язык анализа: Русский \(RU\)/,
+  );
+  assert.equal(
+    calls.some(
+      (call) => call.path === "/api/runs" || call.path === "/api/assistant",
+    ),
+    false,
   );
 });

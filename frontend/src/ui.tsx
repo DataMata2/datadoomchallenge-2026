@@ -1,6 +1,13 @@
 import { activeRun, raw } from "./domain";
 import { useEffect, useRef, useId, useState, type ReactNode } from "react";
 import Icon from "./Icon";
+import {
+  channelName,
+  languageName,
+  label,
+  metadataText,
+  analysisLanguage,
+} from "./locale";
 import type {
   AnalysisOutput,
   ConversationResponse,
@@ -8,15 +15,15 @@ import type {
   ScoredCriterion,
 } from "./api";
 export const metricNames: Record<string, string> = {
-  final_score: "Quality score",
-  contact: "Contact",
-  discovery: "Discovery",
-  identification: "Identification",
-  consultation: "Consultation",
-  empathy: "Empathy",
-  dialogue: "Dialogue",
-  closure: "Closure",
-  critical: "Critical violation",
+  final_score: "Оценка качества",
+  contact: "Контакт",
+  discovery: "Выявление запроса",
+  identification: "Идентификация",
+  consultation: "Консультация",
+  empathy: "Эмпатия",
+  dialogue: "Ведение диалога",
+  closure: "Завершение",
+  critical: "Критическое нарушение",
 };
 export const metricIds = Object.keys(metricNames) as Array<
   | "final_score"
@@ -30,20 +37,23 @@ export const metricIds = Object.keys(metricNames) as Array<
   | "critical"
 >;
 export const score = (value: number | null | undefined) =>
-  value == null ? "Unknown" : value.toFixed(2);
+  value == null
+    ? "Неизвестно"
+    : value.toLocaleString("ru-RU", {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      });
 export { raw, activeRun } from "./domain";
 export const time = (value: string | null | undefined) =>
   value
-    ? new Intl.DateTimeFormat("en-GB", {
+    ? new Intl.DateTimeFormat("ru-RU", {
         timeZone: "Asia/Almaty",
         dateStyle: "medium",
         timeStyle: "short",
       }).format(new Date(value))
-    : "No assigned date";
+    : "Дата не назначена";
 export const errorText = (error: unknown) =>
-  error instanceof Error
-    ? error.message
-    : "The request could not be completed.";
+  error instanceof Error ? error.message : "Не удалось выполнить запрос.";
 export function ErrorBox({ children }: { children: ReactNode }) {
   return (
     <div className="error" role="alert">
@@ -93,7 +103,7 @@ export function Dialog({
           className="icon"
           disabled={busy}
           onClick={close}
-          aria-label="Close dialog"
+          aria-label="Закрыть диалог"
         >
           <Icon name="close" />
         </button>
@@ -105,24 +115,32 @@ export function Dialog({
 export function FilterChips({ output }: { output: AnalysisOutput }) {
   const filters = output.spec.filters;
   const chips: string[] = [];
-  if (filters?.start_at) chips.push(`From ${time(filters.start_at)}`);
-  if (filters?.end_at) chips.push(`Before ${time(filters.end_at)}`);
-  if (filters?.channel) chips.push(filters.channel);
-  if (filters?.language) chips.push(filters.language);
+  if (filters?.start_at) chips.push(`С ${time(filters.start_at)}`);
+  if (filters?.end_at) chips.push(`До ${time(filters.end_at)}`);
+  if (filters?.channel) chips.push(channelName(filters.channel));
+  if (filters?.language) chips.push(languageName(filters.language));
   if (filters?.hours)
     chips.push(
-      `Hours ${filters.hours.start}:00–${filters.hours.end}:00 (end exclusive)`,
+      `Часы ${filters.hours.start}:00–${filters.hours.end}:00 (конец не включается)`,
     );
   if (filters?.weekdays)
-    chips.push(`ISO weekdays ${filters.weekdays.join(", ")}`);
+    chips.push(`Дни недели ISO: ${filters.weekdays.join(", ")}`);
   if (filters?.holiday != null)
     chips.push(
-      filters.holiday ? "KZ public holidays" : "Exclude KZ public holidays",
+      filters.holiday
+        ? "Праздники Казахстана"
+        : "Исключить праздники Казахстана",
     );
-  if (filters?.min_score != null) chips.push(`Score ≥ ${filters.min_score}`);
-  if (filters?.max_score != null) chips.push(`Score ≤ ${filters.max_score}`);
+  if (filters?.min_score != null)
+    chips.push(`Оценка ≥ ${filters.min_score.toLocaleString("ru-RU")}`);
+  if (filters?.max_score != null)
+    chips.push(`Оценка ≤ ${filters.max_score.toLocaleString("ru-RU")}`);
   if (filters?.critical != null)
-    chips.push(filters.critical ? "Critical flagged" : "No critical flag");
+    chips.push(
+      filters.critical
+        ? "С критическим нарушением"
+        : "Без критического нарушения",
+    );
   return (
     <div className="interpretation">
       <div className="chips">
@@ -134,10 +152,10 @@ export function FilterChips({ output }: { output: AnalysisOutput }) {
         ))}
       </div>
       <details>
-        <summary>How this selection is interpreted</summary>
+        <summary>Как интерпретируется выборка</summary>
         <ul>
           {output.filter_interpretation.map((text) => (
-            <li key={text}>{text}</li>
+            <li key={text}>{metadataText(text)}</li>
           ))}
         </ul>
       </details>
@@ -149,24 +167,30 @@ export function RunProgress({ run, cancel }: { run: Run; cancel: () => void }) {
     <section className="run-progress" aria-live="polite">
       <div className="row">
         <strong>
-          {run.kind === "evaluation" ? "Evaluation" : "Custom metric"}:{" "}
-          {run.status}
+          {run.kind === "evaluation" ? "Оценка" : "Пользовательская метрика"}:{" "}
+          {label(run.status)}
         </strong>
         <span>
-          {run.completed} complete · {run.failed} failed · {run.total} selected
+          {run.completed} завершено · {run.failed} с ошибкой · {run.total}{" "}
+          выбрано
         </span>
         {activeRun(run) && run.status !== "cancelled" && (
-          <button onClick={cancel}>Cancel remaining work</button>
+          <button onClick={cancel}>Отменить оставшуюся работу</button>
         )}
       </div>
-      <progress max={run.total || 1} value={run.completed + run.failed} />
+      <p>Язык анализа: {analysisLanguage(run.analysis_language)}</p>
+      <progress
+        aria-label="Ход оценки"
+        max={run.total || 1}
+        value={run.completed + run.failed}
+      />
       {run.error && <ErrorBox>{run.error}</ErrorBox>}
       <details>
-        <summary>Conversation progress</summary>
+        <summary>Ход оценки диалогов</summary>
         <ul>
           {run.items.map((item) => (
             <li key={item.conversation_id}>
-              {item.conversation_id}: {item.status}
+              {item.conversation_id}: {label(item.status)}
               {item.error ? ` — ${item.error}` : ""}
             </li>
           ))}
@@ -207,7 +231,7 @@ export function ConversationTable({
   if (!rows.length && !searchable)
     return (
       <Empty>
-        No conversations match this selection. Adjust the filters to broaden it.
+        В этой выборке нет диалогов. Измените фильтры, чтобы расширить её.
       </Empty>
     );
   return (
@@ -217,37 +241,37 @@ export function ConversationTable({
           <label className="search-input">
             <Icon name="search" size={18} />
             <input
-              aria-label="Search conversations"
-              placeholder="Search by conversation ID…"
+              aria-label="Поиск диалогов"
+              placeholder="Поиск по идентификатору диалога…"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
             />
           </label>
           <label className="table-state">
-            <span className="sr-only">Review filter</span>
+            <span className="sr-only">Фильтр проверки</span>
             <select
-              aria-label="Review filter"
+              aria-label="Фильтр проверки"
               value={state}
               onChange={(e) => setState(e.target.value)}
             >
-              <option value="all">All conversations</option>
-              <option value="critical">Critical flagged</option>
-              <option value="unevaluated">Awaiting evaluation</option>
-              <option value="error">Evaluation failed</option>
+              <option value="all">Все диалоги</option>
+              <option value="critical">С критическим нарушением</option>
+              <option value="unevaluated">Ожидает оценки</option>
+              <option value="error">Ошибка оценки</option>
             </select>
           </label>
-          <span className="table-count">{rows.length} conversations</span>
+          <span className="table-count">{rows.length} диалогов</span>
         </div>
       )}
       <div className="table-wrap conversation-table">
         <table>
           <thead>
             <tr>
-              <th>Conversation</th>
-              <th>Demo date</th>
-              <th>Channel / language</th>
-              <th>Quality score</th>
-              <th>Review state</th>
+              <th>Диалог</th>
+              <th>Демонстрационная дата</th>
+              <th>Канал / язык</th>
+              <th>Оценка качества</th>
+              <th>Статус проверки</th>
             </tr>
           </thead>
           <tbody>
@@ -282,14 +306,14 @@ export function ConversationTable({
                     {source ? (
                       <div className="source-tags">
                         <span>
-                          {source.channel === "voice call"
-                            ? "Voice call"
-                            : "Chat"}
+                          {source.channel === "voice call" ? "Звонок" : "Чат"}
                         </span>
-                        <span className="language-tag">{source.language}</span>
+                        <span className="language-tag">
+                          {languageName(source.language)}
+                        </span>
                       </div>
                     ) : (
-                      "Source loading"
+                      "Загрузка источника"
                     )}
                   </td>
                   <td>
@@ -305,20 +329,20 @@ export function ConversationTable({
                       {row.evaluation_status === "ok" ? (
                         <>
                           <Icon name="check" size={12} />
-                          Evaluated
+                          Оценено
                         </>
                       ) : row.evaluation_status === "error" ? (
-                        "Failed"
+                        "Ошибка"
                       ) : (
-                        "Awaiting evaluation"
+                        "Ожидает оценки"
                       )}
                     </span>
                     {row.final?.critical_flag && (
-                      <span className="critical">Critical flag</span>
+                      <span className="critical">Критическое нарушение</span>
                     )}
                     <button
                       className="row-open"
-                      aria-label={`Open ${row.conversation_id}`}
+                      aria-label={`Открыть ${row.conversation_id}`}
                       onClick={() => open(row.conversation_id)}
                     >
                       <Icon name="chevron" size={15} />
@@ -331,7 +355,8 @@ export function ConversationTable({
         </table>
         {!rows.length && (
           <Empty>
-            No conversations match your search. Try another ID or review filter.
+            По вашему запросу нет диалогов. Попробуйте другой идентификатор или
+            фильтр проверки.
           </Empty>
         )}
       </div>

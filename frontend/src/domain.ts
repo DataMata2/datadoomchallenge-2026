@@ -5,14 +5,17 @@ export const activeRun = (run: Pick<Run, "status" | "finished_at">) =>
   (run.status === "cancelled" && !run.finished_at);
 export const raw = (value: boolean | number | null | undefined) =>
   value === undefined
-    ? "Unknown"
+    ? "Неизвестно"
     : value === null
-      ? "N/A"
+      ? "Н/П"
       : typeof value === "boolean"
         ? value
-          ? "Yes"
-          : "No"
-        : String(value);
+          ? "Да"
+          : "Нет"
+        : value.toLocaleString("ru-RU", {
+            useGrouping: false,
+            maximumFractionDigits: 20,
+          });
 /** Calendar bounds are Almaty instants: inclusive start, exclusive next-day end. */
 export function calendarBounds(
   from: string,
