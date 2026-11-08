@@ -1,3 +1,4 @@
+import { message, t } from "./i18n";
 import { useEffect, useRef, useState } from "react";
 import { api, type Checklist, type CriterionDefinition } from "./api";
 import { Empty, ErrorBox, errorText } from "./ui";
@@ -113,15 +114,17 @@ export default function ChecklistEditor({
       setBusy(false);
     }
   };
-  if (!checklists.length) return <Empty>Loading checklist versions…</Empty>;
+  if (!checklists.length)
+    return <Empty>{t("Loading checklist versions…")}</Empty>;
   return (
     <section className="panel checklist-editor">
       <div className="section-head">
         <div>
-          <h2>Versioned quality checklist</h2>
+          <h2>{t("Versioned quality checklist")}</h2>
           <p>
-            Changes create a new immutable version. Evaluation is a separate
-            action.
+            {t(
+              "Changes create a new immutable version. Evaluation is a separate action.",
+            )}
           </p>
         </div>
       </div>
@@ -133,17 +136,17 @@ export default function ChecklistEditor({
       >
         <div className="filter-bar">
           <label>
-            Start from version
+            {t("Start from version")}
             <select value={parent} onChange={(e) => setParent(e.target.value)}>
               {checklists.map((c) => (
                 <option key={c.id} value={c.id}>
-                  {c.name} ({c.id})
+                  {t(c.name)} ({c.id})
                 </option>
               ))}
             </select>
           </label>
           <label className="grow">
-            New version name
+            {t("New version name")}
             <input
               required
               value={name}
@@ -155,23 +158,22 @@ export default function ChecklistEditor({
           <Icon name="shield" size={26} />
           <div>
             <strong>
-              {criteria.length} criteria ·{" "}
-              {criteria.filter((c) => c.allow_na).length} support N/A
+              {criteria.length} {t(" criteria · ")}{" "}
+              {criteria.filter((c) => c.allow_na).length} {t(" support N/A ")}
             </strong>
             <small>
-              Changes save as a new version. Existing assessments keep their
-              original checklist.
+              {t(
+                "Changes save as a new version. Existing assessments keep their original checklist.",
+              )}
             </small>
           </div>
         </div>
         <details>
-          <summary>How scoring and versions work</summary>
+          <summary>{t("How scoring and versions work")}</summary>
           <p>
-            Weighted criteria normalize over applicable weight. Critical is a
-            separate boolean with zero weight. N/A requires an explicit
-            applicability condition. To replace a criterion, remove its draft
-            row and add a criterion with a new ID. Prior versions and
-            assessments are preserved.
+            {t(
+              "Weighted criteria normalize over applicable weight. Critical is a separate boolean with zero weight. N/A requires an explicit applicability condition. To replace a criterion, remove its draft row and add a criterion with a new ID. Prior versions and assessments are preserved.",
+            )}
           </p>
         </details>
         {criteria.map((c, index) => (
@@ -181,15 +183,16 @@ export default function ChecklistEditor({
             open={index === 0 || c.rowKey === addedRowKey}
           >
             <summary>
-              {c.title || "New criterion"}{" "}
+              {c.title ? t(c.title) : t("New criterion")}{" "}
               <span>
-                {c.weightText} weight · {c.answer_type}
-                {c.allow_na ? " · N/A allowed" : ""}
+                {c.weightText} {t(" weight · ")}
+                {t(c.answer_type)}
+                {c.allow_na ? t(" · N/A allowed") : ""}
               </span>
             </summary>
             <div className="editor-grid">
               <label>
-                Criterion ID
+                {t("Criterion ID")}
                 <input
                   required
                   maxLength={64}
@@ -199,7 +202,7 @@ export default function ChecklistEditor({
                 />
               </label>
               <label>
-                Title
+                {t("Title")}
                 <input
                   required
                   value={c.title}
@@ -207,7 +210,7 @@ export default function ChecklistEditor({
                 />
               </label>
               <label className="full">
-                Criterion wording
+                {t("Criterion wording")}
                 <textarea
                   required
                   value={c.description}
@@ -217,7 +220,7 @@ export default function ChecklistEditor({
                 />
               </label>
               <label>
-                Answer type
+                {t("Answer type")}
                 <select
                   disabled={c.critical}
                   value={c.answer_type}
@@ -232,12 +235,12 @@ export default function ChecklistEditor({
                     })
                   }
                 >
-                  <option value="boolean">Boolean</option>
-                  <option value="scale">Numeric scale</option>
+                  <option value="boolean">{t("Boolean")}</option>
+                  <option value="scale">{t("Numeric scale")}</option>
                 </select>
               </label>
               <label>
-                Weight
+                {t("Weight")}
                 <input
                   type="number"
                   min="0"
@@ -251,7 +254,7 @@ export default function ChecklistEditor({
               </label>
               {c.answer_type === "scale" && (
                 <label className="full">
-                  Allowed raw steps, separated by commas
+                  {t("Allowed raw steps, separated by commas")}
                   <input
                     required
                     value={c.scaleText}
@@ -273,12 +276,12 @@ export default function ChecklistEditor({
                     })
                   }
                 />
-                Allow N/A
+                {t("Allow N/A")}
               </label>
-              <span>{c.critical ? "Unscored critical flag" : ""}</span>
+              <span>{c.critical ? t("Unscored critical flag") : ""}</span>
               {c.allow_na && (
                 <label className="full">
-                  N/A condition
+                  {t("N/A condition")}
                   <textarea
                     required
                     value={c.na_condition || ""}
@@ -289,7 +292,7 @@ export default function ChecklistEditor({
                 </label>
               )}
               <div className="full">
-                <h4>Scale meanings</h4>
+                <h4>{t("Scale meanings")}</h4>
                 {(c.answer_type === "boolean"
                   ? ["false", "true"]
                   : c.scaleText
@@ -298,7 +301,8 @@ export default function ChecklistEditor({
                       .filter(Boolean)
                 ).map((value) => (
                   <label key={value}>
-                    Meaning of {value}
+                    {t("Meaning of ")}
+                    {t(value)}
                     <input
                       value={c.scale_meanings?.[value] || ""}
                       onChange={(e) =>
@@ -325,24 +329,24 @@ export default function ChecklistEditor({
                     setSuccess("");
                   }}
                 >
-                  Remove criterion
+                  {t("Remove criterion")}
                 </button>
               </div>
             </div>
           </details>
         ))}
-        {error && <ErrorBox>{error}</ErrorBox>}
+        {error && <ErrorBox>{message(error)}</ErrorBox>}
         {success && (
           <div className="notice" role="status">
-            {success}
+            {message(success)}
           </div>
         )}
         <div className="checklist-actions">
           <button type="button" disabled={busy} onClick={add}>
-            Add criterion
+            {t("Add criterion")}
           </button>
           <button className="primary" disabled={busy || !name.trim()}>
-            {busy ? "Saving new version…" : "Save new checklist version"}
+            {busy ? t("Saving new version…") : t("Save new checklist version")}
           </button>
         </div>
       </form>

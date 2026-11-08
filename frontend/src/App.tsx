@@ -1,3 +1,5 @@
+import { message, t, useLocale } from "./i18n";
+import LanguageSwitcher from "./LanguageSwitcher";
 import { useEffect, useState } from "react";
 import {
   api,
@@ -28,6 +30,11 @@ const groups = [
   "date",
 ] as const;
 export default function App() {
+  const locale = useLocale();
+  useEffect(() => {
+    document.documentElement.lang = locale;
+    document.title = `Freedom · ${t("Quality intelligence")}`;
+  }, [locale]);
   const [view, setView] = useState<"overview" | "reports" | "checklists">(
     "overview",
   );
@@ -109,7 +116,7 @@ export default function App() {
     };
   }, [bootstrap]);
   const spec: AnalysisSpec = {
-    title: "Conversation quality overview",
+    title: t("Conversation quality overview"),
     filters,
     group_by: "none",
     metric_ids: metricIds,
@@ -161,7 +168,7 @@ export default function App() {
       const r = await api.saveReport({
         ...spec,
         group_by: group,
-        title: `Quality review · ${start || "all dates"}`,
+        title: t("Quality review · {arg0}", { arg0: start || t("all dates") }),
       });
       await reloadLists();
       setReportId(r.id);
@@ -173,7 +180,7 @@ export default function App() {
   return (
     <div className="app-shell">
       <a className="skip-link" href="#workspace-content">
-        Skip to workspace
+        {t("Skip to workspace")}
       </a>
       <aside className="sidebar">
         <a
@@ -195,25 +202,26 @@ export default function App() {
             </svg>
           </span>
           <span className="brand-name">
-            FREEDOM<span>QUALITY INTELLIGENCE</span>
+            FREEDOM<span>{t("QUALITY INTELLIGENCE")}</span>
           </span>
         </a>
         <div className="workspace-switch">
           <span className="workspace-symbol">Q</span>
           <span>
-            Quality workspace<small>Conversation analytics</small>
+            {t("Quality workspace")}
+            <small>{t("Conversation analytics")}</small>
           </span>
           <Icon name="chevron" size={14} />
         </div>
-        <span className="nav-label">WORKSPACE</span>
-        <nav aria-label="Workspace">
+        <span className="nav-label">{t("WORKSPACE")}</span>
+        <nav aria-label={t("Workspace")}>
           <button
             className={view === "overview" ? "active" : ""}
             aria-current={view === "overview" ? "page" : undefined}
             onClick={() => setView("overview")}
           >
             <Icon name="overview" />
-            Overview
+            {t("Overview")}
           </button>
           <button
             className={view === "reports" ? "active" : ""}
@@ -221,7 +229,7 @@ export default function App() {
             onClick={() => setView("reports")}
           >
             <Icon name="sparkle" />
-            Assistant & reports
+            {t("Assistant & reports")}
           </button>
           <button
             className={view === "checklists" ? "active" : ""}
@@ -229,27 +237,35 @@ export default function App() {
             onClick={() => setView("checklists")}
           >
             <Icon name="checklist" />
-            Checklists
+            {t("Checklists")}
           </button>
         </nav>
         <div className="sidebar-foot">
           <div className="sidebar-note">
             <Icon name="shield" />
-            <strong>Evidence in every decision.</strong>
-            <p>Transparent scores. Traceable reviews. Better conversations.</p>
+            <strong>{t("Evidence in every decision.")}</strong>
+            <p>
+              {t(
+                "Transparent scores. Traceable reviews. Better conversations.",
+              )}
+            </p>
           </div>
           <span className="local-status">
             <i />
-            Local workspace <span>Asia/Almaty</span>
+            {t("Local workspace ")}
+            <span>Asia/Almaty</span>
           </span>
           {usage && (
             <details>
-              <summary>Model usage: ${usage.spent_usd.toFixed(2)}</summary>
+              <summary>
+                {t("Model usage: $")}
+                {usage.spent_usd.toFixed(2)}
+              </summary>
               <p>
-                ${usage.reserved_usd.toFixed(2)} reserved
-                <br />${usage.working_remaining_usd.toFixed(2)} working
-                allowance left
-                <br />${usage.hard_limit_usd} hard limit
+                ${usage.reserved_usd.toFixed(2)} {t(" reserved")}
+                <br />${usage.working_remaining_usd.toFixed(2)}{" "}
+                {t(" working allowance left")}
+                <br />${usage.hard_limit_usd} {t(" hard limit")}
               </p>
             </details>
           )}
@@ -258,19 +274,20 @@ export default function App() {
       <main>
         <div className="topbar">
           <div className="breadcrumb">
-            Workspace
+            {t("Workspace")}
             <Icon name="chevron" size={13} />
             <strong>
               {view === "overview"
-                ? "Overview"
+                ? t("Overview")
                 : view === "reports"
-                  ? "Assistant & reports"
-                  : "Checklists"}
+                  ? t("Assistant & reports")
+                  : t("Checklists")}
             </strong>
           </div>
           <div className="topbar-right">
+            <LanguageSwitcher />
             <span className="timezone">Asia/Almaty · UTC+5</span>
-            <span className="avatar" aria-label="Quality review workspace">
+            <span className="avatar" aria-label={t("Quality review workspace")}>
               QA
             </span>
           </div>
@@ -278,20 +295,28 @@ export default function App() {
         <div className="workspace-content" id="workspace-content">
           <header className="page-head">
             <div>
-              <span className="eyebrow">CONVERSATION QUALITY ANALYTICS</span>
+              <span className="eyebrow">
+                {t("CONVERSATION QUALITY ANALYTICS")}
+              </span>
               <h1>
                 {view === "overview"
-                  ? "A clearer view of quality."
+                  ? t("A clearer view of quality.")
                   : view === "reports"
-                    ? "Ask. Explore. Understand."
-                    : "Your standard. Every conversation."}
+                    ? t("Ask. Explore. Understand.")
+                    : t("Your standard. Every conversation.")}
               </h1>
               <p>
                 {view === "overview"
-                  ? "Every conversation tells a story. Turn yours into better service."
+                  ? t(
+                      "Every conversation tells a story. Turn yours into better service.",
+                    )
                   : view === "reports"
-                    ? "Keep the analysis, its filters and source conversations together."
-                    : "Save a new checklist version and evaluate it explicitly."}
+                    ? t(
+                        "Keep the analysis, its filters and source conversations together.",
+                      )
+                    : t(
+                        "Save a new checklist version and evaluate it explicitly.",
+                      )}
               </p>
             </div>
             <button
@@ -299,18 +324,18 @@ export default function App() {
               onClick={() => setImporting(true)}
             >
               <Icon name="upload" size={17} />
-              Import conversations
+              {t("Import conversations")}
             </button>
           </header>
           {error && (
             <ErrorBox>
-              {error}{" "}
+              {message(error)}{" "}
               <button
                 onClick={() =>
                   meta ? setRevision((v) => v + 1) : setBootstrap((v) => v + 1)
                 }
               >
-                Retry overview
+                {t("Retry overview")}
               </button>
             </ErrorBox>
           )}
@@ -324,7 +349,7 @@ export default function App() {
                 }}
               >
                 <label>
-                  Dataset
+                  {t("Dataset")}
                   <select
                     value={filters.dataset_id}
                     onChange={(e) =>
@@ -339,7 +364,7 @@ export default function App() {
                   </select>
                 </label>
                 <label>
-                  From
+                  {t("From")}
                   <input
                     type="date"
                     value={start}
@@ -347,7 +372,7 @@ export default function App() {
                   />
                 </label>
                 <label>
-                  Through
+                  {t("Through")}
                   <input
                     type="date"
                     value={end}
@@ -355,9 +380,9 @@ export default function App() {
                     onChange={(e) => setEnd(e.target.value)}
                   />
                 </label>
-                <button type="submit">Apply dates</button>
+                <button type="submit">{t("Apply dates")}</button>
                 <label>
-                  Channel
+                  {t("Channel")}
                   <select
                     value={filters.channel || ""}
                     onChange={(e) =>
@@ -368,14 +393,16 @@ export default function App() {
                       })
                     }
                   >
-                    <option value="">All channels</option>
+                    <option value="">{t("All channels")}</option>
                     {meta?.channels.map((c) => (
-                      <option key={c}>{c}</option>
+                      <option key={c} value={c}>
+                        {t(c)}
+                      </option>
                     ))}
                   </select>
                 </label>
                 <label>
-                  Language
+                  {t("Language")}
                   <select
                     value={filters.language || ""}
                     onChange={(e) =>
@@ -386,31 +413,35 @@ export default function App() {
                       })
                     }
                   >
-                    <option value="">All languages</option>
+                    <option value="">{t("All languages")}</option>
                     {meta?.languages.map((c) => (
-                      <option key={c}>{c}</option>
+                      <option key={c} value={c}>
+                        {t(c)}
+                      </option>
                     ))}
                   </select>
                 </label>
                 <label>
-                  Compare by
+                  {t("Compare by")}
                   <select
                     value={group}
                     onChange={(e) => setGroup(e.target.value as typeof group)}
                   >
                     {groups.map((c) => (
                       <option key={c} value={c}>
-                        {c.replaceAll("_", " ")}
+                        {t(c.replaceAll("_", " "))}
                       </option>
                     ))}
                   </select>
                 </label>
               </form>
               <details className="advanced-filters">
-                <summary>Additional calendar and quality filters</summary>
+                <summary>
+                  {t("Additional calendar and quality filters")}
+                </summary>
                 <div className="filter-bar">
                   <label>
-                    Local hours
+                    {t("Local hours")}
                     <select
                       value={
                         filters.hours
@@ -427,16 +458,16 @@ export default function App() {
                         });
                       }}
                     >
-                      <option value="">All hours</option>
-                      <option value="6,18">Day: 06:00–18:00</option>
-                      <option value="18,6">Night: 18:00–06:00</option>
+                      <option value="">{t("All hours")}</option>
+                      <option value="6,18">{t("Day: 06:00–18:00")}</option>
+                      <option value="18,6">{t("Night: 18:00–06:00")}</option>
                       <option value="12,0">
-                        Afternoon/evening: 12:00–24:00
+                        {t("Afternoon/evening: 12:00–24:00")}
                       </option>
                     </select>
                   </label>
                   <label>
-                    Holiday calendar
+                    {t("Holiday calendar")}
                     <select
                       value={
                         filters.holiday == null ? "" : String(filters.holiday)
@@ -451,15 +482,17 @@ export default function App() {
                         })
                       }
                     >
-                      <option value="">All dates</option>
+                      <option value="">{t("All dates")}</option>
                       <option value="true">
-                        KZ public holidays (observed)
+                        {t("KZ public holidays (observed)")}
                       </option>
-                      <option value="false">Exclude KZ public holidays</option>
+                      <option value="false">
+                        {t("Exclude KZ public holidays")}
+                      </option>
                     </select>
                   </label>
                   <label>
-                    Weekdays
+                    {t("Weekdays")}
                     <select
                       value={filters.weekdays?.join(",") || ""}
                       onChange={(e) =>
@@ -471,13 +504,13 @@ export default function App() {
                         })
                       }
                     >
-                      <option value="">All weekdays</option>
-                      <option value="1,2,3,4,5">Monday–Friday</option>
-                      <option value="6,7">Saturday–Sunday</option>
+                      <option value="">{t("All weekdays")}</option>
+                      <option value="1,2,3,4,5">{t("Monday–Friday")}</option>
+                      <option value="6,7">{t("Saturday–Sunday")}</option>
                     </select>
                   </label>
                   <label>
-                    Minimum score
+                    {t("Minimum score")}
                     <input
                       type="number"
                       min="0"
@@ -495,7 +528,7 @@ export default function App() {
                     />
                   </label>
                   <label>
-                    Maximum score
+                    {t("Maximum score")}
                     <input
                       type="number"
                       min={filters.min_score ?? 0}
@@ -513,7 +546,7 @@ export default function App() {
                     />
                   </label>
                   <label>
-                    Critical flag
+                    {t("Critical flag")}
                     <select
                       value={
                         filters.critical == null ? "" : String(filters.critical)
@@ -528,36 +561,41 @@ export default function App() {
                         })
                       }
                     >
-                      <option value="">Any status</option>
-                      <option value="true">Critical flagged</option>
-                      <option value="false">No critical flag</option>
+                      <option value="">{t("Any status")}</option>
+                      <option value="true">{t("Critical flagged")}</option>
+                      <option value="false">{t("No critical flag")}</option>
                     </select>
                   </label>
                 </div>
                 <small>
-                  Hours end exclusively. Holidays include observed Kazakhstan
-                  public holidays; ordinary weekends use the weekday filter.
+                  {t(
+                    "Hours end exclusively. Holidays include observed Kazakhstan public holidays; ordinary weekends use the weekday filter.",
+                  )}
                 </small>
               </details>
               <div className="row provenance">
                 <details>
-                  <summary>About calendar dates</summary>
+                  <summary>{t("About calendar dates")}</summary>
                   <p>
-                    Assigned demo dates are separate from original timestamps
-                    and independent of scores.{" "}
+                    {t(
+                      "Assigned demo dates are separate from original timestamps and independent of scores.",
+                    )}{" "}
                     {Array.isArray(meta?.scheduling.algorithms)
                       ? meta.scheduling.algorithms.join(", ")
-                      : "No scheduling algorithm"}{" "}
-                    · seed {String(meta?.scheduling.seed ?? "none")}.
+                      : t("No scheduling algorithm")}{" "}
+                    {t(" · seed ")}
+                    {String(meta?.scheduling.seed ?? t("none"))}.
                   </p>
                 </details>
                 <button disabled={!output || loading} onClick={savedReport}>
-                  Save selection as report
+                  {t("Save selection as report")}
                 </button>
               </div>
               {loading ? (
                 <Empty>
-                  Loading the selected conversations and quality measures…
+                  {t(
+                    "Loading the selected conversations and quality measures…",
+                  )}
                 </Empty>
               ) : output && !!meta?.datasets.length ? (
                 <Analysis
@@ -575,17 +613,18 @@ export default function App() {
                   <span className="upload-orbit">
                     <Icon name="chat" size={30} />
                   </span>
-                  <h2>Your next insight starts with a conversation.</h2>
+                  <h2>{t("Your next insight starts with a conversation.")}</h2>
                   <p>
-                    Import a JSON dataset to explore conversations, evaluate
-                    quality and follow the evidence.
+                    {t(
+                      "Import a JSON dataset to explore conversations, evaluate quality and follow the evidence.",
+                    )}
                   </p>
                   <button
                     className="primary"
                     onClick={() => setImporting(true)}
                   >
                     <Icon name="upload" size={17} />
-                    Import your first conversations
+                    {t("Import your first conversations")}
                   </button>
                 </div>
               )}
@@ -614,9 +653,9 @@ export default function App() {
           )}
           <footer className="page-footer">
             <span>
-              FREEDOM <span>/</span> Quality intelligence
+              FREEDOM <span>/</span> {t(" Quality intelligence")}
             </span>
-            <span>Built around the conversation.</span>
+            <span>{t("Built around the conversation.")}</span>
           </footer>
         </div>
       </main>

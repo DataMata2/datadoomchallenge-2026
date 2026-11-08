@@ -1,3 +1,4 @@
+import { groupLabel, message, t } from "./i18n";
 import { useId, useState } from "react";
 import Icon from "./Icon";
 import type {
@@ -58,7 +59,9 @@ export default function Analysis({
   } | null>(null);
   const [groupKey, setGroupKey] = useState("");
   const [chartMetric, setChartMetric] = useState("final_score");
-  const [tab, setTab] = useState(saved ? "analytics" : "conversations");
+  const [tab, setTab] = useState<"analytics" | "conversations">(
+    saved ? "analytics" : "conversations",
+  );
   const tabId = useId();
   const aggregate =
     output.groups.find((g) => g.key === groupKey) || output.groups[0];
@@ -71,42 +74,49 @@ export default function Analysis({
       <div className="stat-strip">
         <div className="stat-card">
           <span className="stat-label">
-            Selected conversations
+            {t("Selected conversations")}
             <Icon name="chat" size={18} />
           </span>
           <strong>{output.counts.selected}</strong>
-          <span>Across the current selection</span>
+          <span>{t("Across the current selection")}</span>
         </div>
         <div className="stat-card featured">
           <span className="stat-label">
-            Average quality score
+            {t("Average quality score")}
             <Icon name="sparkle" size={18} />
           </span>
-          <strong>
+          <strong
+            className={
+              aggregate?.metrics.final_score?.value == null
+                ? "unknown-stat"
+                : ""
+            }
+          >
             {score(aggregate?.metrics.final_score?.value)}
             <small>/100</small>
           </strong>
           <span>
-            {aggregate?.metrics.final_score?.sample_count || 0} eligible
-            conversations
+            {t("Eligible conversations: {count}", {
+              count: aggregate?.metrics.final_score?.sample_count || 0,
+            })}
             {output.groups.length > 1 && aggregate
-              ? ` · ${aggregate.label}`
+              ? ` · ${groupLabel(aggregate.label)}`
               : ""}
           </span>
         </div>
         <div className="stat-card">
           <span className="stat-label">
-            Critical violations
+            {t("Critical violations")}
             <Icon name="shield" size={18} />
           </span>
           <strong>
             {output.observations.filter((o) => o.final?.critical_flag).length}
           </strong>
-          <span>Flagged separately from the score</span>
+          <span>{t("Flagged separately from the score")}</span>
         </div>
         <div className="stat-card">
           <span className="stat-label">
-            Evaluation coverage
+            {t("Evaluation coverage")}
             <Icon name="checklist" size={18} />
           </span>
           <strong>
@@ -114,14 +124,17 @@ export default function Analysis({
             <small>/{output.counts.selected}</small>
           </strong>
           <span>
-            {output.counts.unevaluated} awaiting · {output.counts.failed} failed
+            {t("Awaiting: {pending} · failed: {failed}", {
+              pending: output.counts.unevaluated,
+              failed: output.counts.failed,
+            })}
           </span>
         </div>
       </div>
       <div
         className="analysis-tabs"
         role="tablist"
-        aria-label="Overview content"
+        aria-label={t("Overview content")}
       >
         <button
           role="tab"
@@ -139,7 +152,8 @@ export default function Analysis({
           onClick={() => setTab("conversations")}
         >
           <Icon name="chat" size={17} />
-          Conversations<span>{output.counts.selected}</span>
+          {t("Conversations")}
+          <span>{output.counts.selected}</span>
         </button>
         <button
           role="tab"
@@ -157,7 +171,7 @@ export default function Analysis({
           onClick={() => setTab("analytics")}
         >
           <Icon name="overview" size={17} />
-          Quality analytics
+          {t("Quality analytics")}
         </button>
       </div>
       <div className="analysis-selection">
@@ -172,11 +186,14 @@ export default function Analysis({
         <section className="panel conversations-panel">
           <div className="section-head">
             <div>
-              <span className="eyebrow">THE CONVERSATION, IN CONTEXT</span>
-              <h2>Conversations behind the numbers</h2>
+              <span className="eyebrow">
+                {t("THE CONVERSATION, IN CONTEXT")}
+              </span>
+              <h2>{t("Conversations behind the numbers")}</h2>
               <p>
-                Open a conversation to explore its assessment and original
-                evidence.
+                {t(
+                  "Open a conversation to explore its assessment and original evidence.",
+                )}
               </p>
             </div>
             <span className="panel-icon">
@@ -192,7 +209,7 @@ export default function Analysis({
           <div className="table-footer">
             <Icon name="shield" size={14} />
             <span>
-              Original transcripts · Traceable assessments · Human review
+              {t("Original transcripts · Traceable assessments · Human review")}
             </span>
           </div>
         </section>
@@ -208,30 +225,33 @@ export default function Analysis({
             <div className="section-head">
               <div>
                 <h2>
-                  Quality at a glance
-                  {output.groups.length > 1 ? ` · ${aggregate.label}` : ""}
+                  {t("Quality at a glance")}
+                  {output.groups.length > 1
+                    ? ` · ${groupLabel(aggregate.label)}`
+                    : ""}
                 </h2>
                 <p>
-                  Inspect any measure to see its denominator and source
-                  conversations.
+                  {t(
+                    "Inspect any measure to see its denominator and source conversations.",
+                  )}
                 </p>
               </div>
               {output.groups.length > 1 ? (
                 <label>
-                  Measure group
+                  {t("Measure group")}
                   <select
                     value={aggregate.key}
                     onChange={(e) => setGroupKey(e.target.value)}
                   >
                     {output.groups.map((g) => (
                       <option key={g.key} value={g.key}>
-                        {g.label}
+                        {groupLabel(g.label)}
                       </option>
                     ))}
                   </select>
                 </label>
               ) : (
-                <small>Baseline checklist cqa-v1</small>
+                <small>{t("Baseline checklist cqa-v1")}</small>
               )}
             </div>
             <div className="metric-grid">
@@ -247,7 +267,8 @@ export default function Analysis({
                     {value.value != null && <small>%</small>}
                   </strong>
                   <span>
-                    {value.sample_count} eligible · {value.na_count} N/A
+                    {value.sample_count} {t(" eligible · ")}
+                    {value.na_count} N/A
                   </span>
                   <span
                     className={`metric-meter ${metric === "critical" ? "critical-meter" : ""}`}
@@ -264,14 +285,15 @@ export default function Analysis({
           <section className="panel">
             <div className="section-head">
               <div>
-                <h2>Compare the selection</h2>
+                <h2>{t("Compare the selection")}</h2>
                 <p>
-                  Each bar uses its own eligible denominator. Select a bar to
-                  inspect.
+                  {t(
+                    "Each bar uses its own eligible denominator. Select a bar to inspect.",
+                  )}
                 </p>
               </div>
               <label>
-                Compare measure
+                {t("Compare measure")}
                 <select
                   value={chartId}
                   onChange={(e) => setChartMetric(e.target.value)}
@@ -295,29 +317,34 @@ export default function Analysis({
                       onClick={() => setInspect({ metric: chartId, group })}
                     >
                       <span>
-                        {group.label}
-                        <small>{group.counts.selected} selected</small>
+                        {groupLabel(group.label)}
+                        <small>
+                          {group.counts.selected} {t(" selected ")}
+                        </small>
                       </span>
                       <span className="bar-track">
                         <span style={{ width: `${metric?.value || 0}%` }} />
                       </span>
                       <strong>
                         {score(metric?.value)}
-                        <small>n={metric?.sample_count || 0}</small>
+                        <small>
+                          {t("n=")}
+                          {metric?.sample_count || 0}
+                        </small>
                       </strong>
                     </button>
                   );
                 })}
               </div>
             ) : (
-              <Empty>No groups in this selection.</Empty>
+              <Empty>{t("No groups in this selection.")}</Empty>
             )}
           </section>
         )}
       </div>
       {inspect && (
         <Dialog
-          title={`${metricNames[inspect.metric]} · ${inspect.group.label}`}
+          title={`${metricNames[inspect.metric]} · ${groupLabel(inspect.group.label)}`}
           close={() => setInspect(null)}
           wide
         >
@@ -344,37 +371,51 @@ function MetricDetails({
   return (
     <div className="dialog-body">
       <p>
-        {criterion?.description ||
+        {(criterion?.description ? t(criterion.description) : undefined) ||
           (metric === "final_score"
-            ? "Mean final quality score across successfully evaluated conversations with a known final score."
-            : "Percentage of successfully evaluated conversations with a critical violation. This separate flag does not zero the quality score.")}
+            ? t(
+                "Mean final quality score across successfully evaluated conversations with a known final score.",
+              )
+            : t(
+                "Percentage of successfully evaluated conversations with a critical violation. This separate flag does not zero the quality score.",
+              ))}
       </p>
       {criterion && (
         <p>
-          Raw values: {criterion.allowed_values.map(raw).join(", ")}. Weight:{" "}
-          {criterion.weight}.{" "}
+          {t("Raw values: ")}
+          {criterion.allowed_values.map(raw).join(", ")}
+          {t(". Weight:")} {criterion.weight}.{" "}
           {criterion.allow_na
-            ? `N/A when ${criterion.na_condition}. N/A is excluded from the eligible denominator.`
-            : "N/A is not permitted."}
+            ? t(
+                "N/A when {arg0}. N/A is excluded from the eligible denominator.",
+                { arg0: t(criterion.na_condition || "") },
+              )
+            : t("N/A is not permitted.")}
         </p>
       )}
       <div className="notice">
-        {score(aggregate?.value)}% across {aggregate?.sample_count || 0}{" "}
-        eligible conversations; {aggregate?.na_count || 0} N/A. Selected:{" "}
-        {group.counts.selected}; failed: {group.counts.failed}; unevaluated:{" "}
-        {group.counts.unevaluated}.{" "}
+        {score(aggregate?.value)}
+        {t(" % across ")}
+        {aggregate?.sample_count || 0} {t("eligible conversations; ")}
+        {aggregate?.na_count || 0} {t(" N/A. Selected:")}{" "}
+        {group.counts.selected}
+        {t(" ; failed: ")}
+        {group.counts.failed}
+        {t(" ; unevaluated: ")} {group.counts.unevaluated}.{" "}
         {metric !== "critical" &&
           metric !== "final_score" &&
-          "Criterion percentages normalize the raw score by its maximum before averaging; they are not weighted contributions."}
+          t(
+            "Criterion percentages normalize the raw score by its maximum before averaging; they are not weighted contributions.",
+          )}
       </div>
       <div className="table-wrap">
         <table>
           <thead>
             <tr>
-              <th>Source conversation</th>
-              <th>Raw value</th>
-              <th>Eligible</th>
-              <th>Evidence</th>
+              <th>{t("Source conversation")}</th>
+              <th>{t("Raw value")}</th>
+              <th>{t("Eligible")}</th>
+              <th>{t("Evidence")}</th>
             </tr>
           </thead>
           <tbody>
@@ -403,20 +444,20 @@ function MetricDetails({
                     <td>
                       {row.evaluation_status === "ok"
                         ? raw(value)
-                        : row.evaluation_status}
+                        : t(row.evaluation_status)}
                     </td>
                     <td>
                       {metric === "final_score"
                         ? value != null
-                          ? "Yes"
-                          : "No"
+                          ? t("Yes")
+                          : t("No")
                         : metric === "critical"
                           ? row.final
-                            ? "Yes"
-                            : "No"
+                            ? t("Yes")
+                            : t("No")
                           : judgment?.applicable
-                            ? "Yes"
-                            : "No"}
+                            ? t("Yes")
+                            : t("No")}
                     </td>
                     <td>
                       {judgment?.evidence_turns.map((turn) => (
@@ -429,7 +470,7 @@ function MetricDetails({
                         >
                           #{turn}
                         </button>
-                      )) || "Open score explanation"}
+                      )) || t("Open score explanation")}
                     </td>
                   </tr>
                 );
@@ -438,7 +479,7 @@ function MetricDetails({
         </table>
       </div>
       <details>
-        <summary>Source selection</summary>
+        <summary>{t("Source selection")}</summary>
         <ConversationTable
           output={output}
           sources={sources}

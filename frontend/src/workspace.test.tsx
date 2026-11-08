@@ -11,6 +11,8 @@ import Analysis from "./Analysis";
 import ConversationDrawer from "./ConversationDrawer";
 import ReportWorkspace from "./ReportWorkspace";
 import DatasetImport from "./DatasetImport";
+import { setLocale } from "./i18n";
+import { metricIds, metricNames } from "./ui";
 import type {
   AnalysisOutput,
   Checklist,
@@ -45,6 +47,7 @@ beforeEach(async () => {
       return 1;
     },
   });
+  setLocale("en");
   dom.window.HTMLDialogElement.prototype.showModal = function () {
     this.open = true;
   };
@@ -267,11 +270,14 @@ test("draft reports ask for clarification; ready reports expose custom coverage 
     ),
   );
   await settle();
-  assert.match(container.textContent || "", /1 applicable \/ 2 selected/);
+  assert.match(
+    (container.textContent || "").replace(/\s+/g, " "),
+    /1 applicable \/ 2 selected/,
+  );
   const metric = container.querySelector(".custom-metric") as HTMLButtonElement;
   await act(async () => metric.click());
   assert.match(
-    container.querySelector("dialog")?.textContent || "",
+    (container.querySelector("dialog")?.textContent || "").replace(/\s+/g, " "),
     /1 uncovered/,
   );
   assert.match(
@@ -785,7 +791,7 @@ test("JSON import previews and submits the existing atomic API without starting 
     /upload-001/,
   );
   assert.equal(calls.length, 0);
-  await act(async () => button("Import 1 conversations").click());
+  await act(async () => button("Import 1 conversation").click());
   await settle();
   assert.deepEqual(calls, [
     {
@@ -863,7 +869,7 @@ test("refresh failure after import keeps the saved result and never repeats the 
   await act(async () => button("Paste JSON").click());
   await typeValue(container.querySelector("textarea")!, JSON.stringify(record));
   await act(async () => button("Preview conversations").click());
-  await act(async () => button("Import 1 conversations").click());
+  await act(async () => button("Import 1 conversation").click());
   await settle();
   await act(async () => button("Open dataset").click());
   assert.match(
@@ -877,4 +883,180 @@ test("refresh failure after import keeps the saved result and never repeats the 
     calls.filter((c) => c.path === "/api/datasets/import").length,
     1,
   );
+});
+
+test("interface locale preserves API filter codes, source text, the selected criterion and an unsent appeal", async () => {
+  const originalRoute = route;
+  const transcript = structuredClone(fixtures.conversation.transcript);
+  transcript[0].text =
+    "Overview · Yes · Сәлеметсіз бе! · Исходный текст · Original EN";
+  route = (path, body) =>
+    path.startsWith("/api/conversations/") &&
+    path !== "/api/conversations/search"
+      ? {
+          ...fixtures.conversation,
+          transcript,
+          evaluation_id: fixtures.evaluation.id,
+        }
+      : originalRoute(path, body);
+  const chooseLocale = async (
+    value: string,
+    parent: ParentNode = container,
+  ) => {
+    const control = parent.querySelector(
+      ".locale-switcher select",
+    ) as HTMLSelectElement;
+    assert.ok(control);
+    await act(async () => {
+      control.value = value;
+      control.dispatchEvent(new dom.window.Event("change", { bubbles: true }));
+    });
+    await settle();
+  };
+  await act(async () => root.render(<App />));
+  await settle();
+  await act(async () => {
+    select("Language").value = "RU";
+    select("Language").dispatchEvent(
+      new dom.window.Event("change", { bubbles: true }),
+    );
+  });
+  await settle();
+  const requests = calls.length;
+  await chooseLocale("ru");
+  assert.equal(document.documentElement.lang, "ru");
+  assert.equal(localStorage.getItem("cqa-ui-locale"), "ru");
+  assert.equal(select("Язык диалога").value, "RU");
+  assert.equal(
+    calls.length,
+    requests,
+    "Switching UI locale makes no API request",
+  );
+  await act(async () => button(fixtures.conversation.conversation_id).click());
+  await settle();
+  const dialogue = [
+    ...container.querySelectorAll(".criterion-tabs button"),
+  ].find((b) =>
+    b.textContent?.includes("Ведение диалога"),
+  ) as HTMLButtonElement;
+  assert.ok(dialogue);
+  await act(async () => dialogue.click());
+  const dialog = container.querySelector("dialog")!;
+  const comment = field(dialog, "Причина апелляции") as HTMLTextAreaElement;
+  await typeValue(
+    comment,
+    "My unsent comment / Менің пікірім / Мой комментарий",
+  );
+  const beforeSwitch = calls.length;
+  await chooseLocale("kk", dialog);
+  assert.equal(document.documentElement.lang, "kk");
+  assert.equal(field(dialog, "Шағым себебі"), comment);
+  assert.equal(
+    comment.value,
+    "My unsent comment / Менің пікірім / Мой комментарий",
+  );
+  assert.match(
+    dialog.querySelector(".criterion-tabs .selected")?.textContent || "",
+    /Диалог жүргізу/,
+  );
+  assert.deepEqual(
+    [...dialog.querySelectorAll(".turns li p")].map((p) => p.textContent),
+    transcript.map((turn: { text: string }) => turn.text),
+  );
+  for (const [index, turn] of transcript.entries())
+    assert.ok(
+      dialog
+        .querySelectorAll(".turns li")
+        [index].classList.contains(turn.speaker),
+      "Participant styling retains the source role in every locale",
+    );
+  assert.equal(
+    calls.length,
+    beforeSwitch,
+    "No evaluation, save or refetch occurs on locale change",
+  );
+  await chooseLocale("en", dialog);
+  assert.equal(field(dialog, "Reason for appeal"), comment);
+  assert.equal(
+    comment.value,
+    "My unsent comment / Менің пікірім / Мой комментарий",
+  );
+});
+
+test("Russian initial render opens the conversations panel and language changes preserve the active tab", async () => {
+  setLocale("ru");
+  await act(async () => root.render(<App />));
+  await settle();
+  const visiblePanel = () =>
+    container.querySelector('[role="tabpanel"]:not([hidden])');
+  assert.ok(visiblePanel()?.querySelector(".conversations-panel"));
+  const locale = container.querySelector(
+    ".locale-switcher select",
+  ) as HTMLSelectElement;
+  await act(async () => {
+    locale.value = "kk";
+    locale.dispatchEvent(new dom.window.Event("change", { bubbles: true }));
+  });
+  assert.ok(visiblePanel()?.querySelector(".conversations-panel"));
+  const analytics = [...container.querySelectorAll('[role="tab"]')].find(
+    (node) => node.textContent?.includes("Сапа талдауы"),
+  ) as HTMLButtonElement;
+  await act(async () => analytics.click());
+  assert.ok(visiblePanel()?.querySelector(".metric-grid"));
+  await act(async () => {
+    locale.value = "en";
+    locale.dispatchEvent(new dom.window.Event("change", { bubbles: true }));
+  });
+  assert.equal(
+    container.querySelector('[role="tab"][aria-selected="true"]')?.textContent,
+    "Quality analytics",
+  );
+  assert.ok(visiblePanel()?.querySelector(".metric-grid"));
+});
+
+test("localized checklist controls retain protocol values and the user's draft", async () => {
+  setLocale("ru");
+  await act(async () => root.render(<App />));
+  await settle();
+  await act(async () => button("Чек-листы").click());
+  const rows = [...container.querySelectorAll(".criterion-editor")];
+  assert.equal(rows.length, fixtures.checklist.criteria.length);
+  for (const [index, row] of rows.entries())
+    assert.equal(
+      field(row, "Тип ответа").value,
+      fixtures.checklist.criteria[index].answer_type,
+    );
+  const title = field(rows[0], "Название");
+  await typeValue(title, "Overview · Мой критерий · Менің өлшемім");
+  const answer = field(rows[0], "Тип ответа");
+  await typeValue(answer, "scale");
+  const requests = calls.length;
+  for (const [locale, label, titleLabel] of [
+    ["kk", "Жауап түрі", "Атауы"],
+    ["en", "Answer type", "Title"],
+    ["ru", "Тип ответа", "Название"],
+  ] as const) {
+    await act(async () => setLocale(locale));
+    assert.equal(field(rows[0], label), answer);
+    assert.equal(answer.value, "scale");
+    assert.equal(field(rows[0], titleLabel), title);
+    assert.equal(title.value, "Overview · Мой критерий · Менің өлшемім");
+  }
+  assert.equal(calls.length, requests);
+});
+
+test("localized metric labels remain compatible with React Refresh object inspection", async () => {
+  for (const locale of ["ru", "en", "kk"] as const) {
+    setLocale(locale);
+    assert.equal(Reflect.get(metricNames, "constructor"), Object);
+    assert.equal(
+      Reflect.get(metricNames, "toString"),
+      Object.prototype.toString,
+    );
+    assert.equal(Reflect.get(metricNames, Symbol.toStringTag), undefined);
+    assert.equal(Reflect.get(metricNames, "not_a_metric"), undefined);
+    assert.deepEqual(Object.keys(metricNames), metricIds);
+    for (const key of metricIds)
+      assert.equal(typeof metricNames[key], "string");
+  }
 });
